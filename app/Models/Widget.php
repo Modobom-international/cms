@@ -6,5 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Widget extends Model
 {
-    //
+    protected $fillable = [
+        'column_id',
+        'order',
+        'settings'
+    ];
 }
