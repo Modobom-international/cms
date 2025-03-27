@@ -2,28 +2,13 @@
 
 namespace App\Services;
 
-use Spatie\Ssh\Ssh;
-
-class SSHService
+class RunBashService
 {
-    protected $server;
-    protected $user;
-    protected $privateKey;
-
-    public function __construct($server)
-    {
-        $this->server = $server;
-        $this->user = config('services.ssh.ssh_user');
-        $this->privateKey = config('services.ssh.ssh_private_key');
-    }
-
-    public function runScript($sourceDir, $slug)
+    public function runScriptCreateLanding($sourceDir, $slug)
     {
         try {
             $script = "bash /create_landing/create.sh {$sourceDir} {$slug}";
-
-            $output = Ssh::create($this->user, $this->server)
-                ->execute($script);
+            $output = shell_exec($script . ' 2>&1');
 
             return $output->getOutput();
         } catch (RequestException $e) {
