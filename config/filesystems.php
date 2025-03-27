@@ -59,6 +59,14 @@ return [
             'throw' => false,
             'report' => false,
         ],
+    
+        'public-image-user' => [
+            'driver' => 'local',
+            'root' => public_path() . '/images/user/',
+            'url' => env('APP_URL') . '/images/user/',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
 
     ],
 
