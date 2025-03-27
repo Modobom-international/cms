@@ -2,10 +2,7 @@
 
 namespace App\Repositories;
 
-use App\Enums\Users;
 use App\Models\User;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class UserRepository extends BaseRepository
 {
@@ -18,6 +15,7 @@ class UserRepository extends BaseRepository
     {
         return $this->model->create($dataUser);
     }
+    
     public function getDataUser($dataUser)
     {
         return $this->model->where('id', $dataUser)->first();
@@ -37,5 +35,4 @@ class UserRepository extends BaseRepository
     {
         return $this->model->where('email', $email)->update($input);
     }
-
 }
