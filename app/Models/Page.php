@@ -12,7 +12,8 @@ class Page extends Model
         'provider'
     ];
 
-    public function rows() {
-        
+    public function rows()
+    {
+        return $this->hasMany(Row::class, 'page_id');
     }
 }
