@@ -2,15 +2,23 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Enums\Users;
+use App\Repositories\UserRepository;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Validator;
 
 class AuthController extends Controller
 {
+    
+    protected $userRepository;
+    
+    public function __construct(UserRepository $userRepository)
+    {
+        $this->userRepository = $userRepository;
+    }
+    
     // Đăng ký user
    
     public function register(Request $request)
@@ -21,12 +29,17 @@ class AuthController extends Controller
                 'email' => 'required|string|email|unique:users',
                 'password' => 'required|string|min:8',
             ]);
-        
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => bcrypt($request->password),
-            ]);
+    
+            $input = $request->all();
+            $dataUser = [
+                'name' => $input['name'],
+                'email' => $input['email'],
+                'password' => bcrypt($input['password']),
+                'role' => Users::USER,
+                'type_user' => $input['type_user'],
+            ];
+    
+            $user = $this->userRepository->createUser($dataUser);
         
             $token = $user->createToken('Personal Access Token')->accessToken;
             return response()->json([
