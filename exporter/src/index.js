@@ -91,6 +91,10 @@ function cleanupPreviousExports() {
  * Process the export
  */
 async function processExport() {
+    // Add 5 second delay before starting
+    console.log('Waiting 5 seconds before starting export...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
     console.log('Processing latest export request');
 
     try {
