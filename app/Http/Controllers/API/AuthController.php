@@ -11,16 +11,16 @@ use Validator;
 
 class AuthController extends Controller
 {
-    
+
     protected $userRepository;
-    
+
     public function __construct(UserRepository $userRepository)
     {
         $this->userRepository = $userRepository;
     }
-    
+
     // Đăng ký user
-   
+
     public function register(Request $request)
     {
         try {
@@ -29,7 +29,7 @@ class AuthController extends Controller
                 'email' => 'required|string|email|unique:users',
                 'password' => 'required|string|min:8',
             ]);
-    
+
             $input = $request->all();
             $dataUser = [
                 'name' => $input['name'],
@@ -38,9 +38,9 @@ class AuthController extends Controller
                 'role' => Users::USER,
                 'type_user' => $input['type_user'],
             ];
-    
+
             $user = $this->userRepository->createUser($dataUser);
-        
+
             $token = $user->createToken('Personal Access Token')->accessToken;
             return response()->json([
                 'success' => true,
@@ -55,7 +55,7 @@ class AuthController extends Controller
             ], 500);
         }
     }
-    
+
     // Đăng nhập user
     public function login(Request $request)
     {
@@ -64,13 +64,13 @@ class AuthController extends Controller
                 'email' => 'required|string|email',
                 'password' => 'required|string',
             ]);
-        
+
             $credentials = $request->only('email', 'password');
-        
+
             if (Auth::attempt($credentials)) {
                 $user = Auth::user();
                 $token = $user->createToken('Personal Access Token')->accessToken;
-        
+
                 return response()->json([
                     'success' => true,
                     'data' => $user,
@@ -80,7 +80,7 @@ class AuthController extends Controller
                     'type' => 'login_success',
                 ], 200);
             }
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Thông tin đăng nhập không đúng',
@@ -94,12 +94,12 @@ class AuthController extends Controller
             ], 500);
         }
     }
-    
+
     // Đăng xuất user
     public function logout(Request $request)
     {
         $request->user()->token()->revoke();
-    
+
         return response()->json([
             'success' => true,
             'message' => 'Đăng xuất thành công',

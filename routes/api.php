@@ -5,6 +5,7 @@ use App\Http\Controllers\API\WorkspaceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\PageController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -12,26 +13,35 @@ Route::get('/user', function (Request $request) {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+// Page routes
+Route::post('/create-page', [PageController::class, 'create']);
+Route::post('/update-page/{id}', [PageController::class, 'update']);
+Route::get('/page/{slug}', [PageController::class, 'getPage']);
+
+// Page export routes
+Route::post('/export-pages', [PageController::class, 'exportPage']);
+Route::get('/pending-exports', [PageController::class, 'getPendingExports']);
+Route::post('/cancel-export', [PageController::class, 'cancelExport']);
+
 Route::middleware('auth:api')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [UserController::class, 'me']);
     Route::post('/update/user', [UserController::class, 'updateCurrentUser']);
     Route::post('/change-password', [UserController::class, 'changePassword']);
-    
+
     //admin change password for useer
     Route::post('/change-password-user/{id}/', [UserController::class, 'updatePassword']);
-    
+
     //workspace
     Route::get('/workspaces', [WorkspaceController::class, 'index']);
     Route::post('/create-workspace', [WorkspaceController::class, 'store']);
     Route::get('/workspace/{id}', [WorkspaceController::class, 'show']);
     Route::post('/update-workspace/{id}', [WorkspaceController::class, 'update']);
     Route::get('/delete-workspace/{id}', [WorkspaceController::class, 'destroy']);
-    
+
     //workspace-user
     Route::post('/workspace/{workspace}/join', [WorkspaceController::class, 'joinPublicWorkspace']);
     Route::post('/workspace/{workspace}/add-member', [WorkspaceController::class, 'addMember']);
     Route::post('/workspace/remove-members', [WorkspaceController::class, 'removeMember']);
     Route::get('/workspace/{workspace}/members', [WorkspaceController::class, 'listMembers']);
-    
 });
