@@ -1,10 +1,11 @@
 <?php
 
+use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\BoardController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\WorkspaceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\API\AuthController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -29,9 +30,22 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/delete-workspace/{id}', [WorkspaceController::class, 'destroy']);
     
     //workspace-user
-    Route::post('/workspace/{workspace}/join', [WorkspaceController::class, 'joinPublicWorkspace']);
-    Route::post('/workspace/{workspace}/add-member', [WorkspaceController::class, 'addMember']);
+    Route::post('/workspace/{id}/join', [WorkspaceController::class, 'joinPublicWorkspace']);
+    Route::post('/workspace/{id}/add-member', [WorkspaceController::class, 'addMember']);
     Route::post('/workspace/remove-members', [WorkspaceController::class, 'removeMember']);
-    Route::get('/workspace/{workspace}/members', [WorkspaceController::class, 'listMembers']);
+    Route::get('/workspace/{id}/members', [WorkspaceController::class, 'listMembers']);
+    
+    //board
+    Route::post('/create-board', [BoardController::class, 'store']); // Tạo Board
+    Route::get('/board/{id}', [BoardController::class, 'show']);
+    Route::get('/workspace/{id}/boards', [BoardController::class, 'index']); // Lấy danh sách Board
+    Route::post('/update-board/{id}', [BoardController::class, 'update']); // Cập nhật Board
+    Route::delete('/delete-board/{id}', [BoardController::class, 'destroy']); // Xóa Board
+    
+    //board-user
+    Route::post('/board/{id}/join', [BoardController::class, 'joinPublicBoard']);
+    Route::post('/board/{id}/add-member', [BoardController::class, 'addMember']);
+    Route::post('/board/remove-members', [BoardController::class, 'removeMember']);
+    Route::get('/board/{id}/members', [BoardController::class, 'listMembers']);
     
 });

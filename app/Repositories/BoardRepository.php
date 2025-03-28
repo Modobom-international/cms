@@ -2,25 +2,21 @@
 
 namespace App\Repositories;
 
-use App\Enums\Users;
-use App\Models\User;
-use App\Models\Workspace;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
+use App\Models\Board;
 
-class WorkspaceRepository extends BaseRepository
+class BoardRepository extends BaseRepository
 {
     public function model()
     {
-        return Workspace::class;
+        return Board::class;
     }
     
-    public function index()
+    public function index($workspaceId)
     {
-        return $this->model->get();
+        return  $this->model->where('workspace_id', $workspaceId)->get();
     }
     
-    public function createWorkspace($data)
+    public function createBoard($data)
     {
        return $this->model->create($data);
     }
@@ -30,7 +26,7 @@ class WorkspaceRepository extends BaseRepository
         return $this->model->with('owner')->where('id', $id)->first();
     }
     
-    public function updateWorkspace($data, $id)
+    public function updateBoard($data, $id)
     {
         return $this->model->where('id', $id)->update($data);
     }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\API;
 
 use App\Enums\Workspace;
 use App\Http\Controllers\Controller;
@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Enums\Utility;
 use Illuminate\Support\Facades\Validator;
+
 class WorkspaceController extends Controller
 {
     protected $workspaceRepository;
@@ -42,7 +43,7 @@ class WorkspaceController extends Controller
             'success' => true,
             'workspace' => $listWorkspace,
             'message' => 'Danh sách workspace',
-            'type' => 'list_workspace',
+            'type' => 'list_workspaces',
         ], 201);
     }
     
@@ -112,7 +113,11 @@ class WorkspaceController extends Controller
         }
         
         if ($workspace->owner_id !== Auth::id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền truy cập',
+                'type' => 'unauthorized',
+            ], 403);
         }
         $input = $request->except(['_token']);
         
@@ -143,7 +148,7 @@ class WorkspaceController extends Controller
         if ($workspace->owner_id !== Auth::id()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền truy cập',
+                'message' => 'Bạn không có quyền xóa',
                 'type' => 'unauthorized',
             ], 403);
         }
@@ -262,8 +267,8 @@ class WorkspaceController extends Controller
     
         return response()->json([
             'success' => true,
-            'message' => 'Thêm workspace user thành công',
-            'type' => 'add_workspace_user_success',
+            'message' => 'Thêm member thành công',
+            'type' => 'add_workspace_member_success',
         ], 201);
     }
     
@@ -273,8 +278,8 @@ class WorkspaceController extends Controller
         return response()->json([
             'success' => true,
             'members' => $members,
-            'message' => 'Danh sách workspace',
-            'type' => 'list_workspace',
+            'message' => 'Danh sách members',
+            'type' => 'list_members',
         ], 201);
     }
     
