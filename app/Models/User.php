@@ -52,6 +52,11 @@ class User extends Authenticatable
     /**
      * Get the boards owned by the user.
      */
+    public function workspaces()
+    {
+        return $this->hasMany(Workspace::class, 'owner_id');
+    }
+    
     public function ownedBoards()
     {
         return $this->hasMany(Board::class, 'owner_id');

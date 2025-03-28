@@ -32,6 +32,11 @@ class UserRepository extends BaseRepository
     {
         return $this->model->where('email', $dataEmail)->first();
     }
+    
+    public function showInfo($id)
+    {
+        return $this->model->with('workspaces')->where('id', $id)->first();
+    }
 
     public function updatePassword($email, $input)
     {
