@@ -4,6 +4,7 @@
         "modobom",
         "onesignal",
         "phpactor",
-        "phpredis"
+        "phpredis",
+        "useer"
     ]
 }
