@@ -4,6 +4,9 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BoardController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\WorkspaceController;
+use App\Http\Controllers\API\HtmlSourceController;
+use App\Http\Controllers\API\UsersTrackingController;
+use App\Http\Controllers\API\LogBehaviorController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\PageController;
@@ -58,4 +61,41 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/board/remove-members', [BoardController::class, 'removeMember']);
     Route::get('/board/{id}/members', [BoardController::class, 'listMembers']);
 
+    Route::prefix('domain')->group(function () {
+        Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
+        Route::get('/create', [DomainController::class, 'createDomain'])->name('domain.create');
+        Route::get('/check', [DomainController::class, 'checkDomain'])->name('domain.check');
+        Route::get('/up', [DomainController::class, 'upDomain'])->name('domain.up');
+        Route::get('/search', [DomainController::class, 'searchDomain'])->name('domain.search');
+        Route::get('/delete', [DomainController::class, 'deleteDomain'])->name('domain.delete');
+    });
+
+    Route::prefix('html-source')->group(function () {
+        Route::get('/', [HtmlSourceController::class, 'listHtmlSource'])->name('html.source.list');
+        Route::get('/{id}', [HtmlSourceController::class, 'showHtmlSource'])->name('html.source.show');
+    });
+
+    Route::prefix('users-tracking')->group(function () {
+        Route::get('/', [UsersTrackingController::class, 'viewUsersTracking'])->name('users.tracking.list');
+        Route::get('/get-detail-tracking', [UsersTrackingController::class, 'getDetailTracking'])->name('users.tracking.detail');
+        Route::get('/get-heat-map', [UsersTrackingController::class, 'getHeatMap'])->name('users.tracking.heat.map');
+        Route::get('/get-link-for-heat-map', [UsersTrackingController::class, 'getLinkForHeatMap'])->name('users.tracking.link.heat.map');
+    });
+
+    Route::prefix('team')->group(function () {
+        Route::get('/', [TeamController::class, 'index'])->name('team.list');
+        Route::get('/create', [TeamController::class, 'create'])->name('team.create');
+        Route::post('/store', [TeamController::class, 'store'])->name('team.store');
+        Route::post('/update/{id}', [TeamController::class, 'update'])->name('team.update');
+        Route::get('/edit/{id}', [TeamController::class, 'edit'])->name('team.edit');
+        Route::get('/delete/{id}', [TeamController::class, 'destroy'])->name('team.delete');
+        Route::get('/get-permission-by-team', [TeamController::class, 'getPermissionByTeam'])->name('team.get.permission');
+    });
+
+    Route::prefix('log-behavior')->group(function () {
+        Route::get('/', [LogBehaviorController::class, 'viewLogBehavior'])->name('log.behavior.list');
+        Route::get('/get-data-chart', [LogBehaviorController::class, 'getDataChartLogBehavior'])->name('log.behavior.chart');
+        Route::get('/compare-date', [LogBehaviorController::class, 'compareDate'])->name('log.behavior.compare.date');
+        Route::get('/get-activity-uid', [LogBehaviorController::class, 'getActivityUid'])->name('log.behavior.activity.uid');
+    });
 });
