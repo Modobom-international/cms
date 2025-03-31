@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Helper\Common;
 use App\Repositories\Permission\PermissionRepository;
 use App\Repositories\Team\TeamRepository;
+use Exception;
 use Illuminate\Http\Request;
 
 class TeamController extends Controller
@@ -22,134 +22,238 @@ class TeamController extends Controller
 
     public function index()
     {
-        $teams = $this->teamRepository->getTeams();
+        try {
+            $teams = $this->teamRepository->getTeams();
 
-        foreach ($teams as $team) {
-            $permissions  = array();
-            if (isset($team->permissions)) {
-                $getPermission = $team->permissions;
-                foreach ($getPermission as $permission) {
-                    $prefix = $permission->prefix;
+            foreach ($teams as $team) {
+                $permissions  = array();
+                if (isset($team->permissions)) {
+                    $getPermission = $team->permissions;
+                    foreach ($getPermission as $permission) {
+                        $prefix = $permission->prefix;
 
-                    if (!in_array($prefix, $permissions)) {
-                        $permissions[] = $prefix;
+                        if (!in_array($prefix, $permissions)) {
+                            $permissions[] = $prefix;
+                        }
                     }
+
+                    $team->prefix_permissions = implode(',', $permissions);
                 }
-
-                $team->prefix_permissions = implode(',', $permissions);
             }
+
+            $teams = $this->utility->paginate($teams);
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lấy danh sách team thành công',
+                'type' => 'list_team_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy danh sách team không thành công',
+                'type' => 'list_team_fail',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $teams = $this->utility->paginate($teams);
-
-        return view('admin.team.index', compact('teams'));
     }
 
     public function create()
     {
-        $getPermission = $this->permissionRepository->getPermissions();
-        $permissions = [];
-        foreach ($getPermission as $permission) {
-            $prefix = $permission->prefix;
+        try {
+            $getPermission = $this->permissionRepository->getPermissions();
+            $permissions = [];
+            foreach ($getPermission as $permission) {
+                $prefix = $permission->prefix;
 
-            $permissions[$prefix][] = $permission;
+                $permissions[$prefix][] = $permission;
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $permissions,
+                'message' => 'Lấy thông tin team thành công',
+                'type' => 'create_view_team_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy thông tin team không thành công',
+                'type' => 'create_view_team_fail',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        return view('admin.team.create', compact('permissions'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'permissions' => 'array',
-        ]);
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'permissions' => 'array',
+            ]);
 
-        $getPermission = $request->get('permissions');
-        $permissions = array();
+            $getPermission = $request->get('permissions');
+            $permissions = array();
 
-        foreach ($getPermission as $permission => $tick) {
-            $permissions[] = $permission;
+            foreach ($getPermission as $permission => $tick) {
+                $permissions[] = $permission;
+            }
+
+            $team = $this->teamRepository->create([
+                'name' => $request->name
+            ]);
+
+            if (!empty($permissions)) {
+                $team->permissions()->sync($permissions);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $request->all(),
+                'message' => 'Tạo team thành công',
+                'type' => 'store_team_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tạo team không thành công',
+                'type' => 'store_team_fail',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $team = $this->teamRepository->create([
-            'name' => $request->name
-        ]);
-
-        if (!empty($permissions)) {
-            $team->permissions()->sync($permissions);
-        }
-
-        return redirect()->route('team.list')->with('success', __('Thêm phòng ban thành công!'));
     }
 
     public function edit($id)
     {
-        $team = $this->teamRepository->findTeam($id);
-        $getPermission = $this->permissionRepository->getPermissions();
-        $permissions = [];
-        $team_permissions = [];
-        foreach ($getPermission as $permission) {
-            $prefix = $permission->prefix;
+        try {
+            $team = $this->teamRepository->findTeam($id);
+            $getPermission = $this->permissionRepository->getPermissions();
+            $permissions = [];
+            $team_permissions = [];
+            foreach ($getPermission as $permission) {
+                $prefix = $permission->prefix;
 
-            $permissions[$prefix][] = $permission;
+                $permissions[$prefix][] = $permission;
+            }
+
+            foreach ($team->permissions as $permission) {
+                $prefix = $permission->prefix;
+
+                $team_permissions[$prefix][] = $permission->name;
+            }
+
+            $response = [
+                'team' => $team,
+                'permissions' => $permissions,
+                'team_permissions' => $team_permissions
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $response,
+                'message' => 'Lấy thông tin team thành công',
+                'type' => 'edit_team_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy thông tin team không thành công',
+                'type' => 'edit_team_fail',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        foreach ($team->permissions as $permission) {
-            $prefix = $permission->prefix;
-
-            $team_permissions[$prefix][] = $permission->name;
-        }
-
-        return view('admin.team.edit', compact('team', 'permissions', 'team_permissions'));
     }
 
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'permissions' => 'array',
-        ]);
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'permissions' => 'array',
+            ]);
 
-        $getPermission = $request->get('permissions');
-        $permissions = array();
+            $getPermission = $request->get('permissions');
+            $permissions = array();
 
-        foreach ($getPermission as $permission => $tick) {
-            $permissions[] = $permission;
+            foreach ($getPermission as $permission => $tick) {
+                $permissions[] = $permission;
+            }
+
+            $this->teamRepository->update($id, [
+                'name' => $request->name
+            ]);
+
+            $team = $this->teamRepository->findTeam($id);
+
+            if (!empty($permissions)) {
+                $team->permissions()->sync($permissions);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $request->all(),
+                'message' => 'Lấy thông tin team thành công',
+                'type' => 'update_team_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy thông tin team không thành công',
+                'type' => 'update_team_fail',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $this->teamRepository->update($id, [
-            'name' => $request->name
-        ]);
-
-        $team = $this->teamRepository->findTeam($id);
-
-        if (!empty($permissions)) {
-            $team->permissions()->sync($permissions);
-        }
-
-        return redirect()->route('team.list')->with('success', __('Cập nhật thông tin phòng ban thành công!'));
     }
 
     public function destroy($id)
     {
-        $this->userRepository->destroy([$id]);
+        try {
+            $this->teamRepository->destroy($id);
 
-        return redirect()->route('team.list')->with('success', __('Xóa phòng ban thành công!'));
+            return response()->json([
+                'success' => true,
+                'data' => [],
+                'message' => 'Xóa team thành công',
+                'type' => 'delete_team_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Xóa team không thành công',
+                'type' => 'delete_team_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function getPermissionByTeam(Request $request)
     {
-        $id = $request->get('id');
-        $team = $this->teamRepository->findTeam($id);
+        try {
+            $id = $request->get('id');
+            $team = $this->teamRepository->findTeam($id);
 
-        if (isset($team->permissions)) {
-            foreach ($team->permissions as $permission) {
-                $prefix = $permission->prefix;
-                $permissions[$prefix][] = $permission->name;
+            if (isset($team->permissions)) {
+                foreach ($team->permissions as $permission) {
+                    $prefix = $permission->prefix;
+                    $permissions[$prefix][] = $permission->name;
+                }
             }
-        }
 
-        return response()->json($permissions);
+            return response()->json([
+                'success' => true,
+                'data' => $permission,
+                'message' => 'Lấy thông tin permission của team thành công',
+                'type' => 'get_permission_team_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy thông tin permission của team không thành công',
+                'type' => 'get_permission_team_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

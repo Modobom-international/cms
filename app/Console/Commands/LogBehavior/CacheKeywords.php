@@ -3,38 +3,23 @@
 namespace App\Console\Commands\LogBehavior;
 
 use App\Enums\LogBehavior;
+use App\Enums\Utility;
 use Illuminate\Console\Command;
 use App\Helper\Common;
 use Illuminate\Support\Facades\DB;
 
 class CacheKeywords extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
+    protected $utility;
     protected $signature = 'log-behavior:cache-keywords';
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Cache keywords in log behavior';
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
+
+    public function __construct(Utility $utility)
     {
+        $this->utility = $utility;
         parent::__construct();
     }
-    /**
-     * Execute the console command.
-     *
-     * @return mixed
-     */
+
     public function handle()
     {
         $while = true;
@@ -45,6 +30,7 @@ class CacheKeywords extends Command
             if (strtotime($selectDate) == strtotime('2023-10-19')) {
                 break;
             }
+            
             $dateEstimate1 = $selectDate . ' 00:00:00';
             $dateEstimate2 = $selectDate . ' 23:59:59';
             $fromQuery = Common::covertDateTimeToMongoBSONDateGMT7($dateEstimate1);
@@ -62,18 +48,22 @@ class CacheKeywords extends Command
                     }
                 }
             }
+
             $count = count($listKeyword);
             $selectDate = date('Y-m-d', strtotime('-1 day', strtotime($selectDate)));
             dump('Done date ' . $selectDate);
             dump('Count keywords ' . $count);
         }
+
         $data = [
             'data' => $listKeyword,
             'key' => LogBehavior::CACHE_KEYWORD
         ];
+
         DB::connection('mongodb')
             ->table('log_behavior_cache')
             ->insert($data);
+
         dump('Cache keyword done');
     }
 }
