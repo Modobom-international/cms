@@ -7,6 +7,7 @@ use App\Http\Controllers\API\WorkspaceController;
 use App\Http\Controllers\API\PushSystemController;
 use App\Http\Controllers\API\HtmlSourceController;
 use App\Http\Controllers\API\UsersTrackingController;
+use App\Http\Controllers\API\LogBehaviorController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -82,22 +83,10 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/get-permission-by-team', [TeamController::class, 'getPermissionByTeam'])->name('team.get.permission');
     });
 
-    Route::prefix('push-system')->group(function () {
-        Route::get('/', [PushSystemController::class, 'listPushSystem'])->name('push.system.list');
-        Route::get('/config-link/add', [PushSystemController::class, 'addConfigSystemLink'])->name('push.system.config.link');
-        Route::get('/list-user-active', [PushSystemController::class, 'listUserActiveAjax'])->name('push.system.list.user.active.ajax');
-        Route::get('/show-config-links', [PushSystemController::class, 'showConfigLinksPush'])->name('push.system.show.config.link');
-        Route::get('/config-links', [PushSystemController::class, 'configLinksPush'])->name('push.system.edit.config.link');
-    });
-
     Route::prefix('log-behavior')->group(function () {
         Route::get('/', [LogBehaviorController::class, 'viewLogBehavior'])->name('log.behavior.list');
         Route::get('/get-data-chart', [LogBehaviorController::class, 'getDataChartLogBehavior'])->name('log.behavior.chart');
-        Route::get('/store-config-filter', [LogBehaviorController::class, 'storeConfigFilterLogBehavior'])->name('log.behavior.store.config.filter');
-        Route::get('/reset-config-filter', [LogBehaviorController::class, 'resetConfigFilterLogBehavior'])->name('log.behavior.reset.config.filter');
         Route::get('/compare-date', [LogBehaviorController::class, 'compareDate'])->name('log.behavior.compare.date');
-        Route::get('/save-list-app-for-check', [LogBehaviorController::class, 'saveListAppForCheck'])->name('log.behavior.save.app.in.checklist');
-        Route::get('/delete-app-in-list-for-check', [LogBehaviorController::class, 'deleteAppInListForCheck'])->name('log.behavior.delete.app.in.checklist');
         Route::get('/get-activity-uid', [LogBehaviorController::class, 'getActivityUid'])->name('log.behavior.activity.uid');
     });
 });

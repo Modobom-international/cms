@@ -9,7 +9,6 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 final class Utility
 {
-
     public function saveImageUser($input)
     {
         if ($input) {
@@ -29,7 +28,7 @@ final class Utility
         return new LengthAwarePaginator($paginatedItems, $items->count(), $perPage, $page, $options);
     }
 
-    public static function getCurrentVNTime($timezone = 'Asia/Ho_Chi_Minh', $format = 'Y-m-d H:i:s')
+    public function getCurrentVNTime($timezone = 'Asia/Ho_Chi_Minh', $format = 'Y-m-d H:i:s')
     {
         return (new \DateTime())->setTimezone(new \DateTimeZone($timezone))->format($format);
     }
@@ -45,5 +44,10 @@ final class Utility
         ]);
         $response = curl_exec($ch);
         return json_decode($response);
+    }
+
+    public function covertDateTimeToMongoBSONDateGMT7($date)
+    {
+        return new \MongoDB\BSON\UTCDateTime(((new \DateTime($date))->getTimestamp() + (7 * 3600)) * 1000);
     }
 }

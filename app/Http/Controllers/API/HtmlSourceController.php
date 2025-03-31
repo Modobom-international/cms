@@ -1,112 +1,146 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\API;
 
+use Exception;
 use App\Helper\Common;
 use App\Jobs\StoreHtmlSource;
+use App\Repositories\HtmlSourceRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class HtmlSourceController extends Controller
 {
+    protected $htmlSourceRepository;
+
+    public function __construct(HtmlSourceRepository $htmlSourceRepository)
+    {
+        $this->htmlSourceRepository = $htmlSourceRepository;
+    }
+
     public function saveHtml(Request $request)
     {
-        $params = $request->all();
-        $params = array_change_key_case($params, CASE_LOWER);
-        $result = [];
+        try {
+            $params = $request->all();
+            $params = array_change_key_case($params, CASE_LOWER);
+            $result = [];
 
-        if (empty($params['url']) || empty($params['source']) || strpos($params['url'], 'youtube') !== false) {
-            $result['success'] = false;
+            if (empty($params['url']) || empty($params['source']) || strpos($params['url'], 'youtube') !== false) {
+                $result['success'] = false;
 
-            return response()->json($result);
+                return response()->json($result);
+            }
+
+            $data = [
+                'appId' => $params['app_id'] ?? null,
+                'version' => $params['version'] ?? null,
+                'note' => $params['note'] ?? null,
+                'deviceId' => $params['device_id'] ?? null,
+                'country' => $params['country'] ?? null,
+                'platform' => $params['platform'] ?? null,
+                'source' => $params['source'],
+                'url' => $params['url']
+            ];
+
+            StoreHtmlSource::dispatch($data)->onQueue('create_html_source');
+            $result['success'] = true;
+
+            return response()->json([
+                'success' => true,
+                'data' => $result,
+                'message' => 'Lưu html source thành công',
+                'type' => 'store_html_source_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lưu html source không thành công',
+                'type' => 'store_html_source_fail',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $data = [
-            'appId' => $params['app_id'] ?? null,
-            'version' => $params['version'] ?? null,
-            'note' => $params['note'] ?? null,
-            'deviceId' => $params['device_id'] ?? null,
-            'country' => $params['country'] ?? null,
-            'platform' => $params['platform'] ?? null,
-            'source' => $params['source'],
-            'url' => $params['url']
-        ];
-
-        StoreHtmlSource::dispatch($data)->onQueue('create_html_source');
-        $result['success'] = true;
-
-        return response()->json($result);
     }
 
     public function listHtmlSource(Request $request)
     {
-        $input = $request->all();
-        $date = $request->get('date') ?? Common::getCurrentVNTime('Y-m-d');
-        $app = $request->get('app');
-        $country = $request->get('country');
-        $device = $request->get('device');
-        $textSource = $request->get('textSource');
-        $listHtmlSource = DB::table('html_sources');
+        try {
+            $input = $request->all();
+            $date = $request->get('date') ?? Common::getCurrentVNTime('Y-m-d');
+            $app = $request->get('app');
+            $country = $request->get('country');
+            $device = $request->get('device');
+            $textSource = $request->get('textSource');
+            $listHtmlSource = $this->htmlSourceRepository->get();
+            $filter = [
+                'country' => $country,
+                'app' => $app,
+                'date' => $date,
+                'device' => $device,
+                'text_source' => $textSource
+            ];
 
-        $dateFormat = date('Y-m-d');
-        $apps = DB::table('html_sources')->select('app_id')->groupBy('app_id')->get();
-        $countries = DB::table('html_sources')->select('country')->groupBy('country')->get();
-        $devices = DB::table('html_sources')->select('device_id')->groupBy('device_id')->get();
-        $query = DB::table('html_sources');
+            $dateFormat = date('Y-m-d');
+            $apps = $this->htmlSourceRepository->getAppsID();
+            $countries = $this->htmlSourceRepository->getCountry();
+            $dataPaginate = $this->htmlSourceRepository->getList($filter);
+            $count = count($listHtmlSource);
 
-        if (!empty($country)) {
-            if ($country != 'all') {
-                $query = $query->where('country', $country);
-            }
+            $row = [
+                'app' => $app,
+                'date' => $dateFormat,
+                'textSource' => $textSource,
+                'device' => $device,
+                'country' => $country,
+            ];
+
+            $response = [
+                'listHtmlSource' => $listHtmlSource,
+                'row' => $row,
+                'apps' => $apps,
+                'countries' => $countries,
+                'device' => $device,
+                'dataPaginate' => $dataPaginate,
+                'input' => $input,
+                'app' => $app,
+                'textSource' => $textSource,
+                'country' => $country,
+                'count' => $count,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $response,
+                'message' => 'Lấy danh sách html source thành công',
+                'type' => 'list_html_source_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy danh sách html source không thành công',
+                'type' => 'list_html_source_fail',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        if (!empty($app)) {
-            if ($app != 'all') {
-                $query = $query->where('app_id', $app);
-            }
-        }
-
-        if (!empty($date)) {
-            $dateFormat = Common::getCurrentVNTime('Y-m-d');
-            $query = $query->where('created_date', $date);
-        }
-
-        if (!empty($device)) {
-            $query = $query->where('device_id', 'like', '%' . $device . '%');
-        }
-        if (!empty($textSource)) {
-            $query = $query->where('source', 'like', '%' . $textSource . '%');
-        }
-
-        $countQuery = clone $query;
-        $count = $countQuery->count();
-        $data = $query->orderBy('id', 'desc');
-
-        if (!empty($showInPage)) {
-            if ($showInPage == 'all') {
-                $dataPaginate = $data->get();
-            } else {
-                $dataPaginate = $data->paginate($showInPage);
-            }
-        } else {
-            $dataPaginate = $data->paginate(20);
-        }
-
-        $row = [
-            'app' => $app,
-            'date' => $dateFormat,
-            'textSource' => $textSource,
-            'device' => $device,
-            'country' => $country,
-        ];
-
-        return view('log_html_source.html_source', compact('listHtmlSource', 'row', 'apps', 'countries', 'device', 'dataPaginate', 'input', 'app', 'textSource', 'country',  'count'));
     }
 
     public function showHtmlSource($id)
     {
-        $dataHtmlSource = DB::table('html_sources')->where('id', $id)->first();
+        try {
+            $dataHtmlSource = DB::table('html_sources')->where('id', $id)->first();
 
-        return response()->json($dataHtmlSource);
+            return response()->json([
+                'success' => true,
+                'data' => $dataHtmlSource,
+                'message' => 'Lấy chi tiết html source thành công',
+                'type' => 'show_html_source_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy chi tiết html source không thành công',
+                'type' => 'show_html_source_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

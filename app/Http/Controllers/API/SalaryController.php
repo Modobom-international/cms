@@ -2,11 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Repositories\Salary\SalaryRepository;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
-class HumanResourcesController extends Controller
+class SalaryController extends Controller
 {
-    public function storeSalary(Request $request)
+    protected $salaryRepository;
+
+    public function __construct(SalaryRepository $salaryRepository)
+    {
+        $this->salaryRepository = $salaryRepository;
+    }
+
+    public function store(Request $request)
     {
         $user = Auth::user();
         $salaryValue = $request->input('salary');
