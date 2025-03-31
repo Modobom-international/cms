@@ -183,6 +183,7 @@ class UserController extends Controller
                 'success' => false,
                 'message' => 'Update user không thành công',
                 'type' => 'error_update_user',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
