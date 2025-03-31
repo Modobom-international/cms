@@ -10,7 +10,6 @@ use App\Models\Page;
 use App\Repositories\PageRepository;
 use App\Repositories\PageExportRepository;
 use Illuminate\Support\Facades\Validator;
-use App\Jobs\ProcessPageExport;
 
 class PageController extends Controller
 {
