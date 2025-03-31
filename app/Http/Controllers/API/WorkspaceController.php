@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\API;
 
 use App\Enums\Workspace;
 use App\Http\Controllers\Controller;
@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Enums\Utility;
 use Illuminate\Support\Facades\Validator;
+
 class WorkspaceController extends Controller
 {
     protected $workspaceRepository;
@@ -42,7 +43,7 @@ class WorkspaceController extends Controller
             'success' => true,
             'workspace' => $listWorkspace,
             'message' => 'Danh sách workspace',
-            'type' => 'list_workspace',
+            'type' => 'list_workspaces',
         ], 201);
     }
     
@@ -51,29 +52,40 @@ class WorkspaceController extends Controller
      */
     public function store(WorkspaceRequest $request)
     {
-        $input = $request->except(['_token']);
-        $workspace = [
-            'name' => $input['name'],
-            'description' => $input['description'],
-            'owner_id' => Auth::user()->id,
-            'visibility' => $input['visibility'],
-        ];
-        $dataWorkspace = $this->workspaceRepository->createWorkspace($workspace);
+        try {
+            $input = $request->except(['_token']);
+            $workspace = [
+                'name' => $input['name'],
+                'description' => $input['description'],
+                'owner_id' => Auth::user()->id,
+                'visibility' => $input['visibility'],
+            ];
+            $dataWorkspace = $this->workspaceRepository->createWorkspace($workspace);
     
-        // Gán user tạo workspace làm admin
-        $dataWorkspaceUser = [
-            'workspace_id' => $dataWorkspace->id,
-            'user_id' => Auth::user()->id,
-            'role' => Workspace::ROLE_ADMIN,
-        ];
+            // Gán user tạo workspace làm admin
+            $dataWorkspaceUser = [
+                'workspace_id' => $dataWorkspace->id,
+                'user_id' => Auth::user()->id,
+                'role' => Workspace::ROLE_ADMIN,
+            ];
+    
+            $this->workspaceUserRepository->createWorkSpaceUser($dataWorkspaceUser);
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Tạo workspace thành công',
+                'type' => 'create_workspace_success',
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+            'success' => false,
+            'message' => 'Lỗi khi tạo workspace',
+            'type' => 'error_create_workspace',
+            'error' => $e->getMessage()
+            ], 500);
+        }
         
-        $this->workspaceUserRepository->createWorkSpaceUser($dataWorkspaceUser);
-    
-        return response()->json([
-            'success' => true,
-            'message' => 'Tạo workspace thành công',
-            'type' => 'create_workspace_success',
-        ], 201);
+       
     }
     
     /**
@@ -102,28 +114,42 @@ class WorkspaceController extends Controller
      */
     public function update(WorkspaceRequest $request, $id)
     {
-        $workspace = $this->workspaceRepository->show($id);
-        if(!$workspace) {
+        try {
+            $workspace = $this->workspaceRepository->show($id);
+            if(!$workspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy workspace',
+                    'type' => 'workspace_not_found',
+                ], 404);
+            }
+    
+            if ($workspace->owner_id !== Auth::id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền truy cập',
+                    'type' => 'unauthorized',
+                ], 403);
+            }
+            $input = $request->except(['_token']);
+    
+            $workspace = $this->workspaceRepository->updateWorkspace($input, $id);
+    
+            return response()->json([
+                'success' => true,
+                'workspace' => $workspace,
+                'message' => 'Cập nhật workspace thành công',
+                'type' => 'update_workspace_success',
+            ], 201);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Không tìm thấy workspace',
-                'type' => 'workspace_not_found',
-            ], 404);
+                'message' => 'Lỗi khi cập nhật workspace',
+                'type' => 'error_create_workspace',
+                'error' => $e->getMessage()
+            ], 500);
         }
         
-        if ($workspace->owner_id !== Auth::id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-        $input = $request->except(['_token']);
-        
-        $workspace = $this->workspaceRepository->updateWorkspace($input, $id);
-    
-        return response()->json([
-            'success' => true,
-            'workspace' => $workspace,
-            'message' => 'Cập nhật workspace thành công',
-            'type' => 'update_workspace_success',
-        ], 201);
     }
     
     /**
@@ -131,140 +157,170 @@ class WorkspaceController extends Controller
      */
     public function destroy($id)
     {
-        $workspace = $this->workspaceRepository->show($id);
-        if(!$workspace) {
+        try {
+            $workspace = $this->workspaceRepository->show($id);
+            if(!$workspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy workspace',
+                    'type' => 'workspace_not_found',
+                ], 404);
+            }
+            
+            if ($workspace->owner_id !== Auth::id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền xóa',
+                    'type' => 'unauthorized',
+                ], 403);
+            }
+            
+            $this->workspaceRepository->destroy($id);
+        
+            return response()->json([
+                'success' => true,
+                'message' => 'Workspace được xóa thành công',
+                'type' => 'delete_workspace_success',
+            ], 201);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Không tìm thấy workspace',
-                'type' => 'workspace_not_found',
-            ], 404);
+                'message' => 'Lỗi khi xóa workspace',
+                'type' => 'error_delete_workspace',
+                'error' => $e->getMessage()
+            ], 500);
         }
-        
-        if ($workspace->owner_id !== Auth::id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bạn không có quyền truy cập',
-                'type' => 'unauthorized',
-            ], 403);
-        }
-        
-        $this->workspaceRepository->destroy($id);
-    
-        return response()->json([
-            'success' => true,
-            'message' => 'Workspace được xóa thành công',
-            'type' => 'delete_workspace_success',
-        ], 201);
     }
     
     public function joinPublicWorkspace($workspaceId)
     {
-        $workspace = $this->workspaceRepository->show($workspaceId);
-        if(!$workspace) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Không tìm thấy workspace',
-                'type' => 'workspace_not_found',
-            ], 404);
-        }
-        
-        if ($workspace->visibility !== Workspace::WORKSPACE_PUBLIC) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Workspace là private',
-                'type' => 'workspace_is_private',
+        try {
+            $workspace = $this->workspaceRepository->show($workspaceId);
+            if(!$workspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy workspace',
+                    'type' => 'workspace_not_found',
+                ], 404);
+            }
+    
+            if ($workspace->visibility !== Workspace::WORKSPACE_PUBLIC) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Workspace là private',
+                    'type' => 'workspace_is_private',
                 ], 403);
-        }
-        
-        $user = Auth::user();
-        
-        // Kiểm tra user đã có trong workspace chưa
-        $memberExist = $this->workspaceUserRepository->checkMemberExist($user->id, $workspaceId);
-        if ($memberExist) {
+            }
+    
+            $user = Auth::user();
+    
+            // Kiểm tra user đã có trong workspace chưa
+            $memberExist = $this->workspaceUserRepository->checkMemberExist($user->id, $workspaceId);
+            if ($memberExist) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn đã là 1 member',
+                    'type' => 'user_exist',
+                ], 400);
+            }
+    
+            $dataWorkspaceUser = [
+                'workspace_id' => $workspaceId,
+                'user_id' => $user->id,
+                'role' => $request->role ?? Workspace::ROLE_MEMBER,
+            ];
+    
+            $this->workspaceUserRepository->createWorkSpaceUser($dataWorkspaceUser);
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Bạn đã join workspace thành công',
+                'type' => 'user_join_success',
+            ], 201);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn đã là 1 member',
-                'type' => 'user_exist',
-            ], 400);
+                'message' => 'Lỗi khi join workspace',
+                'type' => 'error_join_workspace',
+                'error' => $e->getMessage()
+            ], 500);
         }
         
-        $dataWorkspaceUser = [
-            'workspace_id' => $workspaceId,
-            'user_id' => $user->id,
-            'role' => $request->role ?? Workspace::ROLE_MEMBER,
-        ];
-    
-        $this->workspaceUserRepository->createWorkSpaceUser($dataWorkspaceUser);
-    
-        return response()->json([
-            'success' => true,
-            'message' => 'Bạn đã join workspace thành công',
-            'type' => 'user_join_success',
-        ], 201);
+        
     }
     
     public function addMember(Request $request, $workspaceId)
     {
-        //validate
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email|exists:users,email',
-        ]);
-    
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-        //check workspace
-        $workspace = $this->workspaceRepository->show($workspaceId);
-        if(!$workspace) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Không tìm thấy workspace',
-                'type' => 'workspace_not_found',
-            ], 404);
-        }
-        $user = Auth::user();
-        // Chỉ owner hoặc admin mới có quyền mời user
-        $isAdmin = $this->workspaceUserRepository->checkRoleAdmin($user->id ,$workspaceId);
-    
-        if (!$isAdmin && $workspace->owner_id !== $user->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bạn không có quyền',
-                'type' => 'Unauthorized',
-                ], 403);
-        }
+        try {
+            
+            //validate
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email|exists:users,email',
+            ]);
         
-        $user = $this->userRepository->getInfo($request->email);
-        if (!$user) {
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+            //check workspace
+            $workspace = $this->workspaceRepository->show($workspaceId);
+            if(!$workspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy workspace',
+                    'type' => 'workspace_not_found',
+                ], 404);
+            }
+            $user = Auth::user();
+            // Chỉ owner hoặc admin mới có quyền mời user
+            $isAdmin = $this->workspaceUserRepository->checkRoleAdmin($user->id ,$workspaceId);
+        
+            if (!$isAdmin && $workspace->owner_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền',
+                    'type' => 'Unauthorized',
+                    ], 403);
+            }
+            
+            $user = $this->userRepository->getInfo($request->email);
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy user',
+                    'type' => 'user_not_found',
+                ], 404);
+            }
+            // Kiểm tra nếu user đã trong workspace
+            $memberExist = $this->workspaceUserRepository->checkMemberExist($user->id, $workspaceId);
+            if ($memberExist) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn đã là 1 member',
+                    'type' => 'user_exist',
+                ], 400);
+            }
+        
+            $dataWorkspaceUser = [
+                'workspace_id' => $workspaceId,
+                'user_id' => $user->id,
+                'role' => $request->role ?? Workspace::ROLE_MEMBER,
+            ];
+        
+            $this->workspaceUserRepository->createWorkSpaceUser($dataWorkspaceUser);
+        
+            return response()->json([
+                'success' => true,
+                'message' => 'Thêm member thành công',
+                'type' => 'add_workspace_member_success',
+            ], 201);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Không tìm thấy user',
-                'type' => 'user_not_found',
-            ], 404);
+                'message' => 'Lỗi khi add member workspace',
+                'type' => 'error_add_member_workspace',
+                'error' => $e->getMessage()
+            ], 500);
         }
-        // Kiểm tra nếu user đã trong workspace
-        $memberExist = $this->workspaceUserRepository->checkMemberExist($user->id, $workspaceId);
-        if ($memberExist) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bạn đã là 1 member',
-                'type' => 'user_exist',
-            ], 400);
-        }
-    
-        $dataWorkspaceUser = [
-            'workspace_id' => $workspaceId,
-            'user_id' => $user->id,
-            'role' => $request->role ?? Workspace::ROLE_MEMBER,
-        ];
-    
-        $this->workspaceUserRepository->createWorkSpaceUser($dataWorkspaceUser);
-    
-        return response()->json([
-            'success' => true,
-            'message' => 'Thêm workspace user thành công',
-            'type' => 'add_workspace_user_success',
-        ], 201);
     }
     
     public function listMembers($workspaceId)
@@ -273,8 +329,8 @@ class WorkspaceController extends Controller
         return response()->json([
             'success' => true,
             'members' => $members,
-            'message' => 'Danh sách workspace',
-            'type' => 'list_workspace',
+            'message' => 'Danh sách members',
+            'type' => 'list_members',
         ], 201);
     }
     

@@ -100,8 +100,9 @@ class PageController extends Controller
     public function exportPage(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'slugs' => 'required|array',
-            'slugs.*' => 'string'
+            // 'slugs' => 'required|array',
+            // 'slugs.*' => 'string',
+            'html_file' => 'required|file|mimes:html,htm'
         ]);
 
         if ($validator->fails()) {
@@ -112,34 +113,37 @@ class PageController extends Controller
             ], 422);
         }
 
-        $slugs = $request->input('slugs');
-        // Check if the pages exist
-        $pages = $this->pageRepository->findBySlugs($slugs);
+        // $slugs = $request->input('slugs');
+        // // Check if the pages exist
+        // $pages = $this->pageRepository->findBySlugs($slugs);
 
-        if (count($pages) === 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No pages found with the provided slugs'
-            ], 404);
-        }
+        // if (count($pages) === 0) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'No pages found with the provided slugs'
+        //     ], 404);
+        // }
+
+        // Store the HTML file
+        $htmlFile = $request->file('html_file');
+        $filePath = $htmlFile->store('exports', 'public');
 
         // Truncate the page_exports table before creating a new export
         $this->pageExportRepository->truncate();
 
         // Create the export request
         $exportRequest = $this->pageExportRepository->create([
-            'slugs' => $slugs,
+            'slugs' => uuid_create(),
+            'html_path' => $filePath
         ]);
-
-        // Dispatch the export job to the queue
-        ProcessPageExport::dispatch($exportRequest);
 
         return response()->json([
             'success' => true,
             'message' => 'Export process queued',
             'data' => [
                 'export_id' => $exportRequest->id,
-                'requested_slugs' => $slugs
+                // 'requested_slugs' => $slugs,
+                'html_path' => $filePath
             ]
         ]);
     }

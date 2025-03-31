@@ -7,7 +7,7 @@ use App\Repositories\UserRepository;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-use Validator;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
@@ -24,11 +24,19 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         try {
-            $request->validate([
+            // Validate the incoming request
+            $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
                 'email' => 'required|string|email|unique:users',
                 'password' => 'required|string|min:8',
+                'type_user' => 'required',
             ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
             $input = $request->all();
             $dataUser = [
@@ -52,6 +60,7 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'Lỗi khi đăng kí tài khoản',
                 'type' => 'error_register',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
