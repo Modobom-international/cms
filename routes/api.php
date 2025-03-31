@@ -9,12 +9,22 @@ use App\Http\Controllers\API\UsersTrackingController;
 use App\Http\Controllers\API\LogBehaviorController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\PageController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+// Page routes
+Route::post('/create-page', [PageController::class, 'create']);
+Route::post('/update-page', [PageController::class, 'update']);
+Route::get('/page/{slug}', [PageController::class, 'getPage']);
+Route::get('/pages', [PageController::class, 'getPages']);
+
+// Page export routes
+Route::post('/export-pages', [PageController::class, 'exportPage']);
 
 Route::middleware('auth:api')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);

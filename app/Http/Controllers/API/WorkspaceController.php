@@ -352,7 +352,4 @@ class WorkspaceController extends Controller
             'type' => 'delete_member_success',
         ], 201);
     }
-    
-    
-    
 }
