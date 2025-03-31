@@ -16,13 +16,12 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // Page routes
 Route::post('/create-page', [PageController::class, 'create']);
-Route::post('/update-page/{id}', [PageController::class, 'update']);
+Route::post('/update-page', [PageController::class, 'update']);
 Route::get('/page/{slug}', [PageController::class, 'getPage']);
+Route::get('/pages', [PageController::class, 'getPages']);
 
 // Page export routes
 Route::post('/export-pages', [PageController::class, 'exportPage']);
-Route::get('/pending-exports', [PageController::class, 'getPendingExports']);
-Route::post('/cancel-export', [PageController::class, 'cancelExport']);
 
 Route::middleware('auth:api')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);

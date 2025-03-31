@@ -57,10 +57,33 @@ class PageController extends Controller
     /**
      * Update an existing page
      */
-    public function update(PageRequest $request, $id)
+    public function update(Request $request)
     {
-        $page = Page::findOrFail($id);
-        $page->update($request->validated());
+        $validator = Validator::make($request->all(), [
+            'slug' => 'required|string',
+            'content' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $page = Page::where('slug', $request->slug)->first();
+
+        if (!$page) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Page not found'
+            ], 404);
+        }
+
+        $page->update([
+            'content' => $request->content,
+        ]);
 
         return response()->json([
             'success' => true,
@@ -91,6 +114,16 @@ class PageController extends Controller
         ], 404);
     }
 
+    public function getPages()
+    {
+        $pages = Page::all();
+        return response()->json([
+            'success' => true,
+            'message' => 'Pages found',
+            'data' => $pages
+        ], 200);
+    }
+
     /**
      * Create a new page export request and trigger the exporter
      *
@@ -100,8 +133,7 @@ class PageController extends Controller
     public function exportPage(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            // 'slugs' => 'required|array',
-            // 'slugs.*' => 'string',
+            'slug' => 'required|string',
             'html_file' => 'required|file|mimes:html,htm'
         ]);
 
@@ -113,28 +145,20 @@ class PageController extends Controller
             ], 422);
         }
 
-        // $slugs = $request->input('slugs');
-        // // Check if the pages exist
-        // $pages = $this->pageRepository->findBySlugs($slugs);
+        // Get the slug from the request
+        $slug = $request->input('slug');
 
-        // if (count($pages) === 0) {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'No pages found with the provided slugs'
-        //     ], 404);
-        // }
-
-        // Store the HTML file
+        // Store the HTML file with the slug as the filename
         $htmlFile = $request->file('html_file');
-        $filePath = $htmlFile->store('exports', 'public');
+        $filename = $slug . '.' . $htmlFile->getClientOriginalExtension();
+        $filePath = $htmlFile->storeAs('exports', $filename, 'public');
 
-        // Truncate the page_exports table before creating a new export
-        $this->pageExportRepository->truncate();
 
         // Create the export request
         $exportRequest = $this->pageExportRepository->create([
-            'slugs' => uuid_create(),
-            'html_path' => $filePath
+            'slugs' => $slug,
+            'result_path' => $filePath,
+            'status' => 'completed'
         ]);
 
         return response()->json([
@@ -142,7 +166,6 @@ class PageController extends Controller
             'message' => 'Export process queued',
             'data' => [
                 'export_id' => $exportRequest->id,
-                // 'requested_slugs' => $slugs,
                 'html_path' => $filePath
             ]
         ]);
