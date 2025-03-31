@@ -8,7 +8,11 @@ class LogBehavior extends Model
 {
     protected $connection = 'mongodb';
 
-    protected $collection = 'products';
+    protected $collection = 'log_behavior';
 
-    protected $fillable = ['name', 'price', 'description'];
+    protected $fillable = [
+        'name',
+        'price',
+        'description'
+    ];
 }

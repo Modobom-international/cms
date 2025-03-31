@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class HtmlSource extends Model
 {
-    protected $collection = 'html_sources';
+    protected $table = 'html_sources';
 
     protected $fillable = [
         'url',

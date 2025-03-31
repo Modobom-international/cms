@@ -2,8 +2,9 @@
 
 namespace App\Console\Commands\Domains;
 
-use App\Enums\ListServer;
 use Exception;
+use App\Enums\ListServer;
+use App\Enums\Utility;
 use GuzzleHttp\Client;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -15,24 +16,15 @@ class ImportDomainFromCSV extends Command
     protected $apiKey;
     protected $apiSecret;
     protected $apiUrl;
-
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
+    protected $utility;
     protected $signature = 'domains:import-domain-from-csv';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Import domain from CSV file';
 
-    /**
-     * Execute the console command.
-     */
+    public function __construct(Utility $utility)
+    {
+        $this->utility = $utility;
+    }
+
     public function handle()
     {
         $listIP = ListServer::LIST_SERVER;
@@ -174,7 +166,7 @@ class ImportDomainFromCSV extends Command
                         'server' => $server,
                         'status' => 1,
                         'provider' => $provider,
-                        'created_at' => Common::covertDateTimeToMongoBSONDateGMT7(Common::getCurrentVNTime())
+                        'created_at' => $this->utility->covertDateTimeToMongoBSONDateGMT7($this->utility->getCurrentVNTime())
                     ];
 
                     DB::connection('mongodb')
