@@ -5,10 +5,10 @@ namespace App\Console\Commands\Domains;
 use Exception;
 use App\Enums\ListServer;
 use App\Enums\Utility;
+use App\Repositories\UserRepository;
 use GuzzleHttp\Client;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use App\Helper\Common;
 
 class ImportDomainFromCSV extends Command
 {
@@ -17,12 +17,15 @@ class ImportDomainFromCSV extends Command
     protected $apiSecret;
     protected $apiUrl;
     protected $utility;
+    protected $userRepository;
     protected $signature = 'domains:import-domain-from-csv';
     protected $description = 'Import domain from CSV file';
 
-    public function __construct(Utility $utility)
+    public function __construct(Utility $utility, UserRepository $userRepository)
     {
         $this->utility = $utility;
+        $this->userRepository = $userRepository;
+        parent::__construct();
     }
 
     public function handle()
@@ -107,7 +110,7 @@ class ImportDomainFromCSV extends Command
                             dump('Skip domain');
                             continue;
                         } else {
-                            $getUser = DB::table('users')->where('email', 'tranlinh.modobom@gmail.com')->first();
+                            $getUser = $this->userRepository->getUserByEmail('tranlinh.modobom@gmail.com');
                             $provider = $getUser->id;
                         }
                     } else if (array_key_exists('error', $result)) {
@@ -117,7 +120,7 @@ class ImportDomainFromCSV extends Command
                         dump('Skip domain');
                         continue;
                     } else {
-                        $getUser = DB::table('users')->where('email', 'vutuan.modobom@gmail.com')->first();
+                        $getUser = $this->userRepository->getUserByEmail('vutuan.modobom@gmail.com');
                         $provider = $getUser->id;
                     }
 

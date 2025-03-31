@@ -282,7 +282,7 @@ class WorkspaceController extends Controller
                     ], 403);
             }
             
-            $user = $this->userRepository->getInfo($request->email);
+            $user = $this->userRepository->getUserByEmail($request->email);
             if (!$user) {
                 return response()->json([
                     'success' => false,
@@ -352,7 +352,4 @@ class WorkspaceController extends Controller
             'type' => 'delete_member_success',
         ], 201);
     }
-    
-    
-    
 }

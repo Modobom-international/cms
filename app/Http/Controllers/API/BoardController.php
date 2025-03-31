@@ -25,15 +25,15 @@ class BoardController extends Controller
     protected $workspaceRepository;
     protected $utility;
     protected $userRepository;
-    
+
     public function __construct(
         Utility $utility,
         BoardRepository $boardRepository,
         BoardUserRepository $boardUserRepository,
         WorkspaceUserRepository $workspaceUserRepository,
         WorkspaceRepository $workspaceRepository,
-        UserRepository $userRepository)
-    {
+        UserRepository $userRepository
+    ) {
         $this->utility = $utility;
         $this->workspaceUserRepository = $workspaceUserRepository;
         $this->workspaceRepository = $workspaceRepository;
@@ -41,18 +41,18 @@ class BoardController extends Controller
         $this->boardRepository = $boardRepository;
         $this->userRepository = $userRepository;
     }
-    
+
     public function index($workspaceId)
     {
         $workspace = $this->workspaceRepository->show($workspaceId);
-        if(!$workspace) {
+        if (!$workspace) {
             return response()->json([
                 'success' => false,
                 'message' => 'Không tìm thấy workspace',
                 'type' => 'workspace_not_found',
             ], 404);
         }
-        
+
         // Nếu workspace là private, kiểm tra quyền truy cập
         if ($workspace->visibility === Workspace::WORKSPACE_PRIVATE && $workspace->owner_id !== Auth::id()) {
             return response()->json([
@@ -69,12 +69,12 @@ class BoardController extends Controller
             'type' => 'list_boards',
         ], 201);
     }
-    
+
     public function store(BoardRequest $request)
     {
         $input = $request->except(['_token']);
         $workspace = $this->workspaceRepository->show($request->workspace_id);
-        if(!$workspace) {
+        if (!$workspace) {
             return response()->json([
                 'success' => false,
                 'message' => 'Không tìm thấy workspace',
@@ -89,36 +89,36 @@ class BoardController extends Controller
                 'type' => 'user_not_exist',
             ], 403);
         }
-        
+
         $board = [
             'workspace_id' => $request->workspace_id,
             'name' => $request->name,
             'visibility' => $request->visibility ?? 'private',
             'owner_id' => Auth::id(),
         ];
-        
+
         $board = $this->boardRepository->createBoard($board);
         // Gán user tạo board làm admin
-        
+
         $dataBoardUser = [
             'board_id' => $board->id,
             'user_id' => Auth::user()->id,
             'role' => Boards::ROLE_ADMIN,
         ];
-        
+
         $this->boardUserRepository->createBoardUser($dataBoardUser);
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Tạo board thành công',
             'type' => 'create_board_success',
         ], 201);
     }
-    
+
     public function show($id)
     {
         $board = $this->boardRepository->show($id);
-        if(!$board) {
+        if (!$board) {
             return response()->json([
                 'success' => false,
                 'message' => 'Không tìm thấy board',
@@ -133,11 +133,11 @@ class BoardController extends Controller
         ], 201);
     }
     // Cập nhật Board
-    public function update(UpdateBoardRequest $request, $id )
+    public function update(UpdateBoardRequest $request, $id)
     {
         $board = $this->boardRepository->show($id);
-        
-        if(!$board) {
+
+        if (!$board) {
             return response()->json([
                 'success' => false,
                 'message' => 'Không tìm thấy board',
@@ -152,9 +152,9 @@ class BoardController extends Controller
             ], 403);
         }
         $input = $request->except(['_token']);
-        
+
         $this->boardRepository->updateBoard($input, $id);
-        
+
         return response()->json([
             'success' => true,
             'board' => $board,
@@ -162,18 +162,18 @@ class BoardController extends Controller
             'type' => 'update_board_success',
         ], 201);
     }
-    
+
     public function destroy($id)
     {
         $board = $this->boardRepository->show($id);
-        if(!$board) {
+        if (!$board) {
             return response()->json([
                 'success' => false,
                 'message' => 'Không tìm thấy board',
                 'type' => 'board_not_found',
             ], 404);
         }
-        
+
         if ($board->owner_id !== Auth::id()) {
             return response()->json([
                 'success' => false,
@@ -181,7 +181,7 @@ class BoardController extends Controller
                 'type' => 'unauthorized',
             ], 403);
         }
-        
+
         $this->boardRepository->destroy($id);
         return response()->json([
             'success' => true,
@@ -189,19 +189,19 @@ class BoardController extends Controller
             'type' => 'delete_board_success',
         ], 201);
     }
-    
+
     public function joinPublicBoard($boardId)
     {
         try {
             $board = $this->boardRepository->show($boardId);
-            if(!$board) {
+            if (!$board) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không tìm thấy board',
                     'type' => 'board_not_found',
                 ], 404);
             }
-            
+
             if ($board->visibility !== Boards::BOARD_PUBLIC) {
                 return response()->json([
                     'success' => false,
@@ -209,9 +209,9 @@ class BoardController extends Controller
                     'type' => 'board_is_private',
                 ], 403);
             }
-            
+
             $user = Auth::user();
-            
+
             // Kiểm tra user đã có trong workspace chưa
             $memberExist = $this->boardUserRepository->checkMemberExist($user->id, $boardId);
             if ($memberExist) {
@@ -221,15 +221,15 @@ class BoardController extends Controller
                     'type' => 'user_exist',
                 ], 400);
             }
-            
+
             $dataBoardsUser = [
                 'board_id' => $boardId,
                 'user_id' => $user->id,
                 'role' =>  Boards::ROLE_VIEWER,
             ];
-            
+
             $this->boardUserRepository->createBoardUser($dataBoardsUser);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Bạn đã join board thành công',
@@ -244,7 +244,7 @@ class BoardController extends Controller
             ], 500);
         }
     }
-    
+
     public function addMember(Request $request, $boardId)
     {
         try {
@@ -252,13 +252,13 @@ class BoardController extends Controller
             $validator = Validator::make($request->all(), [
                 'email' => 'required|email|exists:users,email',
             ]);
-            
+
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 422);
             }
             //check workspace
             $board = $this->boardRepository->show($boardId);
-            if(!$board) {
+            if (!$board) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không tìm thấy board',
@@ -266,17 +266,20 @@ class BoardController extends Controller
                 ], 404);
             }
             $user = Auth::user();
-    
+
             // Kiểm tra nếu board không tồn tại trong workspace
             $checkExistWorkspace = $this->workspaceRepository->checkExist($board->workspace_id);
             if (!$checkExistWorkspace) {
-                return response()->json([
-                    'message' => 'Workspace không tồn tại'],
-                    404);
+                return response()->json(
+                    [
+                        'message' => 'Workspace không tồn tại'
+                    ],
+                    404
+                );
             }
-            
+
             // Chỉ owner hoặc admin mới có quyền mời user
-            $isAdmin = $this->workspaceUserRepository->checkRoleAdmin($user->id ,$checkExistWorkspace->id);
+            $isAdmin = $this->workspaceUserRepository->checkRoleAdmin($user->id, $checkExistWorkspace->id);
             if (!$isAdmin && $board->owner_id !== $user->id) {
                 return response()->json([
                     'success' => false,
@@ -284,8 +287,8 @@ class BoardController extends Controller
                     'type' => 'Unauthorized',
                 ], 403);
             }
-            
-            $user = $this->userRepository->getInfo($request->email);
+
+            $user = $this->userRepository->getUserByEmail($request->email);
             if (!$user) {
                 return response()->json([
                     'success' => false,
@@ -302,15 +305,15 @@ class BoardController extends Controller
                     'type' => 'user_exist',
                 ], 400);
             }
-            
+
             $dataBoardsUser = [
                 'board_id' => $boardId,
                 'user_id' => $user->id,
                 'role' => $request->role ?? Boards::ROLE_VIEWER,
             ];
-            
+
             $this->boardUserRepository->createBoardUser($dataBoardsUser);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Thêm member thành công',
@@ -325,7 +328,7 @@ class BoardController extends Controller
             ], 500);
         }
     }
-    
+
     public function listMembers($boardId)
     {
         $members = $this->boardUserRepository->getMembers($boardId);
@@ -336,18 +339,18 @@ class BoardController extends Controller
             'type' => 'list_members',
         ], 201);
     }
-    
+
     public function removeMember(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'board_id' => 'required|exists:boards,id',
             'user_id' => 'required|exists:users,id',
         ]);
-        
+
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
-        
+
         $this->boardUserRepository->removeMember($request->board_id, $request->user_id);
         return response()->json([
             'success' => true,
@@ -355,7 +358,4 @@ class BoardController extends Controller
             'type' => 'delete_member_success',
         ], 201);
     }
-    
-    
-    
 }
