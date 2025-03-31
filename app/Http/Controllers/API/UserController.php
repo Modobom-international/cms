@@ -62,7 +62,7 @@ class UserController extends Controller
             ], 404);
         }
         
-        $dataUser = $this->userRepository->getDataUser($user->id); //can be remove, because we already get user from auth
+        $dataUser = $this->userRepository->getUserByID($user->id); //can be remove, because we already get user from auth
        
         return response()->json([
             'success' => true,
