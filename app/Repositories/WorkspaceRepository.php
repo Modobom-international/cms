@@ -1,12 +1,7 @@
 <?php
 
 namespace App\Repositories;
-
-use App\Enums\Users;
-use App\Models\User;
 use App\Models\Workspace;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class WorkspaceRepository extends BaseRepository
 {
@@ -38,6 +33,11 @@ class WorkspaceRepository extends BaseRepository
     public function destroy($id)
     {
         return $this->model->where('id', $id)->delete();
+    }
+    
+    public function checkExist($data)
+    {
+        return $this->model->find($data);
     }
     
 }
