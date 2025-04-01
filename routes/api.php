@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\UsersTracking;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BoardController;
 use App\Http\Controllers\API\UserController;
@@ -26,16 +27,22 @@ Route::post('/update-page', [PageController::class, 'update']);
 Route::get('/page/{slug}', [PageController::class, 'getPage']);
 Route::get('/pages', [PageController::class, 'getPages']);
 
+Route::post('/create-video-timeline', [UsersTracking::class, 'storeVideoTimeline']);
+Route::post('/collect-ai-training-data', [UsersTracking::class, 'storeTrainingData']);
+Route::post('/heartbeat', [UsersTracking::class, 'storeHeartbeat']);
+Route::post('/track-event', [UsersTracking::class, 'storeTrackEvent']);
+
 // Page export routes
 Route::post('/export-pages', [PageController::class, 'exportPage']);
 
 Route::middleware('auth:api')->group(function () {
+
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [UserController::class, 'me']);
     Route::post('/update/user', [UserController::class, 'updateCurrentUser']);
     Route::post('/change-password', [UserController::class, 'changePassword']);
 
-    
+
     //admin change password for useer
     Route::post('/change-password-user/{id}/', [UserController::class, 'updatePassword']);
 
@@ -74,7 +81,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/board/{boardId}/lists', [ListBoardController::class, 'index']); // Lấy danh sách Board
     Route::post('/update-list/{id}', [ListBoardController::class, 'update']); // Cập nhật Board
     Route::delete('/delete-board/{id}', [ListBoardController::class, 'destroy']); // Xóa Board
-    
+
 
 
     Route::prefix('domain')->group(function () {
@@ -115,4 +122,3 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/get-activity-uid', [LogBehaviorController::class, 'getActivityUid'])->name('log.behavior.activity.uid');
     });
 });
-
