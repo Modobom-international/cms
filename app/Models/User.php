@@ -1,3 +1,4 @@
+
 <?php
 
 namespace App\Models;
@@ -68,8 +69,8 @@ class User extends Authenticatable
     public function boards()
     {
         return $this->belongsToMany(Board::class, 'board_users')
-            ->withPivot('role')
-            ->withTimestamp('created_at');
+            ->withPivot('role') // Lưu vai trò của user trong board
+            ->withTimestamps(); // ✅ Dùng withTimestamps() (có 's')
     }
 
     /**
@@ -80,4 +81,7 @@ class User extends Authenticatable
         return $this->hasMany(Comment::class);
     }
 
+
+
 }
+

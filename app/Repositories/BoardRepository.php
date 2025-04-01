@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Board;
+use Illuminate\Support\Facades\Auth;
 
 class BoardRepository extends BaseRepository
 {
@@ -35,5 +36,13 @@ class BoardRepository extends BaseRepository
     {
         return $this->model->where('id', $id)->delete();
     }
+
+    public function userHasAccess($boardId)
+    {
+        $user = Auth::user();
+
+        return $user->boards()->where('board_id', $boardId)->exists();
+    }
+
     
 }
