@@ -230,24 +230,90 @@ class CloudflareController extends Controller
      */
     public function deployExports(Request $request)
     {
-        $request->validate([
-            'project_name' => 'required|string',
-            'directory' => 'nullable|string',
-            'branch' => 'nullable|string',
-            'commit_message' => 'nullable|string',
+        // Validate required input parameters
+        $validator = Validator::make($request->all(), [
+            'project_name' => 'required|string|max:100',
+            'directory' => 'nullable|string|max:255',
+            'branch' => 'nullable|string|max:50',
+            'commit_message' => 'nullable|string|max:200',
         ]);
 
-        $options = [
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Collect deployment options
+        $deploymentOptions = $this->collectDeploymentOptions($request);
+
+        // Execute deployment through service
+        try {
+            $result = $this->cloudflareService->deployExportDirectory(
+                $request->project_name,
+                $request->directory,
+                $deploymentOptions
+            );
+
+            return $this->formatDeploymentResponse($result);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Deployment failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Collect deployment options from request
+     *
+     * @param Request $request
+     * @return array
+     */
+    private function collectDeploymentOptions(Request $request)
+    {
+        return array_filter([
             'branch' => $request->branch,
             'commit_message' => $request->commit_message,
+        ]);
+    }
+
+    /**
+     * Format deployment response
+     *
+     * @param array $result
+     * @return \Illuminate\Http\JsonResponse
+     */
+    private function formatDeploymentResponse($result)
+    {
+        $statusCode = $result['success'] ? 200 : 400;
+
+        $response = [
+            'success' => $result['success'],
+            'message' => $result['message'],
         ];
 
-        $result = $this->cloudflareService->deployExportDirectory(
-            $request->project_name,
-            $request->directory,
-            $options
-        );
+        // Add optional fields if they exist
+        if (isset($result['deployment_url'])) {
+            $response['deployment_url'] = $result['deployment_url'];
+        }
 
-        return response()->json($result);
+        if (isset($result['directory'])) {
+            $response['directory'] = $result['directory'];
+        }
+
+        if (isset($result['elapsed_time'])) {
+            $response['elapsed_time'] = round($result['elapsed_time'], 2) . ' seconds';
+        }
+
+        // Add full output only for debugging or if deployment failed
+        if (!$result['success'] && isset($result['output'])) {
+            $response['output'] = $result['output'];
+        }
+
+        return response()->json($response, $statusCode);
     }
 }

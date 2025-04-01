@@ -82,73 +82,145 @@ class CloudflarePagesService
      */
     public function deployExportDirectory($projectName, $directory = null, $options = [])
     {
-        // Start tracking execution time
+        // Performance tracking
         $startTime = microtime(true);
+        $result = ['success' => false];
 
-        // Determine the directory to deploy
-        if (empty($directory)) {
-            // If no specific directory provided, use the exports directory
-            $deployDir = public_path('storage/exports');
-        } else {
-            // Check if it's a relative path within exports
-            $exportsDir = public_path('storage/exports');
-            if (file_exists("$exportsDir/$directory")) {
-                $deployDir = "$exportsDir/$directory";
-            } else {
-                // Treat as absolute path
-                $deployDir = $directory;
+        try {
+            // Resolve directory path
+            $deployDir = $this->resolveDeployDirectory($directory);
+
+            // Validate directory existence
+            if (!file_exists($deployDir)) {
+                return [
+                    'success' => false,
+                    'message' => 'Directory not found: ' . $deployDir,
+                    'elapsed_time' => $this->getElapsedTime($startTime)
+                ];
             }
-        }
 
-        // Validate directory exists
-        if (!file_exists($deployDir)) {
-            return [
+            // Execute deployment
+            $deploymentCommand = $this->buildWranglerCommand($projectName, $deployDir, $options);
+            $output = $this->executeWranglerCommand($deploymentCommand);
+
+            // Process results
+            $result = $this->processDeploymentResult($output, $deployDir, $startTime);
+        } catch (\Exception $e) {
+            Log::error('Deployment failed: ' . $e->getMessage());
+            $result = [
                 'success' => false,
-                'message' => 'Directory not found: ' . $deployDir,
-                'elapsed_time' => microtime(true) - $startTime
+                'message' => 'Deployment failed: ' . $e->getMessage(),
+                'elapsed_time' => $this->getElapsedTime($startTime)
             ];
         }
 
-        // Set up command options
+        return $result;
+    }
+
+    /**
+     * Resolve the directory path for deployment
+     *
+     * @param string|null $directory Directory path or name
+     * @return string Full path to deployment directory
+     */
+    private function resolveDeployDirectory($directory = null)
+    {
+        $exportsDir = public_path('storage/exports');
+
+        // If no directory specified, use the main exports directory
+        if (empty($directory)) {
+            return $exportsDir;
+        }
+
+        // Check if it's a subdirectory within exports
+        $potentialSubdir = "$exportsDir/$directory";
+        if (file_exists($potentialSubdir)) {
+            return $potentialSubdir;
+        }
+
+        // Treat as absolute path
+        return $directory;
+    }
+
+    /**
+     * Build the Wrangler command for deployment
+     *
+     * @param string $projectName Cloudflare Pages project name
+     * @param string $deployDir Directory to deploy
+     * @param array $options Additional options
+     * @return string Command to execute
+     */
+    private function buildWranglerCommand($projectName, $deployDir, $options = [])
+    {
         $branch = $options['branch'] ?? 'main';
         $commitMessage = $options['commit_message'] ?? "Deployment from CMS on " . date('Y-m-d H:i:s');
 
-        // Build the Wrangler deploy command
-        // Use npx to ensure we run wrangler without needing a specific path
-        $command = "cd $deployDir && npx wrangler pages deploy . " .
+        return "cd $deployDir && npx wrangler pages deploy . " .
             "--project-name=\"$projectName\" " .
             "--branch=\"$branch\" " .
             "--commit-message=\"$commitMessage\"";
+    }
 
+    /**
+     * Execute the Wrangler command and return the output
+     *
+     * @param string $command Command to execute
+     * @return string Command output
+     * @throws \Exception If command execution fails
+     */
+    private function executeWranglerCommand($command)
+    {
         // Log the command for debugging
         Log::info("Executing Wrangler command: $command");
 
-        // Execute the command
+        // Execute the command and capture output (including stderr)
         $output = shell_exec($command . " 2>&1");
 
-        // Check if the command executed successfully
         if ($output === null) {
-            Log::error("Failed to execute Wrangler command");
-            return [
-                'success' => false,
-                'message' => 'Failed to execute Wrangler command',
-                'elapsed_time' => microtime(true) - $startTime
-            ];
+            throw new \Exception("Failed to execute Wrangler command");
         }
 
-        // Extract deployment URL from output if available
+        return $output;
+    }
+
+    /**
+     * Process the deployment result and extract relevant information
+     *
+     * @param string $output Command output
+     * @param string $deployDir Deployment directory
+     * @param float $startTime Start time for performance tracking
+     * @return array Processed result
+     */
+    private function processDeploymentResult($output, $deployDir, $startTime)
+    {
+        // Extract deployment URL if available
         $deploymentUrl = null;
         if (preg_match('/https:\/\/[a-zA-Z0-9.-]+\.pages\.dev/', $output, $matches)) {
             $deploymentUrl = $matches[0];
         }
 
+        // Check for success indicators in output
+        $isSuccess = strpos($output, 'Success') !== false ||
+            strpos($output, 'Published') !== false;
+
         return [
-            'success' => strpos($output, 'Success') !== false || strpos($output, 'Published') !== false,
-            'message' => 'Deployment executed',
+            'success' => $isSuccess,
+            'message' => $isSuccess ? 'Deployment successful' : 'Deployment completed with issues',
             'output' => $output,
             'deployment_url' => $deploymentUrl,
             'directory' => $deployDir,
-            'elapsed_time' => microtime(true) - $startTime
+            'elapsed_time' => $this->getElapsedTime($startTime)
         ];
+    }
+
+    /**
+     * Calculate elapsed time since start
+     *
+     * @param float $startTime Start time from microtime(true)
+     * @return float Elapsed time in seconds
+     */
+    private function getElapsedTime($startTime)
+    {
+        return microtime(true) - $startTime;
     }
 }
