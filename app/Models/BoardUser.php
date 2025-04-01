@@ -9,16 +9,15 @@ class BoardUser extends Model
 {
     use HasFactory;
     
-    protected $fillable = ['board_id', 'user_id', 'role', 'created_at'];
-    public $timestamps = false;
+    protected $fillable = ['board_id', 'user_id', 'role'];
     
-    public function users()
+    public function board()
     {
-        return $this->belongsTo(User::class, 'user_id', 'id');
+        return $this->belongsTo(Board::class, 'board_id');
     }
     
-    public function workspace()
+    public function user()
     {
-        return $this->belongsTo(Workspace::class, 'workspace_id', 'id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

@@ -4,6 +4,7 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BoardController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\WorkspaceController;
+use App\Http\Controllers\API\ListBoardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -47,5 +48,12 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/board/{id}/add-member', [BoardController::class, 'addMember']);
     Route::post('/board/remove-members', [BoardController::class, 'removeMember']);
     Route::get('/board/{id}/members', [BoardController::class, 'listMembers']);
+    
+    //list
+    Route::post('/create-list', [ListBoardController::class, 'store']); // Tạo Board
+    Route::get('/list/{id}', [ListBoardController::class, 'show']);
+    Route::get('/board/{boardId}/lists', [ListBoardController::class, 'index']); // Lấy danh sách Board
+    Route::post('/update-list/{id}', [ListBoardController::class, 'update']); // Cập nhật Board
+    Route::delete('/delete-board/{id}', [ListBoardController::class, 'destroy']); // Xóa Board
     
 });
