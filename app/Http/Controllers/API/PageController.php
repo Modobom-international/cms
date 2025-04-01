@@ -151,7 +151,6 @@ class PageController extends Controller
         $filename = $slug . '.' . $htmlFile->getClientOriginalExtension();
         $filePath = $htmlFile->storeAs('exports', $filename, 'public');
 
-
         // Create the export request
         $exportRequest = $this->pageExportRepository->create([
             'slugs' => $slug,
