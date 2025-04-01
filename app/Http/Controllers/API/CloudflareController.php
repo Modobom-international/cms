@@ -135,19 +135,29 @@ class CloudflareController extends Controller
         // Collect deployment options
         $deploymentOptions = $this->collectDeploymentOptions($request);
 
-        // Execute deployment through service
         try {
-            $result = $this->cloudflareService->deployExportDirectory(
+            // Dispatch the deployment job
+            $job = new \App\Jobs\DeployExportsJob(
                 $request->project_name,
                 $request->directory,
                 $deploymentOptions
             );
 
-            return $this->formatDeploymentResponse($result);
+            dispatch($job);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Deployment job has been queued successfully',
+                'job_details' => [
+                    'project' => $request->project_name,
+                    'directory' => $request->directory ?? 'root',
+                    'queue' => 'deployments'
+                ]
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Deployment failed',
+                'message' => 'Failed to queue deployment job',
                 'error' => $e->getMessage()
             ], 500);
         }

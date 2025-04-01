@@ -286,6 +286,19 @@ return [
                 'maxProcesses' => 5,
                 'tries' => 0,
             ],
+
+            'deployment-supervisor' => [
+                'connection' => 'redis',
+                'queue' => ['deployments'],
+                'balance' => 'false',
+                'maxProcesses' => 5,
+                'maxTime' => 0,
+                'maxJobs' => 0,
+                'memory' => 512,
+                'tries' => 1,
+                'timeout' => 600,
+                'nice' => 0,
+            ],
         ],
     ],
 ];
