@@ -16,7 +16,7 @@ class UserRepository extends BaseRepository
         return $this->model->create($dataUser);
     }
     
-    public function getDataUser($dataUser)
+    public function getUserByID($dataUser)
     {
         return $this->model->where('id', $dataUser)->first();
     }
@@ -26,7 +26,7 @@ class UserRepository extends BaseRepository
         return $this->model->where('id', $id)->update($dataUser);
     }
 
-    public function getInfo($dataEmail)
+    public function getUserByEmail($dataEmail)
     {
         return $this->model->where('email', $dataEmail)->first();
     }

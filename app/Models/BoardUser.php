@@ -1,5 +1,5 @@
-<?php
 
+<?php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,15 +9,17 @@ class BoardUser extends Model
 {
     use HasFactory;
     
-    protected $fillable = ['board_id', 'user_id', 'role'];
+    protected $fillable = ['board_id', 'user_id', 'role', 'created_at'];
+    public $timestamps = false;
     
-    public function board()
+    public function users()
     {
-        return $this->belongsTo(Board::class, 'board_id');
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
     
-    public function user()
+    public function workspace()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Workspace::class, 'workspace_id', 'id');
     }
 }
+

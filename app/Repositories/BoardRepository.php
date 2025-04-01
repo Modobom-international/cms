@@ -43,5 +43,6 @@ class BoardRepository extends BaseRepository
 
         return $user->boards()->where('board_id', $boardId)->exists();
     }
+
     
 }

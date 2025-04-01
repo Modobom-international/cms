@@ -208,34 +208,6 @@ return [
 
             'supervisor-cms-2' => [
                 'connection' => 'redis',
-                'queue' => ['save_request_get_system_setting'],
-                'balance' => 'auto',
-                'minProcesses' => 1,
-                'maxProcesses' => 2,
-                'tries' => 0,
-            ],
-
-            'supervisor-cms-3' => [
-                'connection' => 'redis',
-                'queue' => ['save_user_active_push_system'],
-                'balance' => 'auto',
-                'minProcesses' => 1,
-                'maxProcesses' => 1,
-                'tries' => 0,
-                'timeout' => 300,
-            ],
-
-            'supervisor-cms-4' => [
-                'connection' => 'redis',
-                'queue' => ['save_request_get_system_global_setting'],
-                'balance' => 'auto',
-                'minProcesses' => 1,
-                'maxProcesses' => 2,
-                'tries' => 0,
-            ],
-
-            'supervisor-cms-5' => [
-                'connection' => 'redis',
                 'queue' => ['create_html_source'],
                 'balance' => 'auto',
                 'minProcesses' => 1,
@@ -243,7 +215,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-6' => [
+            'supervisor-cms-3' => [
                 'connection' => 'redis',
                 'queue' => ['create_users_tracking'],
                 'balance' => 'auto',
@@ -252,7 +224,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-7' => [
+            'supervisor-cms-4' => [
                 'connection' => 'redis',
                 'queue' => ['create_heat_map'],
                 'balance' => 'auto',
@@ -261,7 +233,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-8' => [
+            'supervisor-cms-5' => [
                 'connection' => 'redis',
                 'queue' => ['fetch_full_page'],
                 'balance' => 'auto',
@@ -270,7 +242,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-9' => [
+            'supervisor-cms-6' => [
                 'connection' => 'redis',
                 'queue' => ['fetch_image_view'],
                 'balance' => 'auto',
@@ -279,7 +251,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-10' => [
+            'supervisor-cms-7' => [
                 'connection' => 'redis',
                 'queue' => ['create_log_behavior'],
                 'balance' => 'auto',
@@ -288,7 +260,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-11' => [
+            'supervisor-cms-8' => [
                 'connection' => 'redis',
                 'queue' => ['behavior_store_log'],
                 'balance' => 'auto',
@@ -297,16 +269,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-12' => [
-                'connection' => 'redis',
-                'queue' => ['notify_telegram_install_log_behavior'],
-                'balance' => 'auto',
-                'minProcesses' => 1,
-                'maxProcesses' => 5,
-                'tries' => 0,
-            ],
-
-            'supervisor-cms-13' => [
+            'supervisor-cms-9' => [
                 'connection' => 'redis',
                 'queue' => ['notification_system'],
                 'balance' => 'auto',
@@ -315,12 +278,12 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-14' => [
+            'supervisor-cms-10' => [
                 'connection' => 'redis',
                 'queue' => ['notification_system_board_cast'],
                 'balance' => 'auto',
-                'minProcesses' => 5,
-                'maxProcesses' => 20,
+                'minProcesses' => 1,
+                'maxProcesses' => 5,
                 'tries' => 0,
             ],
         ],
