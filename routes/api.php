@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\HtmlSourceController;
 use App\Http\Controllers\API\UsersTrackingController;
 use App\Http\Controllers\API\LogBehaviorController;
+use App\Http\Controllers\API\CloudflareController;
 use App\Http\Controllers\API\PageController;
 
 
@@ -122,3 +123,13 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/get-activity-uid', [LogBehaviorController::class, 'getActivityUid'])->name('log.behavior.activity.uid');
     });
 });
+
+// Cloudflare Pages API routes
+Route::prefix('cloudflare')->group(function () {
+    Route::post('/project/create', [CloudflareController::class, 'createProject']);
+    Route::post('/project/update', [CloudflareController::class, 'updateProject']);
+    Route::post('/deploy', [CloudflareController::class, 'createDeployment']);
+    Route::post('/domain/apply', [CloudflareController::class, 'applyDomain']);
+    Route::post('/deploy-exports', [CloudflareController::class, 'deployExports']);
+});
+
