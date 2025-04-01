@@ -10,8 +10,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\HtmlSourceController;
 use App\Http\Controllers\API\UsersTrackingController;
 use App\Http\Controllers\API\LogBehaviorController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\PageController;
 
 
