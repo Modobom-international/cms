@@ -4,7 +4,6 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PageRequest;
-use App\Http\Requests\ExportPageRequest;
 use Illuminate\Http\Request;
 use App\Models\Page;
 use App\Repositories\PageRepository;
@@ -151,7 +150,6 @@ class PageController extends Controller
         $htmlFile = $request->file('html_file');
         $filename = $slug . '.' . $htmlFile->getClientOriginalExtension();
         $filePath = $htmlFile->storeAs('exports', $filename, 'public');
-
 
         // Create the export request
         $exportRequest = $this->pageExportRepository->create([

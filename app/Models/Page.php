@@ -17,10 +17,6 @@ class Page extends Model
         'provider'
     ];
 
-    public function rows()
-    {
-        return $this->hasMany(Row::class, 'page_id');
-    }
     public function site()
     {
         return $this->belongsTo(Site::class);
