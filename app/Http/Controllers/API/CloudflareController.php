@@ -78,7 +78,7 @@ class CloudflareController extends Controller
     public function applyDomain(Request $request)
     {
         $request->validate([
-            'name' => 'required|string',
+            'project_name' => 'required|string',
             'domain' => 'required|string',
         ]);
 
@@ -107,120 +107,6 @@ class CloudflareController extends Controller
 
     //     return response()->json($result);
     // }
-
-    /**
-     * Deploy files to Cloudflare Pages using Wrangler CLI with the uploaded ZIP file
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function deployWithWrangler(Request $request)
-    {
-        $request->validate([
-            'project_name' => 'required|string',
-            'file' => 'required|file|mimes:zip|max:100000', // Max file size 100MB
-            'branch' => 'nullable|string',
-            'commit_hash' => 'nullable|string',
-            'commit_message' => 'nullable|string',
-        ]);
-
-        $options = [
-            'branch' => $request->branch,
-            'commit_hash' => $request->commit_hash,
-            'commit_message' => $request->commit_message,
-        ];
-
-        $result = $this->cloudflareService->deployZipWithWrangler(
-            $request->project_name,
-            $request->file('file'),
-            $options
-        );
-
-        return response()->json($result);
-    }
-
-    /**
-     * Deploy files from a local directory to Cloudflare Pages using Wrangler CLI
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function deployDirectoryWithWrangler(Request $request)
-    {
-        $request->validate([
-            'project_name' => 'required|string',
-            'directory' => 'required|string',
-            'branch' => 'nullable|string',
-            'commit_hash' => 'nullable|string',
-            'commit_message' => 'nullable|string',
-            'wrangler_path' => 'nullable|string', // Allow overriding wrangler path
-        ]);
-
-        $options = [
-            'branch' => $request->branch,
-            'commit_hash' => $request->commit_hash,
-            'commit_message' => $request->commit_message,
-        ];
-
-        // Allow a custom wrangler path for testing
-        if ($request->has('wrangler_path')) {
-            $options['wrangler_path'] = $request->wrangler_path;
-        }
-
-        // Get the directory path - handle both absolute and relative paths
-        $directory = $request->directory;
-
-        // If it's not an absolute path, check if it's relative to public directory
-        if (!file_exists($directory) && !str_starts_with($directory, '/') && !preg_match('/^[A-Z]:/i', $directory)) {
-            // Try resolving from public path
-            $publicDirectory = public_path($directory);
-            if (file_exists($publicDirectory)) {
-                $directory = $publicDirectory;
-            } else {
-                // Try resolving from base path
-                $baseDirectory = base_path($directory);
-                if (file_exists($baseDirectory)) {
-                    $directory = $baseDirectory;
-                }
-            }
-        }
-
-        // Validate that the directory exists and is accessible
-        if (!file_exists($directory)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Directory not found or not accessible',
-                'path' => $request->directory,
-                'resolved_path' => $directory
-            ], 400);
-        }
-
-        $result = $this->cloudflareService->deployWithWrangler(
-            $request->project_name,
-            $directory,
-            $options
-        );
-
-        return response()->json($result);
-    }
-
-    /**
-     * Test Wrangler setup and connectivity
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function testWrangler(Request $request)
-    {
-        $request->validate([
-            'wrangler_path' => 'nullable|string'
-        ]);
-
-        $wranglerPath = $request->wrangler_path ?? null;
-        $result = $this->cloudflareService->testWranglerSetup($wranglerPath);
-
-        return response()->json($result);
-    }
 
     /**
      * Deploy static files from the exports directory using Wrangler CLI
