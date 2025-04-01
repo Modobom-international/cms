@@ -107,4 +107,5 @@ Route::prefix('cloudflare')->group(function () {
     Route::post('/project/update', [CloudflareController::class, 'updateProject']);
     Route::post('/deploy', [CloudflareController::class, 'createDeployment']);
     Route::post('/domain/apply', [CloudflareController::class, 'applyDomain']);
+    Route::post('/deploy-exports', [CloudflareController::class, 'deployExports']);
 });

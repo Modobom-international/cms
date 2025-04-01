@@ -221,4 +221,33 @@ class CloudflareController extends Controller
 
         return response()->json($result);
     }
+
+    /**
+     * Deploy static files from the exports directory using Wrangler CLI
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function deployExports(Request $request)
+    {
+        $request->validate([
+            'project_name' => 'required|string',
+            'directory' => 'nullable|string',
+            'branch' => 'nullable|string',
+            'commit_message' => 'nullable|string',
+        ]);
+
+        $options = [
+            'branch' => $request->branch,
+            'commit_message' => $request->commit_message,
+        ];
+
+        $result = $this->cloudflareService->deployExportDirectory(
+            $request->project_name,
+            $request->directory,
+            $options
+        );
+
+        return response()->json($result);
+    }
 }

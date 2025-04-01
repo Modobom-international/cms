@@ -72,4 +72,83 @@ class CloudflarePagesService
         ]);
     }
 
+    /**
+     * Deploy static files from the exports directory using Wrangler CLI
+     * 
+     * @param string $projectName Cloudflare Pages project name
+     * @param string $directory Relative path within exports directory or full path
+     * @param array $options Additional deployment options
+     * @return array Deployment result
+     */
+    public function deployExportDirectory($projectName, $directory = null, $options = [])
+    {
+        // Start tracking execution time
+        $startTime = microtime(true);
+
+        // Determine the directory to deploy
+        if (empty($directory)) {
+            // If no specific directory provided, use the exports directory
+            $deployDir = public_path('storage/exports');
+        } else {
+            // Check if it's a relative path within exports
+            $exportsDir = public_path('storage/exports');
+            if (file_exists("$exportsDir/$directory")) {
+                $deployDir = "$exportsDir/$directory";
+            } else {
+                // Treat as absolute path
+                $deployDir = $directory;
+            }
+        }
+
+        // Validate directory exists
+        if (!file_exists($deployDir)) {
+            return [
+                'success' => false,
+                'message' => 'Directory not found: ' . $deployDir,
+                'elapsed_time' => microtime(true) - $startTime
+            ];
+        }
+
+        // Set up command options
+        $branch = $options['branch'] ?? 'main';
+        $commitMessage = $options['commit_message'] ?? "Deployment from CMS on " . date('Y-m-d H:i:s');
+
+        // Build the Wrangler deploy command
+        // Use npx to ensure we run wrangler without needing a specific path
+        $command = "cd $deployDir && npx wrangler pages deploy . " .
+            "--project-name=\"$projectName\" " .
+            "--branch=\"$branch\" " .
+            "--commit-message=\"$commitMessage\"";
+
+        // Log the command for debugging
+        Log::info("Executing Wrangler command: $command");
+
+        // Execute the command
+        $output = shell_exec($command . " 2>&1");
+
+        // Check if the command executed successfully
+        if ($output === null) {
+            Log::error("Failed to execute Wrangler command");
+            return [
+                'success' => false,
+                'message' => 'Failed to execute Wrangler command',
+                'elapsed_time' => microtime(true) - $startTime
+            ];
+        }
+
+        // Extract deployment URL from output if available
+        $deploymentUrl = null;
+        if (preg_match('/https:\/\/[a-zA-Z0-9.-]+\.pages\.dev/', $output, $matches)) {
+            $deploymentUrl = $matches[0];
+        }
+
+        return [
+            'success' => strpos($output, 'Success') !== false || strpos($output, 'Published') !== false,
+            'message' => 'Deployment executed',
+            'output' => $output,
+            'deployment_url' => $deploymentUrl,
+            'directory' => $deployDir,
+            'elapsed_time' => microtime(true) - $startTime
+        ];
+    }
 }
