@@ -287,10 +287,10 @@ return [
                 'tries' => 0,
             ],
 
-            'deployment-supervisor' => [
+            'supervisor-cms-11' => [
                 'connection' => 'redis',
                 'queue' => ['deployments'],
-                'balance' => 'false',
+                'balance' => 'auto',
                 'maxProcesses' => 5,
                 'maxTime' => 0,
                 'maxJobs' => 0,
