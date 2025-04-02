@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use App\Services\CloudflarePagesService;
+use App\Services\CloudFlareService;
 use Illuminate\Support\Facades\Log;
 
 class DeployExportsJob implements ShouldQueue
@@ -38,10 +38,10 @@ class DeployExportsJob implements ShouldQueue
     /**
      * Execute the job.
      *
-     * @param CloudflarePagesService $cloudflareService
+     * @param CloudFlareService $cloudflareService
      * @return void
      */
-    public function handle(CloudflarePagesService $cloudflareService)
+    public function handle(CloudFlareService $cloudflareService)
     {
         try {
             $result = $cloudflareService->deployExportDirectory(

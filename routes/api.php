@@ -36,6 +36,15 @@ Route::post('/track-event', [UsersTracking::class, 'storeTrackEvent']);
 // Page export routes
 Route::post('/export-pages', [PageController::class, 'exportPage']);
 
+// Cloudflare Pages API routes
+Route::prefix('cloudflare')->group(function () {
+    Route::post('/project/create', [CloudflareController::class, 'createProject']);
+    Route::post('/project/update', [CloudflareController::class, 'updateProject']);
+    Route::post('/deploy', [CloudflareController::class, 'createDeployment']);
+    Route::post('/domain/apply', [CloudflareController::class, 'applyDomain']);
+    Route::post('/deploy-exports', [CloudflareController::class, 'deployExports']);
+});
+
 Route::middleware('auth:api')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -123,12 +132,5 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/get-activity-uid', [LogBehaviorController::class, 'getActivityUid'])->name('log.behavior.activity.uid');
     });
 
-    // Cloudflare Pages API routes
-    Route::prefix('cloudflare')->group(function () {
-        Route::post('/project/create', [CloudflareController::class, 'createProject']);
-        Route::post('/project/update', [CloudflareController::class, 'updateProject']);
-        Route::post('/deploy', [CloudflareController::class, 'createDeployment']);
-        Route::post('/domain/apply', [CloudflareController::class, 'applyDomain']);
-        Route::post('/deploy-exports', [CloudflareController::class, 'deployExports']);
-    });
+
 });
