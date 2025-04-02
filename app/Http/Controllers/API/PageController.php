@@ -71,6 +71,16 @@ class PageController extends Controller
         }
 
         try {
+            // Validate that content is valid JSON
+            $content = json_decode($request->content, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Content must be a valid JSON string',
+                    'error' => json_last_error_msg()
+                ], 422);
+            }
+
             $page = $this->pageRepository->findBySlug($request->slug);
 
             if (!$page) {
@@ -81,7 +91,7 @@ class PageController extends Controller
             }
 
             $this->pageRepository->update([
-                'content' => json_decode($request->content, true) ?? $request->content,
+                'content' => $content,  // Already decoded JSON
             ], $page->id);
 
             // Fetch the updated page to return in response

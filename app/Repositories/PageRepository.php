@@ -35,7 +35,10 @@ class PageRepository extends BaseRepository
     public function update($data, $id)
     {
         $page = $this->find($id);
-        $page->update($data);
+        if (!$page) {
+            throw new \Exception('Page not found');
+        }
+        return $page->update($data);
     }
 
     /**
