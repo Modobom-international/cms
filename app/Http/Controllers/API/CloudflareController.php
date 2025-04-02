@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Services\CloudflarePagesService;
+use App\Services\CloudFlareService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -11,7 +11,7 @@ class CloudflareController extends Controller
 {
     protected $cloudflareService;
 
-    public function __construct(CloudflarePagesService $cloudflareService)
+    public function __construct(CloudFlareService $cloudflareService)
     {
         $this->cloudflareService = $cloudflareService;
     }
@@ -30,7 +30,7 @@ class CloudflareController extends Controller
         ]);
 
         $branch = $request->branch ?? 'main';
-        $result = $this->cloudflareService->createProject($request->name, $branch);
+        $result = $this->cloudflareService->createPagesProject($request->name, $branch);
 
         return response()->json($result);
     }
@@ -47,7 +47,7 @@ class CloudflareController extends Controller
             'name' => 'required|string',
         ]);
 
-        $result = $this->cloudflareService->updateProject($request->name, $request->except(['name']));
+        $result = $this->cloudflareService->updatePagesProject($request->name, $request->except(['name']));
 
         return response()->json($result);
     }
@@ -82,31 +82,10 @@ class CloudflareController extends Controller
             'domain' => 'required|string',
         ]);
 
-        $result = $this->cloudflareService->applyDomain($request->name, $request->domain);
+        $result = $this->cloudflareService->applyPagesDomain($request->project_name, $request->domain);
 
         return response()->json($result);
     }
-
-    /**
-     * Deploy files to a Cloudflare Pages project
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    // public function deployFiles(Request $request)
-    // {
-    //     $request->validate([
-    //         'name' => 'required|string',
-    //         'file' => 'required|file|mimes:zip|max:100000', // Max file size 100MB
-    //     ]);
-
-    //     $result = $this->cloudflareService->deployFiles(
-    //         $request->name,
-    //         $request->file('file')
-    //     );
-
-    //     return response()->json($result);
-    // }
 
     /**
      * Deploy static files from the exports directory using Wrangler CLI
@@ -135,19 +114,29 @@ class CloudflareController extends Controller
         // Collect deployment options
         $deploymentOptions = $this->collectDeploymentOptions($request);
 
-        // Execute deployment through service
         try {
-            $result = $this->cloudflareService->deployExportDirectory(
+            // Dispatch the deployment job
+            $job = new \App\Jobs\DeployExportsJob(
                 $request->project_name,
                 $request->directory,
                 $deploymentOptions
             );
 
-            return $this->formatDeploymentResponse($result);
+            dispatch($job);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Deployment job has been queued successfully',
+                'job_details' => [
+                    'project' => $request->project_name,
+                    'directory' => $request->directory ?? 'root',
+                    'queue' => 'deployments'
+                ]
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Deployment failed',
+                'message' => 'Failed to queue deployment job',
                 'error' => $e->getMessage()
             ], 500);
         }

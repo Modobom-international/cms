@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'cloudflare' => [
+        'api_url' => env('CLOUDFLARE_API_URL', 'https://api.cloudflare.com/client/v4'),
+        'account_id' => env('CLOUDFLARE_ACCOUNT_ID'),
+        'api_token' => env('CLOUDFLARE_API_TOKEN'),
+        'api_token_edit_zone_dns' => env('CLOUDFLARE_API_TOKEN_EDIT_ZONE_DNS'),
+        'wrangler_path' => env('WRANGLER_PATH', '/usr/local/bin/wrangler'),
+    ],
+
 ];
