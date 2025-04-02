@@ -16,6 +16,17 @@ class PageRepository extends BaseRepository
         return $this->model->find($id);
     }
 
+    /**
+     * Find a page by its slug
+     *
+     * @param string $slug
+     * @return \App\Models\Page|null
+     */
+    public function findBySlug($slug)
+    {
+        return $this->model->where('slug', $slug)->first();
+    }
+
     public function create($data)
     {
         return $this->model->create($data);
