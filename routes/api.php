@@ -98,18 +98,18 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/lists/{list}/cards', [CardController::class, 'index']); // Lấy danh sách card theo list
     Route::post('/create-card', [CardController::class, 'store']); // Tạo card mới
     Route::post('/update-card/{card}', [CardController::class, 'update']); // Cập nhật card
-    Route::delete('/cards/{card}', [CardController::class, 'destroy']); // Xóa card
-    Route::post('/cards/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
+    Route::delete('/card/{card}', [CardController::class, 'destroy']); // Xóa card
+    Route::post('/card/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
 
 
-//    Route::prefix('domain')->group(function () {
-//        Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
-//        Route::get('/create', [DomainController::class, 'createDomain'])->name('domain.create');
-//        Route::get('/check', [DomainController::class, 'checkDomain'])->name('domain.check');
-//        Route::get('/up', [DomainController::class, 'upDomain'])->name('domain.up');
-//        Route::get('/search', [DomainController::class, 'searchDomain'])->name('domain.search');
-//        Route::get('/delete', [DomainController::class, 'deleteDomain'])->name('domain.delete');
-//    });
+    Route::prefix('domain')->group(function () {
+        Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
+        Route::get('/create', [DomainController::class, 'createDomain'])->name('domain.create');
+        Route::get('/check', [DomainController::class, 'checkDomain'])->name('domain.check');
+        Route::get('/up', [DomainController::class, 'upDomain'])->name('domain.up');
+        Route::get('/search', [DomainController::class, 'searchDomain'])->name('domain.search');
+        Route::get('/delete', [DomainController::class, 'deleteDomain'])->name('domain.delete');
+    });
 
     Route::prefix('html-source')->group(function () {
         Route::get('/', [HtmlSourceController::class, 'listHtmlSource'])->name('html.source.list');

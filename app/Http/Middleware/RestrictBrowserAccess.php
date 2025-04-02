@@ -15,9 +15,9 @@ class RestrictBrowserAccess
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->header('Accept') === 'text/html' || !$request->expectsJson()) {
-            return response()->view('welcome');
-        }
+//        if ($request->header('Accept') === 'text/html' || !$request->expectsJson()) {
+//            return response()->view('welcome');
+//        }
 
         return $next($request);
     }
