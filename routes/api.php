@@ -6,6 +6,7 @@ use App\Http\Controllers\API\BoardController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\WorkspaceController;
 use App\Http\Controllers\API\ListBoardController;
+use App\Http\Controllers\API\CardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\HtmlSourceController;
@@ -88,10 +89,16 @@ Route::middleware('auth:api')->group(function () {
     //list
     Route::post('/create-list', [ListBoardController::class, 'store']); // Tạo Board
     Route::get('/list/{id}', [ListBoardController::class, 'show']);
-    Route::get('/board/{boardId}/lists', [ListBoardController::class, 'index']); // Lấy danh sách Board
+    Route::get('/test/{boardId}/lists', [ListBoardController::class, 'index']); // Lấy danh sách Board
     Route::post('/update-list/{id}', [ListBoardController::class, 'update']); // Cập nhật Board
     Route::delete('/delete-board/{id}', [ListBoardController::class, 'destroy']); // Xóa Board
-
+    
+    //card
+    Route::get('/lists/{list}/cards', [CardController::class, 'index']); // Lấy danh sách card theo list
+    Route::post('/create-card', [CardController::class, 'store']); // Tạo card mới
+    Route::post('/update-card/{card}', [CardController::class, 'update']); // Cập nhật card
+    Route::delete('/cards/{card}', [CardController::class, 'destroy']); // Xóa card
+    Route::post('/cards/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
 
 
     Route::prefix('domain')->group(function () {
@@ -131,6 +138,4 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/compare-date', [LogBehaviorController::class, 'compareDate'])->name('log.behavior.compare.date');
         Route::get('/get-activity-uid', [LogBehaviorController::class, 'getActivityUid'])->name('log.behavior.activity.uid');
     });
-
-
 });

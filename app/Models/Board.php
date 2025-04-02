@@ -7,49 +7,47 @@ use Illuminate\Database\Eloquent\Model;
 
 class Board extends Model
 {
-
     use HasFactory;
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+    
     protected $fillable = [
+        'workspace_id',
         'name',
         'description',
         'visibility',
         'owner_id',
-        'workspace_id',
     ];
-
+    
     /**
-     * Get the owner of the board.
-     */
-    public function owner()
-    {
-        return $this->belongsTo(User::class, 'owner_id');
-    }
-
-    /**
-     * Get the workspace that the board belongs to.
+     * Quan hệ với Workspace
      */
     public function workspace()
     {
         return $this->belongsTo(Workspace::class);
     }
-
+    
     /**
-     * Get the users that are members of the board.
+     * Quan hệ với User (người sở hữu board)
+     */
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
+    
+    /**
+     * Quan hệ với các user trong board thông qua bảng board_users
      */
     public function users()
     {
         return $this->belongsToMany(User::class, 'board_users')
             ->withPivot('role')
-            ->withTimestamps(); // ✅ Dùng withTimestamps() (có 's')
+            ->withTimestamps();
     }
-
-
-
-
+    
+    /**
+     * Quan hệ với List trong board
+     */
+    public function lists()
+    {
+        return $this->hasMany(ListBoard::class);
+    }
 }
