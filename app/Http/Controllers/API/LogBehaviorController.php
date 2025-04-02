@@ -9,7 +9,6 @@ use App\Jobs\BehaviorStoreLogJob;
 use Illuminate\Http\Request;
 use App\Jobs\StoreLogBehaviorJob;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cookie;
 use App\Repositories\LogBehaviorRepository;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
