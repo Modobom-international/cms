@@ -9,6 +9,7 @@ use App\Repositories\CardRepository;
 use App\Repositories\ListBoardRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class CardController extends Controller
 {
@@ -145,7 +146,7 @@ class CardController extends Controller
         }
     }
     
-//    // 📌 4️⃣ Xóa Card
+      // 📌 4️⃣ Xóa Card
     public function destroy($id)
     {
         $card = $this->cardRepository->show($id);
@@ -164,26 +165,55 @@ class CardController extends Controller
         ], 201);
 
     }
-//
-//    // 📌 5️⃣ Di chuyển Card giữa các List
-//    public function move(Request $request, Card $card)
-//    {
-//        $validated = $request->validate([
-//            'list_id' => 'required|exists:lists,id',
-//            'position' => 'required|integer|min:1',
-//        ]);
-//
-//        $newList = ListModel::findOrFail($validated['list_id']);
-//
-//        if (!Auth::user()->boards()->where('board_id', $newList->board_id)->exists()) {
-//            return response()->json(['message' => 'Bạn không có quyền di chuyển card này'], 403);
-//        }
-//
-//        $card->update([
-//            'list_id' => $validated['list_id'],
-//            'position' => $validated['position'],
-//        ]);
-//
-//        return response()->json(['message' => 'Card moved successfully']);
-//    }
+
+    // 📌 5️⃣ Di chuyển Card giữa các List
+    public function move(Request $request, $id)
+    {
+        try{
+        $card = $this->cardRepository->show($id);
+        if (!$card) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy card',
+                'type' => 'card_not_found',
+            ], 404);
+        }
+        $input = $request->except('token');
+        // Validate the incoming request
+        $validator = Validator::make($request->all(), [
+            'list_id' => 'required',
+            'position' => 'required|integer|min:1',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 422);
+        }
+ 
+        $listBoard = $this->listBoardRepository->show($input['list_id']);
+        if(!$listBoard) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy listBoard',
+                'type' => 'listBoard_not_found',
+            ], 404);
+        }
+    
+        $card = $this->cardRepository->moveCard($id, $input['list_id'], $input['position']);
+    
+        return response()->json([
+            'success' => true,
+            'message' => 'Card đã được di chuyển thành công',
+            'data' => $card
+        ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi di chuyển card',
+                'type' => 'error_move_card',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
