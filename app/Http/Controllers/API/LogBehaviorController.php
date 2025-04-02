@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Cookie;
 use App\Repositories\LogBehaviorRepository;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
-use Auth;
 use DateTimeZone;
 use Exception;
 
@@ -221,8 +220,6 @@ class LogBehaviorController extends Controller
             }
 
             $query = json_decode($stringQuery);
-            $getCookieMenu = Cookie::get('menu_log_behavior');
-            $getMenuInDB = DB::table('menu_filter_log_behavior')->where('cookie_id', $getCookieMenu)->first();
             $listArrayPlatform = $listDefaultPlatform = LogBehavior::PLATFORMS;
             $listArrayCountry = $listDefaultCountry = LogBehavior::COUNTRIES;
             $listArrayApp = [];
@@ -230,13 +227,6 @@ class LogBehaviorController extends Controller
                 if ($appItem != null) {
                     $listArrayApp[] = $appItem;
                 }
-            }
-
-            if (!empty($getMenuInDB)) {
-                $menu = json_decode($getMenuInDB->menu, true);
-                $listArrayPlatform = $menu['platforms'];
-                $listArrayCountry = $menu['countries'];
-                $listArrayApp = $menu['apps'];
             }
 
             if (is_array($query) and count($query) > 0 and $totalPath == $countPath) {
@@ -568,10 +558,10 @@ class LogBehaviorController extends Controller
                     $dataPaginate = $query;
                     $statusPaginate = false;
                 } else {
-                    $dataPaginate = Common::paginate($query, $showInPage);
+                    $dataPaginate = $this->utility->paginate($query, $showInPage);
                 }
             } else {
-                $dataPaginate = Common::paginate($query, 50);
+                $dataPaginate = $this->utility->paginate($query, 50);
             }
 
             $filter = [
