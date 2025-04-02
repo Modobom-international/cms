@@ -40,4 +40,9 @@ class UserRepository extends BaseRepository
     {
         return $this->model->where('email', $email)->update($input);
     }
+    
+    public function find($user)
+    {
+        return $this->model->find($user);
+    }
 }
