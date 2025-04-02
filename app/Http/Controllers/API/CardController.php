@@ -3,6 +3,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Requests\CartRequest;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CartUpdateRequest;
 use App\Models\ListModel;
 use App\Repositories\CardRepository;
 use App\Repositories\ListBoardRepository;
@@ -11,7 +12,6 @@ use Illuminate\Support\Facades\Auth;
 
 class CardController extends Controller
 {
-    
     protected $listBoardRepository;
     protected $cardRepository;
     
@@ -96,7 +96,7 @@ class CardController extends Controller
     }
     
     // 📌 3️⃣ Cập nhật Card
-    public function update(Request $request, $id)
+    public function update(CartUpdateRequest $request, $id)
     {
         try{
             $input = $request->except('token');
@@ -146,16 +146,24 @@ class CardController extends Controller
     }
     
 //    // 📌 4️⃣ Xóa Card
-//    public function destroy(Card $card)
-//    {
-//        if (!Auth::user()->boards()->where('board_id', $card->list->board_id)->exists()) {
-//            return response()->json(['message' => 'Bạn không có quyền xóa card này'], 403);
-//        }
-//
-//        $card->delete();
-//
-//        return response()->json(['message' => 'Card deleted successfully']);
-//    }
+    public function destroy($id)
+    {
+        $card = $this->cardRepository->show($id);
+        if (!$card) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy card',
+                'type' => 'card_not_found',
+            ], 404);
+        }
+        $this->cardRepository->destroy($id);
+        return response()->json([
+            'success' => true,
+            'message' => 'Card được xóa thành công',
+            'type' => 'delete_card_success',
+        ], 201);
+
+    }
 //
 //    // 📌 5️⃣ Di chuyển Card giữa các List
 //    public function move(Request $request, Card $card)

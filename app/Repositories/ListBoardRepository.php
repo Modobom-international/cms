@@ -14,18 +14,13 @@ class ListBoardRepository extends BaseRepository
     
     public function getListsByBoard($boardId)
     {
-        // Kiểm tra user có quyền truy cập board không
-        if (!$this->userHasAccess($boardId)) {
-            return null; // Trả về null để xử lý trong Controller
-        }
-        
         // Lấy danh sách list thuộc board
         return $this->model->where('board_id', $boardId)
             ->orderBy('position', 'asc')
             ->get();
     }
     
-    private function userHasAccess($boardId)
+    public function userHasAccess($boardId)
     {
         return Auth::user()->boards()->where('boards.id', $boardId)->exists();
     }

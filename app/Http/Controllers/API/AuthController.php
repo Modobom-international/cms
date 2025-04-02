@@ -20,7 +20,6 @@ class AuthController extends Controller
     }
 
     // Đăng ký user
-
     public function register(Request $request)
     {
         try {

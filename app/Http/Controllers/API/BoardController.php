@@ -209,10 +209,9 @@ class BoardController extends Controller
                     'type' => 'board_is_private',
                 ], 403);
             }
-
-            $user = Auth::user();
-
+            
             // Kiểm tra user đã có trong workspace chưa
+            $user = Auth::user();
             $memberExist = $this->boardUserRepository->checkMemberExist($user->id, $boardId);
             if ($memberExist) {
                 return response()->json([
@@ -265,9 +264,8 @@ class BoardController extends Controller
                     'type' => 'board_not_found',
                 ], 404);
             }
-            $user = Auth::user();
-
             // Kiểm tra nếu board không tồn tại trong workspace
+            $user = Auth::user();
             $checkExistWorkspace = $this->workspaceRepository->checkExist($board->workspace_id);
             if (!$checkExistWorkspace) {
                 return response()->json(
@@ -277,7 +275,6 @@ class BoardController extends Controller
                     404
                 );
             }
-
             // Chỉ owner hoặc admin mới có quyền mời user
             $isAdmin = $this->workspaceUserRepository->checkRoleAdmin($user->id, $checkExistWorkspace->id);
             if (!$isAdmin && $board->owner_id !== $user->id) {

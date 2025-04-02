@@ -3,6 +3,7 @@
 use App\Enums\UsersTracking;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BoardController;
+use App\Http\Controllers\API\TeamController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\WorkspaceController;
 use App\Http\Controllers\API\ListBoardController;
@@ -89,7 +90,7 @@ Route::middleware('auth:api')->group(function () {
     //list
     Route::post('/create-list', [ListBoardController::class, 'store']); // Tạo Board
     Route::get('/list/{id}', [ListBoardController::class, 'show']);
-    Route::get('/test/{boardId}/lists', [ListBoardController::class, 'index']); // Lấy danh sách Board
+    Route::get('/board/{boardId}/lists', [ListBoardController::class, 'index']); // Lấy danh sách Board
     Route::post('/update-list/{id}', [ListBoardController::class, 'update']); // Cập nhật Board
     Route::delete('/delete-board/{id}', [ListBoardController::class, 'destroy']); // Xóa Board
     
@@ -101,14 +102,14 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/cards/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
 
 
-    Route::prefix('domain')->group(function () {
-        Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
-        Route::get('/create', [DomainController::class, 'createDomain'])->name('domain.create');
-        Route::get('/check', [DomainController::class, 'checkDomain'])->name('domain.check');
-        Route::get('/up', [DomainController::class, 'upDomain'])->name('domain.up');
-        Route::get('/search', [DomainController::class, 'searchDomain'])->name('domain.search');
-        Route::get('/delete', [DomainController::class, 'deleteDomain'])->name('domain.delete');
-    });
+//    Route::prefix('domain')->group(function () {
+//        Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
+//        Route::get('/create', [DomainController::class, 'createDomain'])->name('domain.create');
+//        Route::get('/check', [DomainController::class, 'checkDomain'])->name('domain.check');
+//        Route::get('/up', [DomainController::class, 'upDomain'])->name('domain.up');
+//        Route::get('/search', [DomainController::class, 'searchDomain'])->name('domain.search');
+//        Route::get('/delete', [DomainController::class, 'deleteDomain'])->name('domain.delete');
+//    });
 
     Route::prefix('html-source')->group(function () {
         Route::get('/', [HtmlSourceController::class, 'listHtmlSource'])->name('html.source.list');
