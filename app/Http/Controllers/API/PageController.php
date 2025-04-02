@@ -90,8 +90,9 @@ class PageController extends Controller
                 ], 404);
             }
 
+            // Stringify the content before storing
             $this->pageRepository->update([
-                'content' => $content,  // Already decoded JSON
+                'content' => json_encode($content),
             ], $page->id);
 
             // Fetch the updated page to return in response
