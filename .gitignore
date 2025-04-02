@@ -17,3 +17,4 @@ Homestead.json
 auth.json
 package-lock.json
 composer.lock
+/storage
