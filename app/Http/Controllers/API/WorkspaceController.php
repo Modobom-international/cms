@@ -84,8 +84,6 @@ class WorkspaceController extends Controller
             'error' => $e->getMessage()
             ], 500);
         }
-        
-       
     }
     
     /**
@@ -149,7 +147,6 @@ class WorkspaceController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-        
     }
     
     /**
@@ -212,9 +209,8 @@ class WorkspaceController extends Controller
                 ], 403);
             }
     
-            $user = Auth::user();
-    
             // Kiểm tra user đã có trong workspace chưa
+            $user = Auth::user();
             $memberExist = $this->workspaceUserRepository->checkMemberExist($user->id, $workspaceId);
             if ($memberExist) {
                 return response()->json([
@@ -245,14 +241,11 @@ class WorkspaceController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-        
-        
     }
     
     public function addMember(Request $request, $workspaceId)
     {
         try {
-            
             //validate
             $validator = Validator::make($request->all(), [
                 'email' => 'required|email|exists:users,email',
@@ -270,8 +263,9 @@ class WorkspaceController extends Controller
                     'type' => 'workspace_not_found',
                 ], 404);
             }
-            $user = Auth::user();
+           
             // Chỉ owner hoặc admin mới có quyền mời user
+            $user = Auth::user();
             $isAdmin = $this->workspaceUserRepository->checkRoleAdmin($user->id ,$workspaceId);
         
             if (!$isAdmin && $workspace->owner_id !== $user->id) {

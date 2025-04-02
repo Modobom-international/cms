@@ -44,18 +44,32 @@ class ListBoardController extends Controller
     public function index($boardId)
     {
         try {
-            $lists = $this->listBoardRepository->getListsByBoard($boardId);
-            // Nếu user không có quyền truy cập board
-            if ($lists === null) {
-                return response()->json(['message' => 'Bạn không có quyền truy cập board này'], 403);
+            $board = $this->listBoardRepository->show($boardId);
+            if(!$board) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy board',
+                    'type' => 'board_not_found',
+                ], 404);
             }
+            $checkRoleUser = $this->listBoardRepository->userHasAccess($boardId);
+            if (!$checkRoleUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền truy cập board này',
+                    'type' => 'Unauthorized'
+                ], 403);
+            }
+            $lists = $this->listBoardRepository->getListsByBoard($boardId);
         
             return response()->json([
+                'success' => true,
                 'message' => 'Lấy danh sách list thành công',
                 'data' => $lists
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
+                'success' => true,
                 'message' => 'Lỗi khi lấy danh sách list',
                 'error' => $e->getMessage()
             ], 500);
@@ -88,7 +102,7 @@ class ListBoardController extends Controller
         
             // Xác định position nếu không có
             $maxPosition = $this->listBoardRepository->maxPosition( $board->id);
-            $position = $input['position'] ?? ($maxPosition + 1);
+            $position = is_null($maxPosition) ? 0 : $maxPosition + 1;
         
             // Tạo list mới
             $dataList = [
@@ -103,6 +117,7 @@ class ListBoardController extends Controller
                 'success' => true,
                 'data' => $dataList,
                 'message' => 'Tạo list thành công',
+                'type' => 'create_list_success',
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -180,7 +195,8 @@ class ListBoardController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $dataList,
-                'message' => 'Tạo list thành công',
+                'message' => 'Cập nhập list thành công',
+                'type' => 'update_list_success',
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -311,14 +327,11 @@ class ListBoardController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-        
-        
     }
     
     public function addMember(Request $request, $workspaceId)
     {
         try {
-            
             //validate
             $validator = Validator::make($request->all(), [
                 'email' => 'required|email|exists:users,email',
@@ -418,7 +431,4 @@ class ListBoardController extends Controller
             'type' => 'delete_member_success',
         ], 201);
     }
-    
-    
-    
 }

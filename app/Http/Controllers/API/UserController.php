@@ -154,7 +154,6 @@ class UserController extends Controller
      */
     public function updateCurrentUser(UserRequest $request)
     {
-    
         try {
             $user = Auth::user();
             $input = $request->except(['_token']);
@@ -229,11 +228,9 @@ class UserController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-        
-        // Get the authenticated user
-        $user = Auth::user();
-        
+  
         // Check if the current password is correct
+        $user = Auth::user();
         if (!Hash::check($request->current_password, $user->password)) {
             return response()->json(
                 [
