@@ -1,25 +1,41 @@
-
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
-class BoardUser extends Model
+class BoardUser extends Pivot
 {
     use HasFactory;
     
-    protected $fillable = ['board_id', 'user_id', 'role', 'created_at'];
-    public $timestamps = false;
+    protected $table = 'board_users';
     
-    public function users()
+    protected $fillable = [
+        'board_id',
+        'user_id',
+        'role',
+    ];
+    
+    /**
+     * Định nghĩa quyền (role) trong bảng board_users
+     */
+    const ROLE_MEMBER = 'member';
+    const ROLE_ADMIN = 'admin';
+    
+    /**
+     * Quan hệ với User
+     */
+    public function user()
     {
-        return $this->belongsTo(User::class, 'user_id', 'id');
+        return $this->belongsTo(User::class);
     }
     
-    public function workspace()
+    /**
+     * Quan hệ với Board
+     */
+    public function board()
     {
-        return $this->belongsTo(Workspace::class, 'workspace_id', 'id');
+        return $this->belongsTo(Board::class);
     }
 }
-

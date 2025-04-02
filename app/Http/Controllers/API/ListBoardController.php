@@ -45,7 +45,6 @@ class ListBoardController extends Controller
     {
         try {
             $lists = $this->listBoardRepository->getListsByBoard($boardId);
-        
             // Nếu user không có quyền truy cập board
             if ($lists === null) {
                 return response()->json(['message' => 'Bạn không có quyền truy cập board này'], 403);
@@ -232,8 +231,7 @@ class ListBoardController extends Controller
                     'type' => 'listBoard_not_found',
                 ], 404);
             }
-    
-    
+            
             // Kiểm tra xem user có quyền xóa hay không
             if (!Auth::user()->boards()->where('board_id', $listBoard->board_id)->exists()) {
                 return response()->json([
@@ -242,7 +240,6 @@ class ListBoardController extends Controller
                     'type' => 'unauthorized',
                 ], 403);
             }
-         
             
             $this->listBoardRepository->destroy($id);
             
