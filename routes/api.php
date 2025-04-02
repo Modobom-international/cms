@@ -95,13 +95,14 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/delete-board/{id}', [ListBoardController::class, 'destroy']); // Xóa Board
     
     //card
-    Route::get('/lists/{list}/cards', [CardController::class, 'index']); // Lấy danh sách card theo list
+    Route::get('/list/{list}/cards', [CardController::class, 'index']); // Lấy danh sách card theo list
     Route::post('/create-card', [CardController::class, 'store']); // Tạo card mới
     Route::post('/update-card/{card}', [CardController::class, 'update']); // Cập nhật card
     Route::delete('/card/{card}', [CardController::class, 'destroy']); // Xóa card
     Route::post('/card/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
-
-
+    Route::post('/cards/{card}/assign-member', [CardController::class, 'assignMember']);
+    Route::delete('/cards/{card}/members/{user}', [CardController::class, 'removeMember']);
+    
     Route::prefix('domain')->group(function () {
         Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
         Route::get('/create', [DomainController::class, 'createDomain'])->name('domain.create');

@@ -15,4 +15,9 @@ class Card extends Model
     {
         return $this->belongsTo(ListBoard::class);
     }
+    
+    public function members()
+    {
+        return $this->belongsToMany(User::class, 'card_users', 'card_id', 'user_id');
+    }
 }
