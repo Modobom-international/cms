@@ -11,7 +11,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('pages', function (Blueprint $table) {
-            $table->longText('content')->change();
+            $table->dropColumn('content');
+            $table->longText('content');
         });
     }
 
@@ -21,7 +22,8 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('pages', function (Blueprint $table) {
-            $table->json('content')->change();
+            $table->dropColumn('content');
+            $table->json('content');
         });
     }
 };
