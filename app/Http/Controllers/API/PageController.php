@@ -70,24 +70,37 @@ class PageController extends Controller
             ], 422);
         }
 
-        $page = Page::where('slug', $request->slug)->first();
+        try {
+            $content = $request->content;
 
-        if (!$page) {
+            $page = $this->pageRepository->findBySlug($request->slug);
+
+            if (!$page) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Page not found'
+                ], 404);
+            }
+
+            // Stringify the content before storing
+            $this->pageRepository->update([
+                'content' => $content,
+            ], $page->id);
+
+            // Fetch the updated page to return in response
+            $updatedPage = $this->pageRepository->find($page->id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Page updated successfully',
+                'data' => $updatedPage
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Page not found'
-            ], 404);
+                'message' => 'Failed to update page: ' . $e->getMessage()
+            ], 500);
         }
-
-        $page->update([
-            'content' => $request->content,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Page updated successfully',
-            'data' => $page
-        ]);
     }
 
     /**
