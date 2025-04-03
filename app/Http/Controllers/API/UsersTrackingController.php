@@ -12,55 +12,6 @@ use DB;
 
 class UsersTrackingController extends Controller
 {
-    public function store(Request $request)
-    {
-        $origin = $request->header('Origin');
-        $ip = request()->ip();
-        if (!in_array($origin, UsersTracking::LIST_DOMAIN)) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
-        $validatedData = $request->validate([
-            'eventName' => 'required|string',
-            'eventData' => 'required',
-            'user.userAgent' => 'required|string',
-            'user.platform' => 'required|string',
-            'user.language' => 'required|string',
-            'user.cookiesEnabled' => 'required|boolean',
-            'user.screenWidth' => 'required|integer',
-            'user.screenHeight' => 'required|integer',
-            'user.timezone' => 'required|string',
-            'timestamp' => 'required',
-            'domain' => 'required',
-            'uuid' => 'required',
-            'path' => 'required'
-        ]);
-
-        $validatedData['user']['ip'] = $ip;
-        $validatedData['timestamp'] = Common::covertDateTimeToMongoBSONDateGMT7($validatedData['timestamp']);
-        StoreUsersTracking::dispatch($validatedData)->onQueue('create_users_tracking');
-
-        if ($validatedData['eventName'] == 'mousemove' or $validatedData['eventName'] == 'click') {
-            $dataHeatMap = [
-                'uuid' => $validatedData['uuid'],
-                'path' => $validatedData['path'],
-                'domain' => $validatedData['domain'],
-                'heatmapData' => [
-                    'x' => $validatedData['eventData']['x'],
-                    'y' => $validatedData['eventData']['y'],
-                    'timestamp' => $validatedData['timestamp'],
-                    'device' => $validatedData['eventData']['device'],
-                    'event' => $validatedData['eventName'],
-                    'height' => $validatedData['eventData']['height'],
-                ],
-            ];
-
-            StoreHeatMap::dispatch($dataHeatMap)->onQueue('create_heat_map');
-        }
-
-        return response()->json(['message' => 'User behavior recorded successfully.']);
-    }
-
     public function viewUsersTracking(Request $request)
     {
         $domain = $request->get('domain');
@@ -232,5 +183,79 @@ class UsersTrackingController extends Controller
         }
 
         return response()->json($data);
+    }
+
+    public function checkDevice(Request $request): JsonResponse
+    {
+        $deviceData = [
+            'user_agent' => $request->header('User-Agent'),
+            'platform' => $request->input('platform'),
+            'language' => $request->input('language'),
+            'cookies_enabled' => $request->input('cookies_enabled'),
+            'screen_width' => $request->input('screen_width'),
+            'screen_height' => $request->input('screen_height'),
+            'timezone' => $request->input('timezone'),
+            'fingerprint' => $request->input('fingerprint'),
+        ];
+
+        $match = DeviceFingerprint::where($deviceData)->exists();
+        return response()->json(['is_excluded' => $match]);
+    }
+
+    public function storeHeartbeat(Request $request): JsonResponse
+    {
+        Heartbeat::create([
+            'uuid' => $request->input('uuid'),
+            'timestamp' => $request->input('timestamp'),
+            'domain' => $request->input('domain'),
+            'path' => $request->input('path'),
+            'user_info' => $request->input('userInfo'),
+        ]);
+
+        return response()->json(['status' => 'success']);
+    }
+
+    public function storeVideoTimeline(Request $request): JsonResponse
+    {
+        VideoTimeline::create([
+            'uuid' => $request->input('uuid'),
+            'domain' => $request->input('domain'),
+            'path' => $request->input('path'),
+            'start_time' => $request->input('startTime'),
+            'end_time' => $request->input('endTime'),
+            'total_time' => $request->input('totalTime'),
+            'timeline' => $request->input('timeline'),
+            'user_info' => $request->input('userInfo'),
+        ]);
+
+        return response()->json(['status' => 'success']);
+    }
+
+    public function storeAiTrainingData(Request $request): JsonResponse
+    {
+        AiTrainingData::create([
+            'uuid' => $request->input('uuid'),
+            'domain' => $request->input('domain'),
+            'session_start' => $request->input('sessionStart'),
+            'session_end' => $request->input('sessionEnd'),
+            'events' => $request->input('events'),
+        ]);
+
+        return response()->json(['status' => 'success']);
+    }
+
+    public function storeTrackingEvent(Request $request): JsonResponse
+    {
+        TrackingEvent::create([
+            'uuid' => $request->input('uuid'),
+            'event_name' => $request->input('eventName'),
+            'event_data' => $request->input('eventData'),
+            'timestamp' => $request->input('timestamp'),
+            'user' => $request->input('user'),
+            'domain' => $request->input('domain'),
+            'path' => $request->input('path'),
+        ]);
+
+        return response()->json(['status' => 'success']);
     }
 }

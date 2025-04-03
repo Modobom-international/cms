@@ -79,6 +79,21 @@ class AuthController extends Controller
                 $user = Auth::user();
                 $token = $user->createToken('Personal Access Token')->accessToken;
 
+                $deviceData = [
+                    'user_agent' => $request->header('User-Agent'),
+                    'platform' => $request->input('platform'),
+                    'language' => $request->input('language'),
+                    'cookies_enabled' => $request->input('cookies_enabled', true),
+                    'screen_width' => $request->input('screen_width'),
+                    'screen_height' => $request->input('screen_height'),
+                    'timezone' => $request->input('timezone'),
+                    'fingerprint' => $request->input('fingerprint'),
+                ];
+
+                if (!$user->deviceFingerprints()->where('fingerprint', $deviceData['fingerprint'])->exists()) {
+                    $user->deviceFingerprints()->create($deviceData);
+                }
+
                 return response()->json([
                     'success' => true,
                     'data' => $user,

@@ -56,7 +56,7 @@ class User extends Authenticatable
     {
         return $this->hasMany(Workspace::class, 'owner_id');
     }
-    
+
     public function ownedBoards()
     {
         return $this->hasMany(Board::class, 'owner_id');
@@ -79,9 +79,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(Comment::class);
     }
-    
+
     public function assignedCards()
     {
         return $this->belongsToMany(Card::class, 'card_users', 'user_id', 'card_id');
+    }
+
+    public function deviceFingerprints()
+    {
+        return $this->hasMany(DeviceFingerprint::class);
     }
 }

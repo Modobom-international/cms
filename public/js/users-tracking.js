@@ -500,7 +500,7 @@
         const hostname = window.location.hostname;
         return (hostname === 'localhost' || hostname === '127.0.0.1')
             ? 'http://127.0.0.1:8000'
-            : 'https://api.backend.com'; // Thay bằng URL backend thực tế
+            : 'https://api.modobomco.com';
     }
 
     function generateUUID() {
