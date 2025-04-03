@@ -6,7 +6,6 @@ use App\Enums\UsersTracking;
 use App\Jobs\StoreUsersTracking;
 use Illuminate\Http\Request;
 use App\Helper\Common;
-use App\Jobs\FetchFullPage;
 use App\Jobs\StoreHeatMap;
 use UAParser\Parser;
 use DB;
@@ -56,16 +55,7 @@ class UsersTrackingController extends Controller
                 ],
             ];
 
-            $dataFetch = [
-                'domain' => $validatedData['domain'],
-                'path' => $validatedData['path'],
-                'width' => $validatedData['user']['screenWidth'],
-                'height' => $validatedData['user']['screenHeight'],
-                'url' => $validatedData['domain'] . $validatedData['path']
-            ];
-
             StoreHeatMap::dispatch($dataHeatMap)->onQueue('create_heat_map');
-            // FetchFullPage::dispatch($dataFetch)->onQueue('fetch_full_page');
         }
 
         return response()->json(['message' => 'User behavior recorded successfully.']);
@@ -243,6 +233,4 @@ class UsersTrackingController extends Controller
 
         return response()->json($data);
     }
-
-    
 }

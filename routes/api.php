@@ -1,6 +1,7 @@
 <?php
 
-use App\Enums\UsersTracking;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BoardController;
 use App\Http\Controllers\API\TeamController;
@@ -8,14 +9,11 @@ use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\WorkspaceController;
 use App\Http\Controllers\API\ListBoardController;
 use App\Http\Controllers\API\CardController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\HtmlSourceController;
 use App\Http\Controllers\API\UsersTrackingController;
 use App\Http\Controllers\API\LogBehaviorController;
 use App\Http\Controllers\API\CloudflareController;
 use App\Http\Controllers\API\PageController;
-
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -30,10 +28,11 @@ Route::post('/update-page', [PageController::class, 'update']);
 Route::get('/page/{slug}', [PageController::class, 'getPage']);
 Route::get('/pages', [PageController::class, 'getPages']);
 
-Route::post('/create-video-timeline', [UsersTracking::class, 'storeVideoTimeline']);
-Route::post('/collect-ai-training-data', [UsersTracking::class, 'storeTrainingData']);
-Route::post('/heartbeat', [UsersTracking::class, 'storeHeartbeat']);
-Route::post('/track-event', [UsersTracking::class, 'storeTrackEvent']);
+Route::post('/create-video-timeline', [UsersTrackingController::class, 'storeVideoTimeline']);
+Route::post('/collect-ai-training-data', [UsersTrackingController::class, 'storeTrainingData']);
+Route::post('/heartbeat', [UsersTrackingController::class, 'storeHeartbeat']);
+Route::post('/track-event', [UsersTrackingController::class, 'storeTrackEvent']);
+Route::post('/check-device', [UsersTrackingController::class, 'checkDevice']);
 
 // Page export routes
 Route::post('/export-pages', [PageController::class, 'exportPage']);
@@ -54,10 +53,8 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/update/user', [UserController::class, 'updateCurrentUser']);
     Route::post('/change-password', [UserController::class, 'changePassword']);
 
-
     //admin change password for useer
     Route::post('/change-password-user/{id}/', [UserController::class, 'updatePassword']);
-
 
     //admin change password for useer
     Route::post('/change-password-user/{id}/', [UserController::class, 'updatePassword']);
