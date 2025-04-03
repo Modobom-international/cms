@@ -199,15 +199,6 @@ return [
         '*' => [
             'supervisor-cms-1' => [
                 'connection' => 'redis',
-                'queue' => ['save_push_system_data'],
-                'balance' => 'auto',
-                'minProcesses' => 1,
-                'maxProcesses' => 2,
-                'tries' => 0,
-            ],
-
-            'supervisor-cms-2' => [
-                'connection' => 'redis',
                 'queue' => ['create_html_source'],
                 'balance' => 'auto',
                 'minProcesses' => 1,
@@ -215,25 +206,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-3' => [
-                'connection' => 'redis',
-                'queue' => ['create_users_tracking'],
-                'balance' => 'auto',
-                'minProcesses' => 1,
-                'maxProcesses' => 5,
-                'tries' => 0,
-            ],
-
-            'supervisor-cms-4' => [
-                'connection' => 'redis',
-                'queue' => ['create_heat_map'],
-                'balance' => 'auto',
-                'minProcesses' => 1,
-                'maxProcesses' => 5,
-                'tries' => 0,
-            ],
-
-            'supervisor-cms-5' => [
+            'supervisor-cms-2' => [
                 'connection' => 'redis',
                 'queue' => ['fetch_full_page'],
                 'balance' => 'auto',
@@ -242,7 +215,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-6' => [
+            'supervisor-cms-3' => [
                 'connection' => 'redis',
                 'queue' => ['fetch_image_view'],
                 'balance' => 'auto',
@@ -251,7 +224,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-7' => [
+            'supervisor-cms-4' => [
                 'connection' => 'redis',
                 'queue' => ['create_log_behavior'],
                 'balance' => 'auto',
@@ -260,7 +233,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-8' => [
+            'supervisor-cms-5' => [
                 'connection' => 'redis',
                 'queue' => ['behavior_store_log'],
                 'balance' => 'auto',
@@ -269,7 +242,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-9' => [
+            'supervisor-cms-6' => [
                 'connection' => 'redis',
                 'queue' => ['notification_system'],
                 'balance' => 'auto',
@@ -278,7 +251,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-10' => [
+            'supervisor-cms-7' => [
                 'connection' => 'redis',
                 'queue' => ['notification_system_board_cast'],
                 'balance' => 'auto',
@@ -287,7 +260,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-11' => [
+            'supervisor-cms-8' => [
                 'connection' => 'redis',
                 'queue' => ['deployments'],
                 'balance' => 'auto',
@@ -298,6 +271,42 @@ return [
                 'tries' => 1,
                 'timeout' => 600,
                 'nice' => 0,
+            ],
+
+            'supervisor-cms-9' => [
+                'connection' => 'redis',
+                'queue' => ['store_tracking_event'],
+                'balance' => 'auto',
+                'minProcesses' => 1,
+                'maxProcesses' => 5,
+                'tries' => 0,
+            ],
+
+            'supervisor-cms-10' => [
+                'connection' => 'redis',
+                'queue' => ['store_ai_training_data'],
+                'balance' => 'auto',
+                'minProcesses' => 1,
+                'maxProcesses' => 5,
+                'tries' => 0,
+            ],
+
+            'supervisor-cms-9' => [
+                'connection' => 'redis',
+                'queue' => ['store_heart_beat'],
+                'balance' => 'auto',
+                'minProcesses' => 1,
+                'maxProcesses' => 5,
+                'tries' => 0,
+            ],
+
+            'supervisor-cms-9' => [
+                'connection' => 'redis',
+                'queue' => ['store_video_timeline'],
+                'balance' => 'auto',
+                'minProcesses' => 1,
+                'maxProcesses' => 5,
+                'tries' => 0,
             ],
         ],
     ],

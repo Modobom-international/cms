@@ -3,15 +3,25 @@
 namespace App\Http\Controllers\API;
 
 use App\Enums\UsersTracking;
-use App\Jobs\StoreUsersTracking;
+use App\Jobs\StoreAiTrainingData;
+use App\Jobs\StoreHeartBeat;
+use App\Jobs\StoreTrackingEvent;
+use App\Jobs\StoreVideoTimeline;
 use Illuminate\Http\Request;
 use App\Helper\Common;
-use App\Jobs\StoreHeatMap;
+use App\Repositories\DeviceFingerprintRepository;
 use UAParser\Parser;
 use DB;
 
 class UsersTrackingController extends Controller
 {
+    protected $deviceFingerprintRepository;
+
+    public function __construct(DeviceFingerprintRepository $deviceFingerprintRepository)
+    {
+        $this->deviceFingerprintRepository = $deviceFingerprintRepository;
+    }
+
     public function viewUsersTracking(Request $request)
     {
         $domain = $request->get('domain');
@@ -121,70 +131,6 @@ class UsersTrackingController extends Controller
         return response()->json($data);
     }
 
-    public function getHeatMap(Request $request)
-    {
-        $domain = $request->get('domain');
-        $path = $request->get('path');
-        $date = $request->get('date');
-        $event = $request->get('event');
-        $data = [];
-        $file = 'browsershot_fullpage_' . $domain . '_' . str_replace('/', '_', $path) . '.png';
-
-        $query = DB::connection('mongodb')
-            ->table('heat_map')
-            ->where('domain', $domain)
-            ->where('path', $path)
-            ->where('heatmapData.timestamp', '>=', Common::covertDateTimeToMongoBSONDateGMT7($date . ' 00:00:00'))
-            ->where('heatmapData.timestamp', '<=', Common::covertDateTimeToMongoBSONDateGMT7($date . ' 23:59:59'))
-            ->where('heatmapData.device', 'mobile')
-            ->where('heatmapData.event', $event)
-            ->get();
-
-        foreach ($query as $record) {
-            $key = $record->heatmapData['x'] . '-' . $record->heatmapData['y'];
-            if (array_key_exists($key, $data)) {
-                $data[$key]['value'] += 1;
-            } else {
-                $data[$key] = [
-                    'x' => $record->heatmapData['x'],
-                    'y' => $record->heatmapData['y'],
-                    'value' => 1,
-                    'device' => $record->heatmapData['device']
-                ];
-            }
-        }
-
-        $response = [
-            'data' => $data,
-            'path_image' => '/uploads/browsershot/' . $file
-        ];
-
-        return response()->json($response);
-    }
-
-    public function getLinkForHeatMap(Request $request)
-    {
-        $domain = $request->get('domain');
-        $data = [];
-
-        if (!isset($domain)) {
-            $domain = UsersTracking::DEFAULT_DOMAIN;
-        }
-
-        $getUrl = DB::connection('mongodb')
-            ->table('heat_map')
-            ->select('path')
-            ->where('domain', $domain)
-            ->distinct('path')
-            ->get();
-
-        foreach ($getUrl as $url) {
-            $data[] = urldecode($url);
-        }
-
-        return response()->json($data);
-    }
-
     public function checkDevice(Request $request): JsonResponse
     {
         $deviceData = [
@@ -246,6 +192,7 @@ class UsersTrackingController extends Controller
 
     public function storeTrackingEvent(Request $request): JsonResponse
     {
+        StoreTrackingEvent::dispatch($request)->onQueue('store_tracking_event');
         TrackingEvent::create([
             'uuid' => $request->input('uuid'),
             'event_name' => $request->input('eventName'),

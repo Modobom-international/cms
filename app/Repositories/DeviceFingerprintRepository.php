@@ -10,4 +10,8 @@ class DeviceFingerprintRepository extends BaseRepository
     {
         return DeviceFingerprint::class;
     }
+
+    public function getDeviceFingerprint() {
+        
+    }
 }
