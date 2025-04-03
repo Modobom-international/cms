@@ -20,4 +20,9 @@ class Card extends Model
     {
         return $this->belongsToMany(User::class, 'card_users', 'card_id', 'user_id');
     }
+    
+    public function labels()
+    {
+        return $this->belongsToMany(Label::class, 'card_labels');
+    }
 }
