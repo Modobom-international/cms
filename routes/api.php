@@ -24,11 +24,6 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 
-// Page routes
-Route::post('/create-page', [PageController::class, 'create']);
-Route::post('/update-page', [PageController::class, 'update']);
-Route::get('/page/{slug}', [PageController::class, 'getPage']);
-Route::get('/pages', [PageController::class, 'getPages']);
 
 Route::post('/create-video-timeline', [UsersTracking::class, 'storeVideoTimeline']);
 Route::post('/collect-ai-training-data', [UsersTracking::class, 'storeTrainingData']);
@@ -36,16 +31,8 @@ Route::post('/heartbeat', [UsersTracking::class, 'storeHeartbeat']);
 Route::post('/track-event', [UsersTracking::class, 'storeTrackEvent']);
 
 // Page export routes
-Route::post('/export-pages', [PageController::class, 'exportPage']);
 
-// Cloudflare Pages API routes
-Route::prefix('cloudflare')->group(function () {
-    Route::post('/project/create', [CloudflareController::class, 'createProject']);
-    Route::post('/project/update', [CloudflareController::class, 'updateProject']);
-    Route::post('/deploy', [CloudflareController::class, 'createDeployment']);
-    Route::post('/domain/apply', [CloudflareController::class, 'applyDomain']);
-    Route::post('/deploy-exports', [CloudflareController::class, 'deployExports']);
-});
+
 
 Route::middleware('auth:api')->group(function () {
 
@@ -93,7 +80,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/board/{boardId}/lists', [ListBoardController::class, 'index']); // Lấy danh sách Board
     Route::post('/update-list/{id}', [ListBoardController::class, 'update']); // Cập nhật Board
     Route::delete('/delete-board/{id}', [ListBoardController::class, 'destroy']); // Xóa Board
-    
+
     //card
     Route::get('/list/{list}/cards', [CardController::class, 'index']); // Lấy danh sách card theo list
     Route::post('/create-card', [CardController::class, 'store']); // Tạo card mới
@@ -140,4 +127,21 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/compare-date', [LogBehaviorController::class, 'compareDate'])->name('log.behavior.compare.date');
         Route::get('/get-activity-uid', [LogBehaviorController::class, 'getActivityUid'])->name('log.behavior.activity.uid');
     });
+
+    // Cloudflare Pages API routes
+    Route::prefix('cloudflare')->group(function () {
+        Route::post('/project/create', [CloudflareController::class, 'createProject']);
+        Route::post('/project/update', [CloudflareController::class, 'updateProject']);
+        Route::post('/deploy', [CloudflareController::class, 'createDeployment']);
+        Route::post('/domain/apply', [CloudflareController::class, 'applyDomain']);
+        Route::post('/deploy-exports', [CloudflareController::class, 'deployExports']);
+    });
+
+    // Page routes
+    Route::post('/create-page', [PageController::class, 'create']);
+    Route::post('/update-page', [PageController::class, 'update']);
+    Route::get('/page/{slug}', [PageController::class, 'getPage']);
+    Route::get('/pages', [PageController::class, 'getPages']);
+    Route::post('/export-pages', [PageController::class, 'exportPage']);
+
 });
