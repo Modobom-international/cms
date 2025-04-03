@@ -4,23 +4,28 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PageRequest;
+use Auth;
 use Illuminate\Http\Request;
 use App\Models\Page;
 use App\Repositories\PageRepository;
 use App\Repositories\PageExportRepository;
+use App\Repositories\SiteRepository;
 use Illuminate\Support\Facades\Validator;
 
 class PageController extends Controller
 {
     protected $pageRepository;
     protected $pageExportRepository;
+    protected $siteRepository;
 
     public function __construct(
         PageRepository $pageRepository,
-        PageExportRepository $pageExportRepository
+        PageExportRepository $pageExportRepository,
+        SiteRepository $siteRepository
     ) {
         $this->pageRepository = $pageRepository;
         $this->pageExportRepository = $pageExportRepository;
+        $this->siteRepository = $siteRepository;
     }
 
     /**
@@ -28,28 +33,35 @@ class PageController extends Controller
      */
     public function create(PageRequest $request)
     {
-        $provider = $request->provider ?? 1;
-        $content = $request->content;
-        $site_id = $request->site_id;
-        $name = $request->name;
-        $slug = $request->slug;
+        try {
+            $site = $this->siteRepository->findWithRelations($request->site_id);
+            if (!$site) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Site not found'
+                ], 404);
+            }
 
-        $data = [
-            'provider' => $provider,
-            'content' => $content,
-            'site_id' => $site_id,
-            'name' => $name,
-            'slug' => $slug,
+            // Create the page through repository
+            $page = $this->pageRepository->create([
+                'provider' => Auth::id(),
+                'content' => $request->content,
+                'site_id' => $site->id,
+                'name' => $request->name,
+                'slug' => $request->slug,
+            ]);
 
-        ];
-
-        $page = Page::create($data);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Page created successfully',
-            'data' => $page
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Page created successfully',
+                'data' => $page
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create page: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -71,8 +83,6 @@ class PageController extends Controller
         }
 
         try {
-            $content = $request->content;
-
             $page = $this->pageRepository->findBySlug($request->slug);
 
             if (!$page) {
@@ -82,12 +92,12 @@ class PageController extends Controller
                 ], 404);
             }
 
-            // Stringify the content before storing
+            // Update through repository
             $this->pageRepository->update([
-                'content' => $content,
+                'content' => $request->content,
             ], $page->id);
 
-            // Fetch the updated page to return in response
+            // Fetch the updated page through repository
             $updatedPage = $this->pageRepository->find($page->id);
 
             return response()->json([
@@ -111,7 +121,7 @@ class PageController extends Controller
      */
     public function getPage($slug)
     {
-        $page = Page::where('slug', $slug)->first();
+        $page = $this->pageRepository->findBySlug($slug);
         if ($page) {
             return response()->json([
                 'success' => true,
@@ -125,9 +135,14 @@ class PageController extends Controller
         ], 404);
     }
 
+    /**
+     * Get all pages
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function getPages()
     {
-        $pages = Page::all();
+        $pages = $this->pageRepository->getAllWithRelations();
         return response()->json([
             'success' => true,
             'message' => 'Pages found',
@@ -145,7 +160,8 @@ class PageController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'slug' => 'required|string',
-            'html_file' => 'required|file|mimes:html,htm'
+            'html_file' => 'required|file|mimes:html,htm',
+            'site_id' => 'required|exists:sites,id'
         ]);
 
         if ($validator->fails()) {
@@ -156,29 +172,60 @@ class PageController extends Controller
             ], 422);
         }
 
-        // Get the slug from the request
-        $slug = $request->input('slug');
+        try {
+            // Get the site and page through repositories
+            $site = $this->siteRepository->findWithRelations($request->site_id);
+            if (!$site) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Site not found'
+                ], 404);
+            }
 
-        // Store the HTML file with the slug as the filename
-        $htmlFile = $request->file('html_file');
-        $filename = 'index.' . $htmlFile->getClientOriginalExtension();
-        $filePath = $htmlFile->storeAs('exports/' . $slug, $filename, 'public');
+            $page = $this->pageRepository->findBySlugAndSite($request->slug, $site->id);
+            if (!$page) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Page not found for this site'
+                ], 404);
+            }
 
-        // Create the export request
-        $exportRequest = $this->pageExportRepository->create([
-            'slugs' => $slug,
-            'result_path' => $filePath,
-            'status' => 'completed'
-        ]);
+            // Create site-specific export directory structure
+            $exportPath = 'exports/' . $site->cloudflare_project_name . '/' . $request->slug;
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Export process queued',
-            'data' => [
-                'export_id' => $exportRequest->id,
-                'html_path' => $filePath
-            ]
-        ]);
+            // Store the HTML file
+            $htmlFile = $request->file('html_file');
+            $filename = 'index.' . $htmlFile->getClientOriginalExtension();
+            $filePath = $htmlFile->storeAs($exportPath, $filename, 'public');
+
+            // Create the export request through repository
+            $exportRequest = $this->pageExportRepository->create([
+                'slugs' => $request->slug,
+                'result_path' => $filePath,
+                'status' => 'completed',
+                'site_id' => $site->id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Export process completed',
+                'data' => [
+                    'export_id' => $exportRequest->id,
+                    'html_path' => $filePath,
+                    'site' => [
+                        'id' => $site->id,
+                        'name' => $site->name,
+                        'cloudflare_project_name' => $site->cloudflare_project_name
+                    ]
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to export page: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
