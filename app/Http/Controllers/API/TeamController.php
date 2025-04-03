@@ -2,22 +2,26 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Repositories\Permission\PermissionRepository;
-use App\Repositories\Team\TeamRepository;
+use App\Enums\Utility;
+use App\Http\Controllers\Controller;
+use App\Repositories\TeamRepository;
 use Exception;
 use Illuminate\Http\Request;
 
 class TeamController extends Controller
 {
     protected $teamRepository;
-    protected $permissionRepository;
+    // protected $permissionRepository;
     protected $utility;
 
-    public function __construct(TeamRepository $teamRepository, PermissionRepository $permissionRepository, Utility $utility)
-    {
-        $this->teamRepository  = $teamRepository;
-        $this->permissionRepository  = $permissionRepository;
-        $this->utility  = $utility;
+    public function __construct(
+        TeamRepository $teamRepository,
+        // PermissionRepository $permissionRepository, 
+        Utility $utility
+    ) {
+        $this->teamRepository = $teamRepository;
+        // $this->permissionRepository  = $permissionRepository;
+        $this->utility = $utility;
     }
 
     public function index()
@@ -26,7 +30,7 @@ class TeamController extends Controller
             $teams = $this->teamRepository->getTeams();
 
             foreach ($teams as $team) {
-                $permissions  = array();
+                $permissions = array();
                 if (isset($team->permissions)) {
                     $getPermission = $team->permissions;
                     foreach ($getPermission as $permission) {
@@ -45,7 +49,7 @@ class TeamController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $data,
+                'data' => $teams,
                 'message' => 'Lấy danh sách team thành công',
                 'type' => 'list_team_success',
             ], 200);

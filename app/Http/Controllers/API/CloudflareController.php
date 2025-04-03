@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Repositories\SiteRepository;
 use App\Services\CloudFlareService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -10,10 +11,24 @@ use Illuminate\Support\Facades\Validator;
 class CloudflareController extends Controller
 {
     protected $cloudflareService;
+    protected $siteRepository;
 
-    public function __construct(CloudFlareService $cloudflareService)
+    public function __construct(CloudFlareService $cloudflareService, SiteRepository $siteRepository)
     {
         $this->cloudflareService = $cloudflareService;
+        $this->siteRepository = $siteRepository;
+    }
+
+    /**
+     * Get all Cloudflare Pages projects
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getProjects()
+    {
+        $result = $this->cloudflareService->getProjects();
+
+        return response()->json($result);
     }
 
     /**
@@ -97,11 +112,21 @@ class CloudflareController extends Controller
     {
         // Validate required input parameters
         $validator = Validator::make($request->all(), [
-            'project_name' => 'required|string|max:100',
-            'directory' => 'nullable|string|max:255',
+            'site_id' => 'required|exists:sites,id',
             'branch' => 'nullable|string|max:50',
             'commit_message' => 'nullable|string|max:200',
         ]);
+        $site = $this->siteRepository->findWithRelations($request->site_id);
+        if (!$site) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Site not found'
+            ], 404);
+        }
+
+        $projectName = $site->cloudflare_project_name;
+        $directory = $site->name;
+
 
         if ($validator->fails()) {
             return response()->json([
@@ -117,8 +142,8 @@ class CloudflareController extends Controller
         try {
             // Dispatch the deployment job
             $job = new \App\Jobs\DeployExportsJob(
-                $request->project_name,
-                $request->directory,
+                $projectName,
+                $directory,
                 $deploymentOptions
             );
 

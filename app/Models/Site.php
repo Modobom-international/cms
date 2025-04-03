@@ -9,10 +9,39 @@ class Site extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
     protected $fillable = [
-        'domain',
         'name',
+        'domain',
+        'description',
+        'cloudflare_project_name',
+        'cloudflare_domain_status',
+        'branch',
+        'user_id',
+        'status'
     ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    /**
+     * Get the user that owns the site.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     /**
      * Get the pages that belong to this site.

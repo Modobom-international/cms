@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Http\Controllers\Controller;
 use Exception;
 use App\Helper\Common;
 use App\Jobs\StoreHtmlSource;
