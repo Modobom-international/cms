@@ -8,6 +8,7 @@ use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\WorkspaceController;
 use App\Http\Controllers\API\ListBoardController;
 use App\Http\Controllers\API\CardController;
+use App\Http\Controllers\API\LabelController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\HtmlSourceController;
@@ -87,8 +88,20 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/update-card/{card}', [CardController::class, 'update']); // Cập nhật card
     Route::delete('/card/{card}', [CardController::class, 'destroy']); // Xóa card
     Route::post('/card/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
+    
+    //assign-member-to-card
     Route::post('/cards/{card}/assign-member', [CardController::class, 'assignMember']);
     Route::delete('/cards/{card}/members/{user}', [CardController::class, 'removeMember']);
+    
+    //label
+    Route::post('create-label', [LabelController::class, 'store']); // Tạo Board
+    Route::get('/label/{id}', [LabelController::class, 'show']);
+    Route::get('labels', [LabelController::class, 'index']); // Lấy danh sách Board
+    Route::post('/update-label/{id}', [LabelController::class, 'update']); // Cập nhật Board
+    Route::delete('/delete-label/{id}', [LabelController::class, 'destroy']); // Xóa Board
+    
+    Route::post('/cards/{cardId}/labels', [CardController::class, 'addLabel']);
+    Route::delete('/cards/{cardId}/labels/{labelId}', [CardController::class, 'removeLabel']);
     
     Route::prefix('domain')->group(function () {
         Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
