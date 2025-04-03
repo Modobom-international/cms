@@ -116,8 +116,7 @@ class CloudflareController extends Controller
             'branch' => 'nullable|string|max:50',
             'commit_message' => 'nullable|string|max:200',
         ]);
-        $site = $this->siteRepository->find($request->site_id);
-
+        $site = $this->siteRepository->findWithRelations($request->site_id);
         if (!$site) {
             return response()->json([
                 'success' => false,
