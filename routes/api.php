@@ -10,9 +10,7 @@ use App\Http\Controllers\API\WorkspaceController;
 use App\Http\Controllers\API\ListBoardController;
 use App\Http\Controllers\API\CardController;
 use App\Http\Controllers\API\LabelController;
-use App\Http\Controllers\API\HtmlSourceController;
 use App\Http\Controllers\API\UsersTrackingController;
-use App\Http\Controllers\API\LogBehaviorController;
 use App\Http\Controllers\API\CloudflareController;
 use App\Http\Controllers\API\PageController;
 use App\Http\Controllers\API\SiteController;
@@ -23,17 +21,11 @@ Route::get('/user', function (Request $request) {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-
-
 Route::post('/create-video-timeline', [UsersTrackingController::class, 'storeVideoTimeline']);
 Route::post('/collect-ai-training-data', [UsersTrackingController::class, 'storeTrainingData']);
 Route::post('/heartbeat', [UsersTrackingController::class, 'storeHeartbeat']);
-Route::post('/track-event', [UsersTrackingController::class, 'storeTrackEvent']);
+Route::post('/tracking-event', [UsersTrackingController::class, 'storeTrackingEvent']);
 Route::post('/check-device', [UsersTrackingController::class, 'checkDevice']);
-
-// Page export routes
-
-
 
 Route::middleware('auth:api')->group(function () {
 
@@ -101,25 +93,9 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/cards/{cardId}/labels', [CardController::class, 'addLabel']);
     Route::delete('/cards/{cardId}/labels/{labelId}', [CardController::class, 'removeLabel']);
 
-    // Route::prefix('domain')->group(function () {
-    //     Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
-    //     Route::get('/create', [DomainController::class, 'createDomain'])->name('domain.create');
-    //     Route::get('/check', [DomainController::class, 'checkDomain'])->name('domain.check');
-    //     Route::get('/up', [DomainController::class, 'upDomain'])->name('domain.up');
-    //     Route::get('/search', [DomainController::class, 'searchDomain'])->name('domain.search');
-    //     Route::get('/delete', [DomainController::class, 'deleteDomain'])->name('domain.delete');
-    // });
-
-    Route::prefix('html-source')->group(function () {
-        Route::get('/', [HtmlSourceController::class, 'listHtmlSource'])->name('html.source.list');
-        Route::get('/{id}', [HtmlSourceController::class, 'showHtmlSource'])->name('html.source.show');
-    });
-
     Route::prefix('users-tracking')->group(function () {
         Route::get('/', [UsersTrackingController::class, 'viewUsersTracking'])->name('users.tracking.list');
         Route::get('/get-detail-tracking', [UsersTrackingController::class, 'getDetailTracking'])->name('users.tracking.detail');
-        Route::get('/get-heat-map', [UsersTrackingController::class, 'getHeatMap'])->name('users.tracking.heat.map');
-        Route::get('/get-link-for-heat-map', [UsersTrackingController::class, 'getLinkForHeatMap'])->name('users.tracking.link.heat.map');
     });
 
     Route::prefix('team')->group(function () {
@@ -132,30 +108,23 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/get-permission-by-team', [TeamController::class, 'getPermissionByTeam'])->name('team.get.permission');
     });
 
-    Route::prefix('log-behavior')->group(function () {
-        Route::get('/', [LogBehaviorController::class, 'viewLogBehavior'])->name('log.behavior.list');
-        Route::get('/get-data-chart', [LogBehaviorController::class, 'getDataChartLogBehavior'])->name('log.behavior.chart');
-        Route::get('/compare-date', [LogBehaviorController::class, 'compareDate'])->name('log.behavior.compare.date');
-        Route::get('/get-activity-uid', [LogBehaviorController::class, 'getActivityUid'])->name('log.behavior.activity.uid');
-    });
-
     // Site routes
     Route::prefix('sites')->group(function () {
-        Route::get('/', [SiteController::class, 'index']);
-        Route::post('/', [SiteController::class, 'store']);
-        Route::get('/{id}', [SiteController::class, 'show']);
-        Route::put('/{id}', [SiteController::class, 'update']);
-        Route::delete('/{id}', [SiteController::class, 'destroy']);
+        Route::get('/', [SiteController::class, 'index'])->name('sites.list');
+        Route::post('/', [SiteController::class, 'store'])->name('sites.store');
+        Route::get('/{id}', [SiteController::class, 'show'])->name('sites.show');
+        Route::put('/{id}', [SiteController::class, 'update'])->name('sites.update');
+        Route::delete('/{id}', [SiteController::class, 'destroy'])->name('sites.delete');
     });
 
     // Cloudflare Pages API routes
     Route::prefix('cloudflare')->group(function () {
-        Route::get('/projects', [CloudflareController::class, 'getProjects']);
-        Route::post('/project/create', [CloudflareController::class, 'createProject']);
-        Route::post('/project/update', [CloudflareController::class, 'updateProject']);
-        Route::post('/deploy', [CloudflareController::class, 'createDeployment']);
-        Route::post('/domain/apply', [CloudflareController::class, 'applyDomain']);
-        Route::post('/deploy-exports', [CloudflareController::class, 'deployExports']);
+        Route::get('/projects', [CloudflareController::class, 'getProjects'])->name('cloudflare.get.projects');
+        Route::post('/project/create', [CloudflareController::class, 'createProject'])->name('cloudflare.create.project');
+        Route::post('/project/update', [CloudflareController::class, 'updateProject'])->name('cloudflare.update.project');
+        Route::post('/deploy', [CloudflareController::class, 'createDeployment'])->name('cloudflare.create.deployment');
+        Route::post('/domain/apply', [CloudflareController::class, 'applyDomain'])->name('cloudflare.apply.domain');
+        Route::post('/deploy-exports', [CloudflareController::class, 'deployExports'])->name('cloudflare.deploy.exports');
     });
 
     // Page routes
@@ -165,5 +134,4 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/pages', [PageController::class, 'getPages']);
     Route::get('/sites/{siteId}/pages', [PageController::class, 'getPagesBySite']);
     Route::post('/export-pages', [PageController::class, 'exportPage']);
-
 });

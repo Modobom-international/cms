@@ -10,4 +10,14 @@ class DomainRepository extends BaseRepository
     {
         return Domain::class;
     }
+
+    public function getFirstDomain()
+    {
+        return $this->model->where('is_locked', false)->first();
+    }
+
+    public function getAllDomain()
+    {
+        return $this->model->where('is_locked', false)->get();
+    }
 }

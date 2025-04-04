@@ -20,7 +20,7 @@ class Cors
     {
         $response = $next($request);
 
-        $corsDomain = $this->domainRepository->all()->toArray();
+        $corsDomain = $this->domainRepository->getAllDomain()->toArray();
 
         if (in_array($request->headers->get('Origin'), $corsDomain)) {
             $response->headers->set('Access-Control-Allow-Origin', $request->headers->get('Origin'));
