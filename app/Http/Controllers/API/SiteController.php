@@ -95,6 +95,7 @@ class SiteController extends Controller
                             $request->domain,
                             $projectDetails['result']['subdomain']
                         );
+                        dd($dnsResult);
                         if (isset($dnsResult['error'])) {
                             $site->cloudflare_domain_status = 'dns_failed';
                         }

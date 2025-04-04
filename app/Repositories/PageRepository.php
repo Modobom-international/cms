@@ -75,18 +75,4 @@ class PageRepository extends BaseRepository
     {
         return $this->model->with(['site'])->latest()->get();
     }
-
-    /**
-     * Get all pages for a specific site with relationships
-     *
-     * @param int $siteId
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    public function getBySiteId($siteId)
-    {
-        return $this->model->with(['site'])
-            ->where('site_id', $siteId)
-            ->latest()
-            ->get();
-    }
 }
