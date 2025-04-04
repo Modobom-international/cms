@@ -2,13 +2,11 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Enums\UsersTracking;
 use App\Jobs\StoreAiTrainingData;
 use App\Jobs\StoreHeartBeat;
 use App\Jobs\StoreTrackingEvent;
 use App\Jobs\StoreVideoTimeline;
 use Illuminate\Http\Request;
-use App\Helper\Common;
 use App\Repositories\DeviceFingerprintRepository;
 use UAParser\Parser;
 use DB;
@@ -16,10 +14,14 @@ use DB;
 class UsersTrackingController extends Controller
 {
     protected $deviceFingerprintRepository;
+    protected $trackingEventRepository;
+    protected $domainRepository;
 
-    public function __construct(DeviceFingerprintRepository $deviceFingerprintRepository)
+    public function __construct(DeviceFingerprintRepository $deviceFingerprintRepository, TrackingEventRepository $trackingEventRepository, DomainRepository $domainRepository)
     {
         $this->deviceFingerprintRepository = $deviceFingerprintRepository;
+        $this->trackingEventRepository = $trackingEventRepository;
+        $this->domainRepository = $domainRepository;
     }
 
     public function viewUsersTracking(Request $request)
@@ -28,20 +30,14 @@ class UsersTrackingController extends Controller
         $date = $request->get('date');
 
         if (!isset($domain)) {
-            $domain = UsersTracking::DEFAULT_DOMAIN;
+            $domain = $this->domainRepository->getFirstDomain();
         }
 
         if (!isset($date)) {
             $date = Common::getCurrentVNTime('Y-m-d');
         }
 
-        $query = DB::connection('mongodb')
-            ->table('users_tracking')
-            ->where('domain', $domain)
-            ->where('timestamp', '>=', Common::covertDateTimeToMongoBSONDateGMT7($date . ' 00:00:00'))
-            ->where('timestamp', '<=', Common::covertDateTimeToMongoBSONDateGMT7($date . ' 23:59:59'))
-            ->orderBy('timestamp', 'desc')
-            ->get();
+        // $query = 
 
         $data = Common::paginate($query->groupBy('uuid'));
 
@@ -144,26 +140,28 @@ class UsersTrackingController extends Controller
             'fingerprint' => $request->input('fingerprint'),
         ];
 
-        $match = DeviceFingerprint::where($deviceData)->exists();
+        $match = $this->deviceFingerprintRepository->getDeviceFingerprint($deviceData);
         return response()->json(['is_excluded' => $match]);
     }
 
     public function storeHeartbeat(Request $request): JsonResponse
     {
-        Heartbeat::create([
+        $data = [
             'uuid' => $request->input('uuid'),
             'timestamp' => $request->input('timestamp'),
             'domain' => $request->input('domain'),
             'path' => $request->input('path'),
             'user_info' => $request->input('userInfo'),
-        ]);
+        ];
+
+        StoreHeartBeat::dispatch($data)->onQueue('store_heartbeat');
 
         return response()->json(['status' => 'success']);
     }
 
     public function storeVideoTimeline(Request $request): JsonResponse
     {
-        VideoTimeline::create([
+        $data = [
             'uuid' => $request->input('uuid'),
             'domain' => $request->input('domain'),
             'path' => $request->input('path'),
@@ -172,28 +170,31 @@ class UsersTrackingController extends Controller
             'total_time' => $request->input('totalTime'),
             'timeline' => $request->input('timeline'),
             'user_info' => $request->input('userInfo'),
-        ]);
+        ];
+
+        StoreVideoTimeline::dispatch($data)->onQueue('store_video_timeline');
 
         return response()->json(['status' => 'success']);
     }
 
     public function storeAiTrainingData(Request $request): JsonResponse
     {
-        AiTrainingData::create([
+        $data = [
             'uuid' => $request->input('uuid'),
             'domain' => $request->input('domain'),
             'session_start' => $request->input('sessionStart'),
             'session_end' => $request->input('sessionEnd'),
             'events' => $request->input('events'),
-        ]);
+        ];
+
+        StoreAiTrainingData::dispatch($data)->onQueue('store_ai_training_data');
 
         return response()->json(['status' => 'success']);
     }
 
     public function storeTrackingEvent(Request $request): JsonResponse
     {
-        StoreTrackingEvent::dispatch($request)->onQueue('store_tracking_event');
-        TrackingEvent::create([
+        $data = [
             'uuid' => $request->input('uuid'),
             'event_name' => $request->input('eventName'),
             'event_data' => $request->input('eventData'),
@@ -201,7 +202,9 @@ class UsersTrackingController extends Controller
             'user' => $request->input('user'),
             'domain' => $request->input('domain'),
             'path' => $request->input('path'),
-        ]);
+        ];
+
+        StoreTrackingEvent::dispatch($data)->onQueue('store_tracking_event');
 
         return response()->json(['status' => 'success']);
     }

@@ -11,7 +11,8 @@ class DeviceFingerprintRepository extends BaseRepository
         return DeviceFingerprint::class;
     }
 
-    public function getDeviceFingerprint() {
-        
+    public function getDeviceFingerprint($data)
+    {
+        return $this->model->where($data)->exists();
     }
 }

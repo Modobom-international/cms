@@ -10,12 +10,14 @@ class StoreTrackingEvent implements ShouldQueue
 {
     use Queueable;
 
+    protected $data;
+
     /**
      * Create a new job instance.
      */
-    public function __construct()
+    public function __construct($data)
     {
-        //
+        $this->data = $data;
     }
 
     /**
@@ -23,6 +25,6 @@ class StoreTrackingEvent implements ShouldQueue
      */
     public function handle(TrackingEventRepository $trackingEventRepository): void
     {
-        //
+        $trackingEventRepository->create($this->data);
     }
 }
