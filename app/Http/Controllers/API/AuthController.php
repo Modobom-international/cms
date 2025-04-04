@@ -74,6 +74,7 @@ class AuthController extends Controller
             ]);
 
             $credentials = $request->only('email', 'password');
+
             if (Auth::attempt($credentials)) {
                 $user = Auth::user();
                 $token = $user->createToken('Personal Access Token')->accessToken;
@@ -89,9 +90,9 @@ class AuthController extends Controller
                     'fingerprint' => $request->input('fingerprint'),
                 ];
 
-                // if (!$user->deviceFingerprints()->where('fingerprint', $deviceData['fingerprint'])->exists()) {
-                //     $user->deviceFingerprints()->create($deviceData);
-                // }
+                if (!$user->deviceFingerprints()->where('fingerprint', $deviceData['fingerprint'])->exists()) {
+                    $user->deviceFingerprints()->create($deviceData);
+                }
 
                 return response()->json([
                     'success' => true,

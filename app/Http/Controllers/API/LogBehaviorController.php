@@ -5,7 +5,6 @@ namespace App\Http\Controllers\API;
 use App\Enums\EUCountry;
 use App\Enums\LogBehavior;
 use App\Enums\Utility;
-use App\Http\Controllers\Controller;
 use App\Jobs\BehaviorStoreLogJob;
 use Illuminate\Http\Request;
 use App\Jobs\StoreLogBehaviorJob;
@@ -654,7 +653,7 @@ class LogBehaviorController extends Controller
                 $explode = explode('_', $record->key);
                 $arrDate[$explode[2]] .= $record->data;
             }
-
+            
             foreach ($arrDate as $date => $totalData) {
                 $data['labels'][] = $date;
                 $install = 0;
@@ -891,7 +890,7 @@ class LogBehaviorController extends Controller
 
             $sumTotal = array_sum($arrTotal);
             $sumSend = array_sum($arrSend);
-            $data['datasets'][] = (object) [
+            $data['datasets'][] = (object)[
                 'label' => 'Tổng lượt cài',
                 'data' => $arrTotal,
                 'borderColor' => 'rgb(0, 0, 0)',
@@ -900,7 +899,7 @@ class LogBehaviorController extends Controller
                 'pointHoverRadius' => 15,
             ];
 
-            $data['datasets'][] = (object) [
+            $data['datasets'][] = (object)[
                 'label' => 'Tổng lượt gửi',
                 'data' => $arrSend,
                 'borderColor' => 'rgb(0, 255, 0)',

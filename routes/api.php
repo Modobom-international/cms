@@ -15,7 +15,6 @@ use App\Http\Controllers\API\UsersTrackingController;
 use App\Http\Controllers\API\LogBehaviorController;
 use App\Http\Controllers\API\CloudflareController;
 use App\Http\Controllers\API\PageController;
-use App\Http\Controllers\API\SiteController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -86,29 +85,29 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/update-card/{card}', [CardController::class, 'update']); // Cập nhật card
     Route::delete('/card/{card}', [CardController::class, 'destroy']); // Xóa card
     Route::post('/card/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
-
+    
     //assign-member-to-card
     Route::post('/cards/{card}/assign-member', [CardController::class, 'assignMember']);
     Route::delete('/cards/{card}/members/{user}', [CardController::class, 'removeMember']);
-
+    
     //label
     Route::post('create-label', [LabelController::class, 'store']); // Tạo Board
     Route::get('/label/{id}', [LabelController::class, 'show']);
     Route::get('labels', [LabelController::class, 'index']); // Lấy danh sách Board
     Route::post('/update-label/{id}', [LabelController::class, 'update']); // Cập nhật Board
     Route::delete('/delete-label/{id}', [LabelController::class, 'destroy']); // Xóa Board
-
+    
     Route::post('/cards/{cardId}/labels', [CardController::class, 'addLabel']);
     Route::delete('/cards/{cardId}/labels/{labelId}', [CardController::class, 'removeLabel']);
-
-    // Route::prefix('domain')->group(function () {
-    //     Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
-    //     Route::get('/create', [DomainController::class, 'createDomain'])->name('domain.create');
-    //     Route::get('/check', [DomainController::class, 'checkDomain'])->name('domain.check');
-    //     Route::get('/up', [DomainController::class, 'upDomain'])->name('domain.up');
-    //     Route::get('/search', [DomainController::class, 'searchDomain'])->name('domain.search');
-    //     Route::get('/delete', [DomainController::class, 'deleteDomain'])->name('domain.delete');
-    // });
+    
+    Route::prefix('domain')->group(function () {
+        Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
+        Route::get('/create', [DomainController::class, 'createDomain'])->name('domain.create');
+        Route::get('/check', [DomainController::class, 'checkDomain'])->name('domain.check');
+        Route::get('/up', [DomainController::class, 'upDomain'])->name('domain.up');
+        Route::get('/search', [DomainController::class, 'searchDomain'])->name('domain.search');
+        Route::get('/delete', [DomainController::class, 'deleteDomain'])->name('domain.delete');
+    });
 
     Route::prefix('html-source')->group(function () {
         Route::get('/', [HtmlSourceController::class, 'listHtmlSource'])->name('html.source.list');
@@ -139,18 +138,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/get-activity-uid', [LogBehaviorController::class, 'getActivityUid'])->name('log.behavior.activity.uid');
     });
 
-    // Site routes
-    Route::prefix('sites')->group(function () {
-        Route::get('/', [SiteController::class, 'index']);
-        Route::post('/', [SiteController::class, 'store']);
-        Route::get('/{id}', [SiteController::class, 'show']);
-        Route::put('/{id}', [SiteController::class, 'update']);
-        Route::delete('/{id}', [SiteController::class, 'destroy']);
-    });
-
     // Cloudflare Pages API routes
     Route::prefix('cloudflare')->group(function () {
-        Route::get('/projects', [CloudflareController::class, 'getProjects']);
         Route::post('/project/create', [CloudflareController::class, 'createProject']);
         Route::post('/project/update', [CloudflareController::class, 'updateProject']);
         Route::post('/deploy', [CloudflareController::class, 'createDeployment']);

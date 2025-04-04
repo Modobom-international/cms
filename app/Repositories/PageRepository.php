@@ -51,28 +51,4 @@ class PageRepository extends BaseRepository
     {
         return $this->model->whereIn('slug', $slugs)->get();
     }
-
-    /**
-     * Find a page by slug and site ID
-     *
-     * @param string $slug
-     * @param int $siteId
-     * @return \App\Models\Page|null
-     */
-    public function findBySlugAndSite($slug, $siteId)
-    {
-        return $this->model->where('slug', $slug)
-            ->where('site_id', $siteId)
-            ->first();
-    }
-
-    /**
-     * Get all pages with relationships
-     *
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    public function getAllWithRelations()
-    {
-        return $this->model->with(['site'])->latest()->get();
-    }
 }
