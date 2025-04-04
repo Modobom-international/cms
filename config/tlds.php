@@ -16,6 +16,7 @@ return [
         'name.vn',
         'pro.vn',
         'health.vn',
+        'io.vn',
 
         // UK TLDs
         'co.uk',

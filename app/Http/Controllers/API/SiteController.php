@@ -101,7 +101,7 @@ class SiteController extends Controller
                     }
                 }
 
-                $site->save();
+                // $site->save();
             }
 
             return response()->json([
