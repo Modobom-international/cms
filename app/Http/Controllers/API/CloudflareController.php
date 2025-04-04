@@ -125,7 +125,7 @@ class CloudflareController extends Controller
         }
 
         $projectName = $site->cloudflare_project_name;
-        $directory = $site->name;
+        $directory = $site->cloudflare_project_name;
 
 
         if ($validator->fails()) {
