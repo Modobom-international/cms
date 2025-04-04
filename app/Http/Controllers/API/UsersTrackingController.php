@@ -13,6 +13,7 @@ use App\Repositories\TrackingEventRepository;
 use App\Repositories\DomainRepository;
 use UAParser\Parser;
 use DB;
+use Exception;
 
 class UsersTrackingController extends Controller
 {
@@ -81,20 +82,24 @@ class UsersTrackingController extends Controller
 
     public function checkDevice(Request $request): JsonResponse
     {
-        $deviceData = [
-            'user_agent' => $request->header('User-Agent'),
-            'platform' => $request->input('platform'),
-            'language' => $request->input('language'),
-            'cookies_enabled' => $request->input('cookies_enabled'),
-            'screen_width' => $request->input('screen_width'),
-            'screen_height' => $request->input('screen_height'),
-            'timezone' => $request->input('timezone'),
-            'fingerprint' => $request->input('fingerprint'),
-        ];
+        try {
+            $deviceData = [
+                'user_agent' => $request->header('User-Agent'),
+                'platform' => $request->input('platform'),
+                'language' => $request->input('language'),
+                'cookies_enabled' => $request->input('cookies_enabled'),
+                'screen_width' => $request->input('screen_width'),
+                'screen_height' => $request->input('screen_height'),
+                'timezone' => $request->input('timezone'),
+                'fingerprint' => $request->input('fingerprint')
+            ];
 
-        $match = $this->deviceFingerprintRepository->getDeviceFingerprint($deviceData);
+            $match = $this->deviceFingerprintRepository->getDeviceFingerprint($deviceData);
 
-        return response()->json(['is_excluded' => $match]);
+            return response()->json(['is_excluded' => $match]);
+        } catch (Exception $e) {
+            return response()->json(['error' => $e, 'is_excluded' => true]);
+        }
     }
 
     public function storeHeartbeat(Request $request): JsonResponse
@@ -104,7 +109,7 @@ class UsersTrackingController extends Controller
             'timestamp' => $request->input('timestamp'),
             'domain' => $request->input('domain'),
             'path' => $request->input('path'),
-            'user_info' => $request->input('userInfo'),
+            'user_info' => $request->input('userInfo')
         ];
 
         StoreHeartBeat::dispatch($data)->onQueue('store_heartbeat');
@@ -122,7 +127,7 @@ class UsersTrackingController extends Controller
             'end_time' => $request->input('endTime'),
             'total_time' => $request->input('totalTime'),
             'timeline' => $request->input('timeline'),
-            'user_info' => $request->input('userInfo'),
+            'user_info' => $request->input('userInfo')
         ];
 
         StoreVideoTimeline::dispatch($data)->onQueue('store_video_timeline');
@@ -137,7 +142,7 @@ class UsersTrackingController extends Controller
             'domain' => $request->input('domain'),
             'session_start' => $request->input('sessionStart'),
             'session_end' => $request->input('sessionEnd'),
-            'events' => $request->input('events'),
+            'events' => $request->input('events')
         ];
 
         StoreAiTrainingData::dispatch($data)->onQueue('store_ai_training_data');
@@ -154,7 +159,7 @@ class UsersTrackingController extends Controller
             'timestamp' => $request->input('timestamp'),
             'user' => $request->input('user'),
             'domain' => $request->input('domain'),
-            'path' => $request->input('path'),
+            'path' => $request->input('path')
         ];
 
         StoreTrackingEvent::dispatch($data)->onQueue('store_tracking_event');
