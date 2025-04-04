@@ -141,6 +141,7 @@ class UsersTrackingController extends Controller
         ];
 
         $match = $this->deviceFingerprintRepository->getDeviceFingerprint($deviceData);
+        
         return response()->json(['is_excluded' => $match]);
     }
 
