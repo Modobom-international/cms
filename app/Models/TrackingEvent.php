@@ -8,7 +8,7 @@ class TrackingEvent extends Model
 {
     protected $connection = 'mongodb';
 
-    protected $collection = 'heartbeats';
+    protected $collection = 'tracking_events';
 
     protected $fillable = ['uuid', 'event_name', 'event_data', 'timestamp', 'user', 'domain', 'path'];
 }
