@@ -3,7 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\TrackingEvent;
-use App\Utility\Utility;
+use App\Enums\Utility;
 
 class TrackingEventRepository extends BaseRepository
 {
