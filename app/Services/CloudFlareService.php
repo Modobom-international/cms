@@ -49,6 +49,45 @@ class CloudFlareService
         return $zoneID;
     }
 
+    /**
+     * Get DNS records for a zone
+     * 
+     * @param string $zoneId
+     * @param array $params Optional query parameters
+     * @return array
+     */
+    public function getDnsRecords($zoneId, $params = [])
+    {
+        try {
+            $queryString = http_build_query($params);
+            $url = $this->apiUrl . "/zones/{$zoneId}/dns_records" . ($queryString ? "?{$queryString}" : "");
+            $response = $this->clientDNS->get($url);
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * Update an existing DNS record
+     * 
+     * @param string $zoneId
+     * @param string $recordId
+     * @param array $data
+     * @return array
+     */
+    public function updateDnsRecord($zoneId, $recordId, $data)
+    {
+        try {
+            $response = $this->clientDNS->put($this->apiUrl . "/zones/{$zoneId}/dns_records/{$recordId}", [
+                'json' => $data
+            ]);
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
+    }
+
     public function updateDnsARecord($domain, $ip)
     {
         $zoneId = $this->getZoneId($domain);
@@ -196,28 +235,48 @@ class CloudFlareService
         // Extract root domain for zone lookup
         $rootDomain = $this->getRootDomain($domain);
         $zoneId = $this->getZoneId($rootDomain);
-
+        Log::info('Zone ID: ' . $zoneId);
         if (!$zoneId) {
             return ['error' => 'Zone ID not found for domain: ' . $rootDomain];
         }
-
         try {
             // For subdomains, we only need the subdomain part as the name
             $dnsName = $domain === $rootDomain ? '@' : str_replace('.' . $rootDomain, '', $domain);
 
-            $response = $this->clientDNS->post($this->apiUrl . "/zones/{$zoneId}/dns_records", [
-                'json' => [
-                    'type' => 'CNAME',
-                    'name' => $dnsName,
-                    'content' => $pagesSubdomain,
-                    'ttl' => 1,
-                    'proxied' => true
-                ]
+            // Check for existing records
+            $existingRecords = $this->getDnsRecords($zoneId, [
+                'name' => $dnsName === '@' ? $rootDomain : $domain,
+                // 'type' => 'CNAME'
+            ]);
+            Log::info('Existing records: ' . json_encode($existingRecords));
+            $recordData = [
+                'type' => 'CNAME',
+                'name' => $dnsName,
+                'content' => $pagesSubdomain,
+                'ttl' => 1,
+                'proxied' => true
+            ];
 
+            // If record exists, update it
+            if (!empty($existingRecords['result'])) {
+                $existingRecord = $existingRecords['result'][0];
+                return $this->updateDnsRecord($zoneId, $existingRecord['id'], $recordData);
+            }
+
+            // If no existing record, create new one
+            $response = $this->clientDNS->post($this->apiUrl . "/zones/{$zoneId}/dns_records", [
+                'json' => $recordData
+            ]);
+
+            Log::info('DNS record created successfully', [
+                'zone_id' => $zoneId,
+                'record_data' => $recordData,
+                'response' => json_decode($response->getBody(), true)
             ]);
 
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
+            Log::error('Error creating DNS record: ' . $e->getMessage());
             return $this->handleException($e);
         }
     }

@@ -24,10 +24,10 @@ class DeployExportsJob implements ShouldQueue
      * Create a new job instance.
      *
      * @param string $projectName
-     * @param string|null $directory
+     * @param string $directory
      * @param array $options
      */
-    public function __construct(string $projectName, ?string $directory = null, array $options = [])
+    public function __construct(string $projectName, string $directory, array $options = [])
     {
         $this->projectName = $projectName;
         $this->directory = $directory;
