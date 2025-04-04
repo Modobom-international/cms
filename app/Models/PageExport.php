@@ -16,6 +16,9 @@ class PageExport extends Model
      */
     protected $fillable = [
         'slugs',
+        'result_path',
+        'status',
+        'site_id'
     ];
 
     /**
@@ -26,4 +29,12 @@ class PageExport extends Model
     protected $casts = [
         'slugs' => 'array',
     ];
+
+    /**
+     * Get the site that owns this export.
+     */
+    public function site()
+    {
+        return $this->belongsTo(Site::class);
+    }
 }
