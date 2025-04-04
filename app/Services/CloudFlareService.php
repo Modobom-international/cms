@@ -34,7 +34,7 @@ class CloudFlareService
 
         $this->clientDNS = new Client([
             'headers' => [
-                'Authorization' => 'Bearer ' . $this->apiTokenDNS,
+                'Authorization' => 'Bearer ' . $this->apiToken,
                 'Content-Type' => 'application/json',
             ],
         ]);
@@ -157,6 +157,133 @@ class CloudFlareService
             $response = $this->client->post(
                 $this->apiUrl . "/accounts/{$this->accountId}/pages/projects/{$projectName}/domains",
                 ['json' => ['name' => $domain]]
+            );
+
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * Get Cloudflare Pages project details including subdomain
+     * 
+     * @param string $projectName
+     * @return array
+     */
+    public function getPagesProject($projectName)
+    {
+        try {
+            $response = $this->client->get(
+                $this->apiUrl . "/accounts/{$this->accountId}/pages/projects/{$projectName}"
+            );
+
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * Set up DNS CNAME record for a domain pointing to Pages subdomain
+     * 
+     * @param string $domain
+     * @param string $pagesSubdomain
+     * @return array
+     */
+    public function setupDomainDNS($domain, $pagesSubdomain)
+    {
+        // Extract root domain for zone lookup
+        $rootDomain = $this->getRootDomain($domain);
+        $zoneId = $this->getZoneId($rootDomain);
+
+        if (!$zoneId) {
+            return ['error' => 'Zone ID not found for domain: ' . $rootDomain];
+        }
+
+        try {
+            // For subdomains, we only need the subdomain part as the name
+            $dnsName = $domain === $rootDomain ? '@' : str_replace('.' . $rootDomain, '', $domain);
+
+            $response = $this->clientDNS->post($this->apiUrl . "/zones/{$zoneId}/dns_records", [
+                'json' => [
+                    'type' => 'CNAME',
+                    'name' => $dnsName,
+                    'content' => $pagesSubdomain,
+                    'ttl' => 1,
+                    'proxied' => true
+                ]
+
+            ]);
+
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * Extract the root domain from a domain/subdomain
+     * 
+     * @param string $domain
+     * @return string
+     */
+    private function getRootDomain($domain)
+    {
+        // Split the domain into parts
+        $parts = explode('.', $domain);
+
+        // If we have more than 2 parts, it's likely a subdomain
+        if (count($parts) > 2) {
+            // Get the last two parts for common TLDs (e.g., example.com)
+            $rootDomain = implode('.', array_slice($parts, -2));
+
+            // Get special TLDs from config
+            $specialTlds = config('tlds.special', []);
+
+            foreach ($specialTlds as $tld) {
+                if (str_ends_with($domain, '.' . $tld)) {
+                    $rootDomain = implode('.', array_slice($parts, -3));
+                    break;
+                }
+            }
+
+            return $rootDomain;
+        }
+
+        // If only 2 parts, it's already a root domain
+        return $domain;
+    }
+
+    /**
+     * Get all Cloudflare Pages projects
+     * 
+     * @return array
+     */
+    public function getProjects()
+    {
+        try {
+            $response = $this->client->get(
+                $this->apiUrl . "/accounts/{$this->accountId}/pages/projects"
+            );
+
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * Delete a Cloudflare Pages project
+     * 
+     * @param string $projectName
+     * @return array
+     */
+    public function deletePagesProject($projectName)
+    {
+        try {
+            $response = $this->client->delete(
+                $this->apiUrl . "/accounts/{$this->accountId}/pages/projects/{$projectName}"
             );
 
             return json_decode($response->getBody(), true);
