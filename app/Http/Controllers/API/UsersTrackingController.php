@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\API;
 
 use App\Enums\UsersTracking;
-use App\Http\Controllers\Controller;
 use App\Jobs\StoreAiTrainingData;
 use App\Jobs\StoreHeartBeat;
 use App\Jobs\StoreTrackingEvent;
