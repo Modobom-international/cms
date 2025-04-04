@@ -8,6 +8,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class RestrictBrowserAccess
 {
+    protected $except = [
+        'api/check-device',
+    ];
+
     /**
      * Handle an incoming request.
      *
