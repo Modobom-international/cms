@@ -81,7 +81,7 @@ class UsersTrackingController extends Controller
         return response()->json($data);
     }
 
-    public function checkDevice(Request $request): JsonResponse
+    public function checkDevice(Request $request)
     {
         try {
             $deviceData = [
@@ -103,7 +103,7 @@ class UsersTrackingController extends Controller
         }
     }
 
-    public function storeHeartbeat(Request $request): JsonResponse
+    public function storeHeartbeat(Request $request)
     {
         $data = [
             'uuid' => $request->input('uuid'),
@@ -118,7 +118,7 @@ class UsersTrackingController extends Controller
         return response()->json(['status' => 'success']);
     }
 
-    public function storeVideoTimeline(Request $request): JsonResponse
+    public function storeVideoTimeline(Request $request)
     {
         $data = [
             'uuid' => $request->input('uuid'),
@@ -136,7 +136,7 @@ class UsersTrackingController extends Controller
         return response()->json(['status' => 'success']);
     }
 
-    public function storeAiTrainingData(Request $request): JsonResponse
+    public function storeAiTrainingData(Request $request)
     {
         $data = [
             'uuid' => $request->input('uuid'),
@@ -151,7 +151,7 @@ class UsersTrackingController extends Controller
         return response()->json(['status' => 'success']);
     }
 
-    public function storeTrackingEvent(Request $request): JsonResponse
+    public function storeTrackingEvent(Request $request)
     {
         $data = [
             'uuid' => $request->input('uuid'),
