@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use App\Repositories\DeviceFingerprintRepository;
 use App\Repositories\TrackingEventRepository;
 use App\Repositories\DomainRepository;
+use App\Http\Controllers\Controller;
 use UAParser\Parser;
 use DB;
 use Exception;
