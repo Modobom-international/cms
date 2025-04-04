@@ -78,7 +78,7 @@
 
         const isSuspicious = (
             timeSinceLastInteraction < 50 ||
-            mouseMovements === 0 ||
+            mouseMovements === 0 && keyPresses > 10 ||
             navigator.webdriver ||
             !window.outerWidth ||
             performance.timing.domInteractive < 100
@@ -282,19 +282,6 @@
             }
         }
 
-        async function getCityFromCoordinates(latitude, longitude) {
-            try {
-                const response = await fetch(
-                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`
-                );
-                const data = await response.json();
-                return data.address?.city || data.address?.town || 'Unknown';
-            } catch (error) {
-                console.warn('Error fetching city:', error);
-                return 'Unknown';
-            }
-        }
-
         const basicInfo = {
             userAgent: navigator.userAgent,
             platform: navigator.platform,
@@ -328,15 +315,12 @@
         let geolocation = null;
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const latitude = position.coords.latitude;
-                    const longitude = position.coords.longitude;
-                    const city = await getCityFromCoordinates(latitude, longitude);
+                (position) => {
                     geolocation = {
-                        latitude: latitude,
-                        longitude: longitude,
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
                         accuracy: position.coords.accuracy,
-                        city: city
+                        city: null
                     };
                 },
                 (error) => {
@@ -474,7 +458,7 @@
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(data),
-            }).catch(error => console.error('Error:', error));
+            }).catch(error => console.error('Error sending data to server:', error));
         }
     }
 
@@ -491,7 +475,9 @@
             path: path
         };
 
-        sendDataToServer(event, '/api/tracking-event');
+        if (shouldTrack()) {
+            sendDataToServer(event, '/api/track-event');
+        }
     }
 
     function checkURL() {

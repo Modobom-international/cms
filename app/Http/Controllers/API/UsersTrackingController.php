@@ -12,6 +12,8 @@ use App\Repositories\DeviceFingerprintRepository;
 use App\Repositories\TrackingEventRepository;
 use App\Repositories\DomainRepository;
 use App\Http\Controllers\Controller;
+use App\Jobs\StoreGeolocation;
+use App\Services\GeolocationService;
 use UAParser\Parser;
 use DB;
 use Exception;
@@ -22,17 +24,20 @@ class UsersTrackingController extends Controller
     protected $trackingEventRepository;
     protected $domainRepository;
     protected $utility;
+    protected $geolocationService;
 
     public function __construct(
         DeviceFingerprintRepository $deviceFingerprintRepository,
         TrackingEventRepository $trackingEventRepository,
         DomainRepository $domainRepository,
-        Utility $utility
+        Utility $utility,
+        GeolocationService $geolocationService
     ) {
         $this->deviceFingerprintRepository = $deviceFingerprintRepository;
         $this->trackingEventRepository = $trackingEventRepository;
         $this->domainRepository = $domainRepository;
         $this->utility = $utility;
+        $this->geolocationService = $geolocationService;
     }
 
     public function viewUsersTracking(Request $request)
@@ -105,21 +110,34 @@ class UsersTrackingController extends Controller
 
     public function storeHeartbeat(Request $request)
     {
+        $userInfo = $request->input('userInfo');
+
         $data = [
             'uuid' => $request->input('uuid'),
             'timestamp' => $request->input('timestamp'),
             'domain' => $request->input('domain'),
             'path' => $request->input('path'),
-            'user_info' => $request->input('userInfo')
+            'user_info' => $userInfo
         ];
 
         StoreHeartBeat::dispatch($data)->onQueue('store_heartbeat');
+        if (isset($userInfo['geolocation']) && isset($userInfo['geolocation']['latitude'])) {
+            $dataQueue = [
+                'latitude' => $userInfo['geolocation']['latitude'],
+                'longitude' => $userInfo['geolocation']['longitude'],
+                'type' => 'heartbeat',
+            ];
+
+            StoreGeolocation::dispatch($dataQueue)->onQueue('store_geolocation');
+        }
 
         return response()->json(['status' => 'success']);
     }
 
     public function storeVideoTimeline(Request $request)
     {
+        $userInfo = $request->input('userInfo');
+
         $data = [
             'uuid' => $request->input('uuid'),
             'domain' => $request->input('domain'),
@@ -128,10 +146,19 @@ class UsersTrackingController extends Controller
             'end_time' => $request->input('endTime'),
             'total_time' => $request->input('totalTime'),
             'timeline' => $request->input('timeline'),
-            'user_info' => $request->input('userInfo')
+            'user_info' => $userInfo
         ];
 
         StoreVideoTimeline::dispatch($data)->onQueue('store_video_timeline');
+        if (isset($userInfo['geolocation']) && isset($userInfo['geolocation']['latitude'])) {
+            $dataQueue = [
+                'latitude' => $userInfo['geolocation']['latitude'],
+                'longitude' => $userInfo['geolocation']['longitude'],
+                'type' => 'video_timeline',
+            ];
+
+            StoreGeolocation::dispatch($dataQueue)->onQueue('store_geolocation');
+        }
 
         return response()->json(['status' => 'success']);
     }
@@ -153,17 +180,28 @@ class UsersTrackingController extends Controller
 
     public function storeTrackingEvent(Request $request)
     {
+        $user = $request->input('user');
+
         $data = [
             'uuid' => $request->input('uuid'),
             'event_name' => $request->input('eventName'),
             'event_data' => $request->input('eventData'),
             'timestamp' => $request->input('timestamp'),
-            'user' => $request->input('user'),
+            'user' => $user,
             'domain' => $request->input('domain'),
             'path' => $request->input('path')
         ];
 
         StoreTrackingEvent::dispatch($data)->onQueue('store_tracking_event');
+        if (isset($user['geolocation']) && isset($user['geolocation']['latitude'])) {
+            $dataQueue = [
+                'latitude' => $user['geolocation']['latitude'],
+                'longitude' => $user['geolocation']['longitude'],
+                'type' => 'tracking_event',
+            ];
+
+            StoreGeolocation::dispatch($dataQueue)->onQueue('store_geolocation');
+        }
 
         return response()->json(['status' => 'success']);
     }

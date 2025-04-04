@@ -263,6 +263,15 @@ return [
                 'maxProcesses' => 5,
                 'tries' => 0,
             ],
+
+            'supervisor-cms-8' => [
+                'connection' => 'redis',
+                'queue' => ['store_geolocation'],
+                'balance' => 'auto',
+                'minProcesses' => 1,
+                'maxProcesses' => 5,
+                'tries' => 0,
+            ],
         ],
     ],
 ];

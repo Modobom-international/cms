@@ -37,61 +37,67 @@ Route::middleware('auth:api')->group(function () {
     //admin change password for useer
     Route::post('/change-password-user/{id}/', [UserController::class, 'updatePassword']);
 
-    //admin change password for useer
-    Route::post('/change-password-user/{id}/', [UserController::class, 'updatePassword']);
-    //workspace
-    Route::get('/workspaces', [WorkspaceController::class, 'index']);
-    Route::post('/create-workspace', [WorkspaceController::class, 'store']);
-    Route::get('/workspace/{id}', [WorkspaceController::class, 'show']);
-    Route::post('/update-workspace/{id}', [WorkspaceController::class, 'update']);
-    Route::get('/delete-workspace/{id}', [WorkspaceController::class, 'destroy']);
+    //Sau route này sẽ tất cả các route sẽ được define làm phân quyền
+    //Cấu trúc bắt buộc nhóm chứng năng Route -> prefix -> path -> controller -> action -> method -> name
 
-    //workspace-user
-    Route::post('/workspace/{id}/join', [WorkspaceController::class, 'joinPublicWorkspace']);
-    Route::post('/workspace/{id}/add-member', [WorkspaceController::class, 'addMember']);
-    Route::post('/workspace/remove-members', [WorkspaceController::class, 'removeMember']);
-    Route::get('/workspace/{id}/members', [WorkspaceController::class, 'listMembers']);
+    //workspace
+    Route::prefix('workspace')->group(function () {
+        Route::get('/', [WorkspaceController::class, 'index'])->name('workspace.list');
+        Route::post('/create', [WorkspaceController::class, 'store'])->name('workspace.create');
+        Route::get('/{id}', [WorkspaceController::class, 'show'])->name('workspace.detail');
+        Route::post('/update/{id}', [WorkspaceController::class, 'update'])->name('workspace.update');
+        Route::get('/delete/{id}', [WorkspaceController::class, 'destroy'])->name('workspace.destroy');
+
+        //workspace-user
+        Route::post('/{id}/join', [WorkspaceController::class, 'joinPublicWorkspace'])->name('workspace.join');
+        Route::post('/{id}/add-member', [WorkspaceController::class, 'addMember'])->name('workspace.add.member');
+        Route::post('/remove-members', [WorkspaceController::class, 'removeMember'])->name('workspace.remove.member');
+        Route::get('/{id}/members', [WorkspaceController::class, 'listMembers'])->name('workspace.members');
+    });
 
     //board
-    Route::post('/create-board', [BoardController::class, 'store']); // Tạo Board
-    Route::get('/board/{id}', [BoardController::class, 'show']);
-    Route::get('/workspace/{id}/boards', [BoardController::class, 'index']); // Lấy danh sách Board
-    Route::post('/update-board/{id}', [BoardController::class, 'update']); // Cập nhật Board
-    Route::delete('/delete-board/{id}', [BoardController::class, 'destroy']); // Xóa Board
+    Route::prefix('board')->group(function () {
+        Route::post('/create', [BoardController::class, 'store'])->name('board.create');
+        Route::get('/{id}', [BoardController::class, 'show'])->name('board.detail');
+        Route::get('/workspace/{id}/boards', [BoardController::class, 'index'])->name('board.list.workspace');
+        Route::post('/update/{id}', [BoardController::class, 'update'])->name('board.update');
+        Route::delete('/delete/{id}', [BoardController::class, 'destroy'])->name('board.destroy');
 
-    //board-user
-    Route::post('/board/{id}/join', [BoardController::class, 'joinPublicBoard']);
-    Route::post('/board/{id}/add-member', [BoardController::class, 'addMember']);
-    Route::post('/board/remove-members', [BoardController::class, 'removeMember']);
-    Route::get('/board/{id}/members', [BoardController::class, 'listMembers']);
+        //board-user
+        Route::post('/{id}/join', [BoardController::class, 'joinPublicBoard'])->name('board.join');
+        Route::post('/{id}/add-member', [BoardController::class, 'addMember'])->name('board.add.member');
+        Route::post('/remove-members', [BoardController::class, 'removeMember'])->name('board.remove.member');
+        Route::get('/{id}/members', [BoardController::class, 'listMembers'])->name('board.members');
 
-    //list
-    Route::post('/create-list', [ListBoardController::class, 'store']); // Tạo Board
-    Route::get('/list/{id}', [ListBoardController::class, 'show']);
-    Route::get('/board/{boardId}/lists', [ListBoardController::class, 'index']); // Lấy danh sách Board
-    Route::post('/update-list/{id}', [ListBoardController::class, 'update']); // Cập nhật Board
-    Route::delete('/delete-board/{id}', [ListBoardController::class, 'destroy']); // Xóa Board
+        //board-list
+        Route::post('/create-list', [ListBoardController::class, 'store'])->name('board.list.create');
+        Route::get('/list/{id}', [ListBoardController::class, 'show'])->name('board.list.detail');
+        Route::get('/{boardId}/lists', [ListBoardController::class, 'index'])->name('board.list');
+        Route::post('/update-list/{id}', [ListBoardController::class, 'update'])->name('board.list.update');
+        Route::delete('/delete-board/{id}', [ListBoardController::class, 'destroy'])->name('board.list.destroy');
+    });
 
-    //card
-    Route::get('/list/{list}/cards', [CardController::class, 'index']); // Lấy danh sách card theo list
-    Route::post('/create-card', [CardController::class, 'store']); // Tạo card mới
-    Route::post('/update-card/{card}', [CardController::class, 'update']); // Cập nhật card
-    Route::delete('/card/{card}', [CardController::class, 'destroy']); // Xóa card
-    Route::post('/card/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
 
-    //assign-member-to-card
-    Route::post('/cards/{card}/assign-member', [CardController::class, 'assignMember']);
-    Route::delete('/cards/{card}/members/{user}', [CardController::class, 'removeMember']);
+    Route::prefix('card')->group(function () {
+        Route::get('/list/{list}/cards', [CardController::class, 'index'])->name('card.list');
+        Route::post('/create-card', [CardController::class, 'store'])->name('card.create');
+        Route::post('/update-card/{card}', [CardController::class, 'update'])->name('card.update');
+        Route::delete('/card/{card}', [CardController::class, 'destroy'])->name('card.destroy');
+        Route::post('/card/{card}/move', [CardController::class, 'move'])->name('card.move');
 
-    //label
-    Route::post('create-label', [LabelController::class, 'store']); // Tạo Board
-    Route::get('/label/{id}', [LabelController::class, 'show']);
-    Route::get('labels', [LabelController::class, 'index']); // Lấy danh sách Board
-    Route::post('/update-label/{id}', [LabelController::class, 'update']); // Cập nhật Board
-    Route::delete('/delete-label/{id}', [LabelController::class, 'destroy']); // Xóa Board
+        //assign-member-to-card
+        Route::post('/cards/{card}/assign-member', [CardController::class, 'assignMember'])->name('card.assign.member');
+        Route::delete('/cards/{card}/members/{user}', [CardController::class, 'removeMember'])->name('card.remove.member');
 
-    Route::post('/cards/{cardId}/labels', [CardController::class, 'addLabel']);
-    Route::delete('/cards/{cardId}/labels/{labelId}', [CardController::class, 'removeLabel']);
+        Route::post('/cards/{cardId}/labels', [CardController::class, 'addLabel'])->name('card.label.add');
+        Route::delete('/cards/{cardId}/labels/{labelId}', [CardController::class, 'removeLabel'])->name('card.label.remove');
+
+        Route::post('create-label', [LabelController::class, 'store'])->name('card.label.create');
+        Route::get('/label/{id}', [LabelController::class, 'show'])->name('card.label.detail');
+        Route::get('labels', [LabelController::class, 'index'])->name('card.label.list');
+        Route::post('/update-label/{id}', [LabelController::class, 'update'])->name('card.label.update');
+        Route::delete('/delete-label/{id}', [LabelController::class, 'destroy'])->name('card.label.destroy');
+    });
 
     Route::prefix('users-tracking')->group(function () {
         Route::get('/', [UsersTrackingController::class, 'viewUsersTracking'])->name('users.tracking.list');
@@ -104,7 +110,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/store', [TeamController::class, 'store'])->name('team.store');
         Route::post('/update/{id}', [TeamController::class, 'update'])->name('team.update');
         Route::get('/edit/{id}', [TeamController::class, 'edit'])->name('team.edit');
-        Route::get('/delete/{id}', [TeamController::class, 'destroy'])->name('team.delete');
+        Route::get('/delete/{id}', [TeamController::class, 'destroy'])->name('team.destroy');
         Route::get('/get-permission-by-team', [TeamController::class, 'getPermissionByTeam'])->name('team.get.permission');
     });
 
@@ -114,7 +120,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/', [SiteController::class, 'store'])->name('sites.store');
         Route::get('/{id}', [SiteController::class, 'show'])->name('sites.show');
         Route::put('/{id}', [SiteController::class, 'update'])->name('sites.update');
-        Route::delete('/{id}', [SiteController::class, 'destroy'])->name('sites.delete');
+        Route::delete('/{id}', [SiteController::class, 'destroy'])->name('sites.destroy');
     });
 
     // Cloudflare Pages API routes
