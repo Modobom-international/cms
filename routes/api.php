@@ -163,7 +163,6 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/update-page', [PageController::class, 'update']);
     Route::get('/page/{slug}', [PageController::class, 'getPage']);
     Route::get('/pages', [PageController::class, 'getPages']);
-    Route::get('/sites/{siteId}/pages', [PageController::class, 'getPagesBySite']);
     Route::post('/export-pages', [PageController::class, 'exportPage']);
 
 });

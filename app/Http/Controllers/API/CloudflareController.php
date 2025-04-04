@@ -153,8 +153,8 @@ class CloudflareController extends Controller
                 'success' => true,
                 'message' => 'Deployment job has been queued successfully',
                 'job_details' => [
-                    'project' => $projectName,
-                    'directory' => $directory,
+                    'project' => $request->project_name,
+                    'directory' => $request->directory ?? 'root',
                     'queue' => 'deployments'
                 ]
             ]);

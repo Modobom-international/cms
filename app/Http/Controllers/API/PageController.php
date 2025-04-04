@@ -151,38 +151,6 @@ class PageController extends Controller
     }
 
     /**
-     * Get all pages for a specific site
-     * 
-     * @param int $siteId The site ID
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getPagesBySite($siteId)
-    {
-        try {
-            // Verify site exists
-            $site = $this->siteRepository->findWithRelations($siteId);
-            if (!$site) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Site not found'
-                ], 404);
-            }
-
-            $pages = $this->pageRepository->getBySiteId($siteId);
-            return response()->json([
-                'success' => true,
-                'message' => 'Pages found for site',
-                'data' => $pages
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch pages: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
      * Create a new page export request and trigger the exporter
      *
      * @param  \Illuminate\Http\Request  $request
