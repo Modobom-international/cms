@@ -10,6 +10,10 @@ class RestrictBrowserAccess
 {
     protected $except = [
         'api/check-device',
+        'api/tracking-event',
+        'api/heartbeat',
+        'api/collect-ai-training-data',
+        'api/create-video-timeline',
     ];
 
     /**
