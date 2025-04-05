@@ -30,8 +30,11 @@ class StoreHeartBeat implements ShouldQueue
     {
         try {
             $heartBeatRepository->create($this->data);
-        } catch (\Exception $e) {
-            Log::error("Job failed: " . $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error("Job failed: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'data' => $this->data,
+            ]);
         }
     }
 }

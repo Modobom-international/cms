@@ -131,6 +131,10 @@ abstract class BaseRepository
      */
     public function create(array $data)
     {
+        if (!$this->model) {
+            $this->makeModel();
+        }
+
         $this->unsetClauses();
 
         return $this->model->create($data);

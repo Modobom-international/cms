@@ -30,8 +30,11 @@ class StoreTrackingEvent implements ShouldQueue
     {
         try {
             $trackingEventRepository->create($this->data);
-        } catch (\Exception $e) {
-            Log::error("Job failed: " . $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error("Job failed: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'data' => $this->data,
+            ]);
         }
     }
 }
