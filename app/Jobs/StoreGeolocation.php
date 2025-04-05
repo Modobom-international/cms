@@ -6,10 +6,13 @@ use App\Repositories\GeolocationRepository;
 use App\Services\GeolocationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Bus\Dispatchable;
 
 class StoreGeolocation implements ShouldQueue
 {
-    use Queueable;
+    use Dispatchable, Queueable, InteractsWithQueue, SerializesModels;
 
     protected $data;
 

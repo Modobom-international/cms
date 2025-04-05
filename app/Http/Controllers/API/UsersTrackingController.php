@@ -79,10 +79,6 @@ class UsersTrackingController extends Controller
             'device' => $result->device->family
         ];
 
-        foreach ($getHeatMap as $heat) {
-            $data['heat_map'][$heat->path] = $heat->heatmapData;
-        }
-
         return response()->json($data);
     }
 

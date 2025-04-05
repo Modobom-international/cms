@@ -77,7 +77,6 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/delete-board/{id}', [ListBoardController::class, 'destroy'])->name('board.list.destroy');
     });
 
-
     Route::prefix('card')->group(function () {
         Route::get('/list/{list}/cards', [CardController::class, 'index'])->name('card.list');
         Route::post('/create-card', [CardController::class, 'store'])->name('card.create');

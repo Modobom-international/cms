@@ -87,9 +87,6 @@
     }
 
     function shouldTrack() {
-        console.log('isExcluded:', isExcluded);
-        console.log('isBot:', isBot());
-
         return !isExcluded && !isBot();
     }
 
