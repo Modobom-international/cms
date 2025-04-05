@@ -90,6 +90,9 @@
     }
 
     function shouldTrack() {
+        console.log('isExcluded:', isExcluded);
+        console.log('isBot:', isBot());
+
         return !isExcluded && !isBot();
     }
 
@@ -123,16 +126,14 @@
     }
 
     function startHeartbeat() {
-        if (shouldTrack()) {
-            sendHeartbeat();
-            heartbeatInterval = setInterval(() => {
-                if (shouldTrack()) {
-                    sendHeartbeat();
-                } else {
-                    clearInterval(heartbeatInterval);
-                }
-            }, 10000);
-        }
+        sendHeartbeat();
+        heartbeatInterval = setInterval(() => {
+            if (shouldTrack()) {
+                sendHeartbeat();
+            } else {
+                clearInterval(heartbeatInterval);
+            }
+        }, 10000);
     }
 
     function sendHeartbeat() {
