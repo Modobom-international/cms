@@ -28,6 +28,10 @@ class StoreAiTrainingData implements ShouldQueue
      */
     public function handle(AiTrainingDataRepository $aiTrainingDataRepository): void
     {
-        $aiTrainingDataRepository->create($this->data);
+        try {
+            $aiTrainingDataRepository->create($this->data);
+        } catch (\Exception $e) {
+            Log::error("Job failed: " . $e->getMessage());
+        }
     }
 }

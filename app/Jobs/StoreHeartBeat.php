@@ -28,6 +28,10 @@ class StoreHeartBeat implements ShouldQueue
      */
     public function handle(HeartBeatRepository $heartBeatRepository): void
     {
-        $heartBeatRepository->create($this->data);
+        try {
+            $heartBeatRepository->create($this->data);
+        } catch (\Exception $e) {
+            Log::error("Job failed: " . $e->getMessage());
+        }
     }
 }

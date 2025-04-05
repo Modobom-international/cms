@@ -28,6 +28,10 @@ class StoreVideoTimeline implements ShouldQueue
      */
     public function handle(VideoTimelineRepository $videoTimelineRepository): void
     {
-        $videoTimelineRepository->create($this->data);
+        try {
+            $videoTimelineRepository->create($this->data);
+        } catch (\Exception $e) {
+            Log::error("Job failed: " . $e->getMessage());
+        }
     }
 }
