@@ -68,7 +68,6 @@
 
     function isBot() {
         const currentTime = getCurrentTimeInGMT7();
-        const timeSinceLastInteraction = currentTime - lastInteractionTime;
         const userAgent = navigator.userAgent.toLowerCase();
         const botPatterns = [
             /bot/i, /spider/i, /crawler/i, /slurp/i, /googlebot/i,
@@ -77,8 +76,6 @@
         ];
 
         const isSuspicious = (
-            timeSinceLastInteraction < 50 ||
-            mouseMovements === 0 && keyPresses > 10 ||
             navigator.webdriver ||
             !window.outerWidth ||
             performance.timing.domInteractive < 100
