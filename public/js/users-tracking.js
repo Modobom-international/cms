@@ -471,7 +471,7 @@
         };
 
         if (shouldTrack()) {
-            sendDataToServer(event, '/api/track-event');
+            sendDataToServer(event, '/api/tracking-event');
         }
     }
 
