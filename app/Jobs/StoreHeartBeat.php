@@ -28,7 +28,7 @@ class StoreHeartBeat implements ShouldQueue
     public function handle(): void
     {
         try {
-            DB::connection('mongodb')->table('heartbeat')->insert($this->data);
+            DB::connection('mongodb')->table('heartbeats')->insert($this->data);
         } catch (\Throwable $e) {
             Log::error("Job failed: " . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
