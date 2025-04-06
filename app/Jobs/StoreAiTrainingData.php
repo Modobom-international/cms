@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Repositories\AiTrainingDataRepository;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -26,10 +25,10 @@ class StoreAiTrainingData implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(AiTrainingDataRepository $aiTrainingDataRepository): void
+    public function handle(): void
     {
         try {
-            $aiTrainingDataRepository->create($this->data);
+            DB::connection('mongodb')->table('ai_training_data')->insert($this->data);
         } catch (\Throwable $e) {
             Log::error("Job failed: " . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),

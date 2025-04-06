@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Repositories\TrackingEventRepository;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -26,10 +25,10 @@ class StoreTrackingEvent implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(TrackingEventRepository $trackingEventRepository): void
+    public function handle(): void
     {
         try {
-            $trackingEventRepository->create($this->data);
+            DB::connection('mongodb')->table('tracking_event')->insert($this->data);
         } catch (\Throwable $e) {
             Log::error("Job failed: " . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
