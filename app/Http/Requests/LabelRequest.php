@@ -15,8 +15,9 @@ class LabelRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'color' => 'required|string|regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/',
-        ];
+    
+            'color' => 'required', 'string',
+            ];
     }
     
     public function messages()
