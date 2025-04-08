@@ -11,9 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('ai_training_data', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+        Schema::table('domains', function (Blueprint $table) {
+            $table->boolean('is_locked')->default(false);
         });
     }
 
@@ -22,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('ai_training_data');
+        Schema::table('domains', function (Blueprint $table) {
+            $table->dropColumn('is_locked');
+        });
     }
 };

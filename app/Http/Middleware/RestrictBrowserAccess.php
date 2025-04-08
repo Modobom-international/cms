@@ -8,6 +8,14 @@ use Symfony\Component\HttpFoundation\Response;
 
 class RestrictBrowserAccess
 {
+    protected $except = [
+        'api/check-device',
+        'api/tracking-event',
+        'api/heartbeat',
+        'api/collect-ai-training-data',
+        'api/create-video-timeline',
+    ];
+
     /**
      * Handle an incoming request.
      *
@@ -15,9 +23,12 @@ class RestrictBrowserAccess
      */
     public function handle(Request $request, Closure $next): Response
     {
-//        if ($request->header('Accept') === 'text/html' || !$request->expectsJson()) {
-//            return response()->view('welcome');
-//        }
+
+        if (!in_array($request->path(), $this->except)) {
+            if ($request->header('Accept') === 'text/html' || !$request->expectsJson()) {
+                return response()->view('welcome');
+            }
+        }
 
         return $next($request);
     }

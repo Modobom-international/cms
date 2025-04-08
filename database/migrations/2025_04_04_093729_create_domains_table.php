@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('video_timelines', function (Blueprint $table) {
+        Schema::create('domains', function (Blueprint $table) {
             $table->id();
+            $table->string('domain')->unique();
+            $table->dateTime('time_expired')->nullable();
+            $table->string('registrar');
             $table->timestamps();
         });
     }
@@ -22,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('video_timelines');
+        Schema::dropIfExists('domains');
     }
 };

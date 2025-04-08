@@ -4,17 +4,23 @@ namespace App\Jobs;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Support\Facades\DB;
 
 class StoreVideoTimeline implements ShouldQueue
 {
-    use Queueable;
+    use Dispatchable, Queueable, InteractsWithQueue, SerializesModels;
+
+    protected $data;
 
     /**
      * Create a new job instance.
      */
-    public function __construct()
+    public function __construct($data)
     {
-        //
+        $this->data = $data;
     }
 
     /**
@@ -22,6 +28,13 @@ class StoreVideoTimeline implements ShouldQueue
      */
     public function handle(): void
     {
-        //
+        try {
+            DB::connection('mongodb')->table('video_timelines')->insert($this->data);
+        } catch (\Throwable $e) {
+            Log::error("Job failed: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'data' => $this->data,
+            ]);
+        }
     }
 }

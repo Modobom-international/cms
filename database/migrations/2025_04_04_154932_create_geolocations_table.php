@@ -11,9 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tracking_events', function (Blueprint $table) {
+        Schema::create('geolocations', function (Blueprint $table) {
             $table->id();
+            $table->decimal('latitude', 10, 7);
+            $table->decimal('longitude', 10, 7);
+            $table->string('city')->nullable();
             $table->timestamps();
+
+            $table->unique(['latitude', 'longitude']);
         });
     }
 
@@ -22,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tracking_events');
+        Schema::dropIfExists('geolocations');
     }
 };

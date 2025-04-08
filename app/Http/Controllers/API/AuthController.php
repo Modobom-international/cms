@@ -81,13 +81,13 @@ class AuthController extends Controller
 
                 $deviceData = [
                     'user_agent' => $request->header('User-Agent'),
-                    'platform' => $request->input('platform'),
-                    'language' => $request->input('language'),
-                    'cookies_enabled' => $request->input('cookies_enabled', true),
-                    'screen_width' => $request->input('screen_width'),
-                    'screen_height' => $request->input('screen_height'),
-                    'timezone' => $request->input('timezone'),
-                    'fingerprint' => $request->input('fingerprint'),
+                    'platform' => $request->input('platform') ?? 'web',
+                    'language' => $request->input('language') ?? 'en',
+                    'cookies_enabled' => $request->input('cookies_enabled') ?? true,
+                    'screen_width' => $request->input('screen_width') ?? 1920,
+                    'screen_height' => $request->input('screen_height') ?? 1080,
+                    'timezone' => $request->input('timezone') ?? 'Asia/Ho_Chi_Minh',
+                    'fingerprint' => $request->input('fingerprint') ?? '1234567890',
                 ];
 
                 if (!$user->deviceFingerprints()->where('fingerprint', $deviceData['fingerprint'])->exists()) {

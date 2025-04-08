@@ -68,7 +68,6 @@
 
     function isBot() {
         const currentTime = getCurrentTimeInGMT7();
-        const timeSinceLastInteraction = currentTime - lastInteractionTime;
         const userAgent = navigator.userAgent.toLowerCase();
         const botPatterns = [
             /bot/i, /spider/i, /crawler/i, /slurp/i, /googlebot/i,
@@ -77,8 +76,6 @@
         ];
 
         const isSuspicious = (
-            timeSinceLastInteraction < 50 ||
-            mouseMovements === 0 ||
             navigator.webdriver ||
             !window.outerWidth ||
             performance.timing.domInteractive < 100
@@ -123,16 +120,14 @@
     }
 
     function startHeartbeat() {
-        if (shouldTrack()) {
-            sendHeartbeat();
-            heartbeatInterval = setInterval(() => {
-                if (shouldTrack()) {
-                    sendHeartbeat();
-                } else {
-                    clearInterval(heartbeatInterval);
-                }
-            }, 10000);
-        }
+        sendHeartbeat();
+        heartbeatInterval = setInterval(() => {
+            if (shouldTrack()) {
+                sendHeartbeat();
+            } else {
+                clearInterval(heartbeatInterval);
+            }
+        }, 10000);
     }
 
     function sendHeartbeat() {
@@ -143,7 +138,7 @@
             path: window.location.pathname + window.location.search,
             userInfo: getUserInfo()
         };
-        sendDataToServer(heartbeatData, '/heartbeat');
+        sendDataToServer(heartbeatData, '/api/heartbeat');
     }
 
     function aggregateForVideo(eventName, eventData, timestamp) {
@@ -213,7 +208,7 @@
                     timeline: behaviorTimeline,
                     userInfo: getUserInfo()
                 };
-                sendDataToServer(videoData, '/create-video-timeline');
+                sendDataToServer(videoData, '/api/create-video-timeline');
             }
 
             if (aiTrainingData.length > 0) {
@@ -224,7 +219,7 @@
                     sessionEnd: getCurrentTimeInGMT7(),
                     events: aiTrainingData
                 };
-                sendDataToServer(trainingData, '/collect-ai-training-data');
+                sendDataToServer(trainingData, '/api/collect-ai-training-data');
             }
         }
     }
@@ -282,19 +277,6 @@
             }
         }
 
-        async function getCityFromCoordinates(latitude, longitude) {
-            try {
-                const response = await fetch(
-                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`
-                );
-                const data = await response.json();
-                return data.address?.city || data.address?.town || 'Unknown';
-            } catch (error) {
-                console.warn('Error fetching city:', error);
-                return 'Unknown';
-            }
-        }
-
         const basicInfo = {
             userAgent: navigator.userAgent,
             platform: navigator.platform,
@@ -328,15 +310,12 @@
         let geolocation = null;
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const latitude = position.coords.latitude;
-                    const longitude = position.coords.longitude;
-                    const city = await getCityFromCoordinates(latitude, longitude);
+                (position) => {
                     geolocation = {
-                        latitude: latitude,
-                        longitude: longitude,
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
                         accuracy: position.coords.accuracy,
-                        city: city
+                        city: null
                     };
                 },
                 (error) => {
@@ -474,7 +453,7 @@
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(data),
-            }).catch(error => console.error('Error:', error));
+            }).catch(error => console.error('Error sending data to server:', error));
         }
     }
 
@@ -492,7 +471,7 @@
         };
 
         if (shouldTrack()) {
-            sendDataToServer(event);
+            sendDataToServer(event, '/api/tracking-event');
         }
     }
 

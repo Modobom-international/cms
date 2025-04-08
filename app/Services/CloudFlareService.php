@@ -34,7 +34,7 @@ class CloudFlareService
 
         $this->clientDNS = new Client([
             'headers' => [
-                'Authorization' => 'Bearer ' . $this->apiTokenDNS,
+                'Authorization' => 'Bearer ' . $this->apiToken,
                 'Content-Type' => 'application/json',
             ],
         ]);
@@ -47,6 +47,45 @@ class CloudFlareService
         $zoneID = $result['result'][0]['id'] ?? null;
 
         return $zoneID;
+    }
+
+    /**
+     * Get DNS records for a zone
+     * 
+     * @param string $zoneId
+     * @param array $params Optional query parameters
+     * @return array
+     */
+    public function getDnsRecords($zoneId, $params = [])
+    {
+        try {
+            $queryString = http_build_query($params);
+            $url = $this->apiUrl . "/zones/{$zoneId}/dns_records" . ($queryString ? "?{$queryString}" : "");
+            $response = $this->clientDNS->get($url);
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * Update an existing DNS record
+     * 
+     * @param string $zoneId
+     * @param string $recordId
+     * @param array $data
+     * @return array
+     */
+    public function updateDnsRecord($zoneId, $recordId, $data)
+    {
+        try {
+            $response = $this->clientDNS->put($this->apiUrl . "/zones/{$zoneId}/dns_records/{$recordId}", [
+                'json' => $data
+            ]);
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
     }
 
     public function updateDnsARecord($domain, $ip)
@@ -157,6 +196,153 @@ class CloudFlareService
             $response = $this->client->post(
                 $this->apiUrl . "/accounts/{$this->accountId}/pages/projects/{$projectName}/domains",
                 ['json' => ['name' => $domain]]
+            );
+
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * Get Cloudflare Pages project details including subdomain
+     * 
+     * @param string $projectName
+     * @return array
+     */
+    public function getPagesProject($projectName)
+    {
+        try {
+            $response = $this->client->get(
+                $this->apiUrl . "/accounts/{$this->accountId}/pages/projects/{$projectName}"
+            );
+
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * Set up DNS CNAME record for a domain pointing to Pages subdomain
+     * 
+     * @param string $domain
+     * @param string $pagesSubdomain
+     * @return array
+     */
+    public function setupDomainDNS($domain, $pagesSubdomain)
+    {
+        // Extract root domain for zone lookup
+        $rootDomain = $this->getRootDomain($domain);
+        $zoneId = $this->getZoneId($rootDomain);
+        Log::info('Zone ID: ' . $zoneId);
+        if (!$zoneId) {
+            return ['error' => 'Zone ID not found for domain: ' . $rootDomain];
+        }
+        try {
+            // For subdomains, we only need the subdomain part as the name
+            $dnsName = $domain === $rootDomain ? '@' : str_replace('.' . $rootDomain, '', $domain);
+
+            // Check for existing records
+            $existingRecords = $this->getDnsRecords($zoneId, [
+                'name' => $dnsName === '@' ? $rootDomain : $domain,
+                // 'type' => 'CNAME'
+            ]);
+            Log::info('Existing records: ' . json_encode($existingRecords));
+            $recordData = [
+                'type' => 'CNAME',
+                'name' => $dnsName,
+                'content' => $pagesSubdomain,
+                'ttl' => 1,
+                'proxied' => true
+            ];
+
+            // If record exists, update it
+            if (!empty($existingRecords['result'])) {
+                $existingRecord = $existingRecords['result'][0];
+                return $this->updateDnsRecord($zoneId, $existingRecord['id'], $recordData);
+            }
+
+            // If no existing record, create new one
+            $response = $this->clientDNS->post($this->apiUrl . "/zones/{$zoneId}/dns_records", [
+                'json' => $recordData
+            ]);
+
+            Log::info('DNS record created successfully', [
+                'zone_id' => $zoneId,
+                'record_data' => $recordData,
+                'response' => json_decode($response->getBody(), true)
+            ]);
+
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            Log::error('Error creating DNS record: ' . $e->getMessage());
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * Extract the root domain from a domain/subdomain
+     * 
+     * @param string $domain
+     * @return string
+     */
+    private function getRootDomain($domain)
+    {
+        // Split the domain into parts
+        $parts = explode('.', $domain);
+
+        // If we have more than 2 parts, it's likely a subdomain
+        if (count($parts) > 2) {
+            // Get the last two parts for common TLDs (e.g., example.com)
+            $rootDomain = implode('.', array_slice($parts, -2));
+
+            // Get special TLDs from config
+            $specialTlds = config('tlds.special', []);
+
+            foreach ($specialTlds as $tld) {
+                if (str_ends_with($domain, '.' . $tld)) {
+                    $rootDomain = implode('.', array_slice($parts, -3));
+                    break;
+                }
+            }
+
+            return $rootDomain;
+        }
+
+        // If only 2 parts, it's already a root domain
+        return $domain;
+    }
+
+    /**
+     * Get all Cloudflare Pages projects
+     * 
+     * @return array
+     */
+    public function getProjects()
+    {
+        try {
+            $response = $this->client->get(
+                $this->apiUrl . "/accounts/{$this->accountId}/pages/projects"
+            );
+
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * Delete a Cloudflare Pages project
+     * 
+     * @param string $projectName
+     * @return array
+     */
+    public function deletePagesProject($projectName)
+    {
+        try {
+            $response = $this->client->delete(
+                $this->apiUrl . "/accounts/{$this->accountId}/pages/projects/{$projectName}"
             );
 
             return json_decode($response->getBody(), true);
