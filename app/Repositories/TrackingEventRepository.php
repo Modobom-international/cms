@@ -11,6 +11,7 @@ class TrackingEventRepository extends BaseRepository
 
     public function __construct(Utility $utility)
     {
+        parent::__construct();
         $this->utility = $utility;
     }
 
