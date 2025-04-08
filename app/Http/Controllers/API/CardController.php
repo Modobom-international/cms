@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\API;
 
+use App\Http\Requests\AssignMultipleMembersRequest;
 use App\Http\Requests\CartRequest;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CartUpdateRequest;
@@ -243,20 +244,64 @@ class CardController extends Controller
         }
     }
     
-    public function assignMember(Request $request, $cardId)
+    public function join($cardId)
     {
-    
-        // Validate the incoming request
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
-        ]);
-    
-        if ($validator->fails()) {
+        $card = $this->cardRepository->show($cardId);
+        if (!$card) {
             return response()->json([
-                'errors' => $validator->errors()
-            ], 422);
+                'success' => false,
+                'message' => 'Không tìm thấy card',
+                'type' => 'card_not_found',
+            ], 404);
         }
-        try{
+        $user = Auth::user();
+        if ($card->members()->where('user_id', $user->id)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đã tham gia',
+                'type' => 'user_exists',
+            ], 400);
+        }
+        $card->members()->attach($user->id);
+    
+        return response()->json([
+            'success' => true,
+            'message' => 'Bạn đã tham gia thành công',
+            'type' => 'join_card_success',
+        ], 200);
+    }
+    
+    public function leave($cardId)
+    {
+        $card = $this->cardRepository->show($cardId);
+        if (!$card) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy card',
+                'type' => 'card_not_found',
+            ], 404);
+        }
+        $user = Auth::user();
+        if (!$card->members()->where('user_id', $user->id)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đã tham gia',
+                'type' => 'user_exists',
+            ], 400);
+        }
+        
+        $card->members()->detach($user->id);
+    
+        return response()->json([
+            'success' => true,
+            'message' => 'Bạn đã rời thành công',
+            'type' => 'leave_card_success',
+        ], 200);
+    }
+    
+    public function assignMember(AssignMultipleMembersRequest $request, $cardId)
+    {
+        try {
             $card = $this->cardRepository->show($cardId);
             if (!$card) {
                 return response()->json([
@@ -265,42 +310,53 @@ class CardController extends Controller
                     'type' => 'card_not_found',
                 ], 404);
             }
-            
-            // Kiểm tra quyền truy cập vào board
-            if  (!Auth::user()->boards()->where('board_id', $card->listBoard->board_id)->exists()) {
+            // Kiểm tra quyền truy cập vào board chứa card
+            $boardId = optional($card->listBoard)->board_id;
+            if (!$boardId || !Auth::user()->boards()->where('board_id', $boardId)->exists()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bạn không có quyền xóa',
+                    'message' => 'Bạn không có quyền hoặc dữ liệu không hợp lệ',
                     'type' => 'unauthorized',
                 ], 403);
             }
             
-            $user = $this->userRepository->find($request->user_id);
-            if(!$user)
-            {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User không tồn tại',
-                    'type' => 'user_not_found',
-                ], 404);
-            }
-            // Kiểm tra user đã được assign chưa
-            if ($card->members()->where('user_id', $user->id)->exists()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User đã được assign',
-                    'type' => 'user_assigned',
-                ], 400);
-            }
+            // Lặp qua danh sách user_id từ request để assign nhiều user
+            $assigned = [];
+            $skipped = [];
             
-            // Gán user vào card
-            $card->members()->attach($user->id);
+            foreach ($request->user_ids as $userId) {
+                $user = $this->userRepository->find($userId);
+                if (!$user) {
+                    $skipped[] = [
+                        'user_id' => $userId,
+                        'reason' => 'User không tồn tại',
+                    ];
+                    continue;
+                }
+                
+                $alreadyAssigned = $card->members()->where('user_id', $userId)->exists();
+                if ($alreadyAssigned) {
+                    $skipped[] = [
+                        'user_id' => $userId,
+                        'reason' => 'User đã được assign',
+                    ];
+                    continue;
+                }
+                
+                $card->members()->attach($userId);
+                $assigned[] = $userId;
+            }
             
             return response()->json([
-                'success' => false,
-                'message' => 'Assign member thành công',
+                'success' => true,
+                'message' => 'Assign member hoàn tất',
                 'type' => 'assign_member_success',
+                'data' => [
+                    'assigned' => $assigned,
+                    'skipped' => $skipped,
+                ]
             ], 201);
+            
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -322,36 +378,50 @@ class CardController extends Controller
                     'type' => 'card_not_found',
                 ], 404);
             }
-    
-            // Kiểm tra quyền truy cập vào board
-            if  (!Auth::user()->boards()->where('board_id', $card->listBoard->board_id)->exists()) {
+            
+            // Kiểm tra quyền truy cập vào board chứa card
+            $boardId = optional($card->listBoard)->board_id;
+            if (!$boardId || !Auth::user()->boards()->where('board_id', $boardId)->exists()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bạn không có quyền xóa',
+                    'message' => 'Bạn không có quyền hoặc dữ liệu không hợp lệ',
                     'type' => 'unauthorized',
                 ], 403);
             }
-    
-            if (!$card->members()->where('user_id', $userId)->exists()) {
+            
+            $user = $this->userRepository->find($userId);
+            if (!$user) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Member không thuộc card này.',
+                    'message' => 'User không tồn tại',
                     'type' => 'user_not_found',
+                ], 404);
+            }
+            
+            // Kiểm tra user đã tham gia card chưa
+            if (!$card->members()->where('user_id', $user->id)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User chưa được assign vào card',
+                    'type' => 'user_not_assigned',
                 ], 400);
             }
-    
-            $card->members()->detach($userId);
+            
+            // Xoá user khỏi card
+            $card->members()->detach($user->id);
+            
             return response()->json([
                 'success' => true,
-                'message' => 'Đã xóa member khỏi card thành công',
-                'type' => 'Member_delete_success',
-            ], 400);
+                'message' => 'Xoá member thành công',
+                'type' => 'remove_member_success',
+            ], 200);
+            
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Lỗi khi xóa member',
-                'type' => 'error_delete_member',
-                'error' => $e->getMessage()
+                'message' => 'Lỗi khi xoá member',
+                'type' => 'error_remove_member',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

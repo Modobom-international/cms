@@ -13,7 +13,7 @@ class Card extends Model
     
     public function listBoard()
     {
-        return $this->belongsTo(ListBoard::class);
+        return $this->belongsTo(ListBoard::class,'list_id' );
     }
     
     public function members()
@@ -23,6 +23,6 @@ class Card extends Model
     
     public function labels()
     {
-        return $this->belongsToMany(Label::class, 'card_labels');
+        return $this->belongsToMany(Label::class, 'card_labels') ->withTimestamps();
     }
 }
