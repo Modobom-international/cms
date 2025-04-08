@@ -2,12 +2,12 @@
 
 namespace App\Jobs;
 
+use App\Repositories\VideoTimelineRepository;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class StoreVideoTimeline implements ShouldQueue
@@ -27,10 +27,10 @@ class StoreVideoTimeline implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle(VideoTimelineRepository $videoTimelineRepository): void
     {
         try {
-            DB::connection('mongodb')->table('video_timelines')->insert($this->data);
+            $videoTimelineRepository->create($this->data);
         } catch (\Throwable $e) {
             Log::error("Job failed: " . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),

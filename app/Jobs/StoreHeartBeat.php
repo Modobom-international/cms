@@ -2,13 +2,13 @@
 
 namespace App\Jobs;
 
+use App\Repositories\HeartBeatRepository;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
 
 class StoreHeartBeat implements ShouldQueue
 {
@@ -27,10 +27,10 @@ class StoreHeartBeat implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle(HeartBeatRepository $heartBeatRepository): void
     {
         try {
-            DB::connection('mongodb')->table('heartbeats')->insert($this->data);
+            $heartBeatRepository->create($this->data);
         } catch (\Throwable $e) {
             Log::error("Job failed: " . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
