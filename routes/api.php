@@ -59,7 +59,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/create', [BoardController::class, 'store']); // Tạo Board
         Route::get('/{id}', [BoardController::class, 'show']);
         Route::post('/update/{id}', [BoardController::class, 'update']); // Cập nhật Board
-        Route::delete('/delete/{id}', [BoardController::class, 'destroy']); // Xóa Board
+        Route::get('/delete/{id}', [BoardController::class, 'destroy']); // Xóa Board
         //board-user
         Route::post('/board/{id}/join', [BoardController::class, 'joinPublicBoard']);
         Route::post('/board/{id}/add-member', [BoardController::class, 'addMember']);
@@ -73,7 +73,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/create', [ListBoardController::class, 'store']); // Tạo list
         Route::get('/{id}', [ListBoardController::class, 'show']);
         Route::post('/update/{id}', [ListBoardController::class, 'update']); // Cập nhật list
-        Route::delete('/delete/{id}', [ListBoardController::class, 'destroy']); // Xóa list
+        Route::get('/delete/{id}', [ListBoardController::class, 'destroy']); // Xóa list
     });
     
     //card
@@ -93,8 +93,11 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/update/{id}', [LabelController::class, 'update']); // Cập nhật label
         Route::delete('/delete/{id}', [LabelController::class, 'destroy']); // Xóa label
     });
-    //assign-member-to-card
-    Route::post('/cards/{card}/assign-member', [CardController::class, 'assignMember']);
+    
+    // member-card
+    Route::post('/cards/{card}/join', [CardController::class, 'join']);
+    Route::post('/cards/{card}/leave', [CardController::class, 'leave']);
+    Route::post('/cards/{card}/assign-members', [CardController::class, 'assignMember']);
     Route::delete('/cards/{card}/members/{user}', [CardController::class, 'removeMember']);
     
     //assign-label-to-card

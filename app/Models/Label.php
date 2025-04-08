@@ -11,6 +11,6 @@ class Label extends Model
     
     public function cards()
     {
-        return $this->belongsToMany(Card::class, 'card_labels');
+        return $this->belongsToMany(Card::class, 'card_labels') ->withTimestamps();
     }
 }
