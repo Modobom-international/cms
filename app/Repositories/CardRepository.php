@@ -25,7 +25,7 @@ class CardRepository extends BaseRepository
     
     public function show($id)
     {
-        return $this->model->where('id', $id)->first();
+        return $this->model->with('listBoard')->where('id', $id)->first();
     }
 
     public function updateCard($data, $id)
