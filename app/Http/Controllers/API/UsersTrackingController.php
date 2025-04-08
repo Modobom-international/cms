@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Enums\UsersTracking;
+use App\Http\Controllers\Controller;
 use App\Enums\Utility;
 use App\Jobs\StoreAiTrainingData;
 use App\Jobs\StoreHeartBeat;
@@ -11,7 +13,6 @@ use Illuminate\Http\Request;
 use App\Repositories\DeviceFingerprintRepository;
 use App\Repositories\TrackingEventRepository;
 use App\Repositories\DomainRepository;
-use App\Http\Controllers\Controller;
 use App\Jobs\StoreGeolocation;
 use App\Services\GeolocationService;
 use UAParser\Parser;

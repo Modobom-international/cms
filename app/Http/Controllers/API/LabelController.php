@@ -22,7 +22,7 @@ class LabelController extends Controller
         $listLabels = $this->labelRepository->listLabels();
         return response()->json([
             'success' => true,
-            'message' => 'Lấy danh sách list labels thành công',
+            'message' => 'Danh sách list labels',
             'data' => $listLabels
         ], 200);
     
@@ -63,7 +63,7 @@ class LabelController extends Controller
         }
         return response()->json([
             'success' => true,
-            'workspace' => $label,
+            'label' => $label,
             'message' => 'Thông tin label',
             'type' => 'label_information',
         ], 201);
@@ -114,7 +114,7 @@ class LabelController extends Controller
         $this->labelRepository->destroy($id);
         return response()->json([
             'success' => true,
-            'workspace' => $label,
+            'label' => $label,
             'message' => 'Thông tin label được xóa',
             'type' => 'delete_label_success',
         ], 201);

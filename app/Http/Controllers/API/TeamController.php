@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Http\Controllers\Controller;
 use App\Repositories\Permission\PermissionRepository;
 use App\Repositories\Team\TeamRepository;
 use Exception;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 
 class TeamController extends Controller
 {
