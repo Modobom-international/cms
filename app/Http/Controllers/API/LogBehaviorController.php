@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Enums\EUCountry;
 use App\Enums\LogBehavior;
 use App\Enums\Utility;
+use App\Http\Controllers\Controller;
 use App\Jobs\BehaviorStoreLogJob;
 use Illuminate\Http\Request;
 use App\Jobs\StoreLogBehaviorJob;

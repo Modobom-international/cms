@@ -23,8 +23,6 @@ Route::get('/user', function (Request $request) {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-
-
 Route::post('/create-video-timeline', [UsersTrackingController::class, 'storeVideoTimeline']);
 Route::post('/collect-ai-training-data', [UsersTrackingController::class, 'storeTrainingData']);
 Route::post('/heartbeat', [UsersTrackingController::class, 'storeHeartbeat']);
@@ -33,82 +31,86 @@ Route::post('/check-device', [UsersTrackingController::class, 'checkDevice']);
 
 // Page export routes
 
-
-
 Route::middleware('auth:api')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [UserController::class, 'me']);
     Route::post('/update/user', [UserController::class, 'updateCurrentUser']);
     Route::post('/change-password', [UserController::class, 'changePassword']);
-
-    //admin change password for useer
+    //admin change password for user
     Route::post('/change-password-user/{id}/', [UserController::class, 'updatePassword']);
-
-    //admin change password for useer
-    Route::post('/change-password-user/{id}/', [UserController::class, 'updatePassword']);
+    
     //workspace
-    Route::get('/workspaces', [WorkspaceController::class, 'index']);
-    Route::post('/create-workspace', [WorkspaceController::class, 'store']);
-    Route::get('/workspace/{id}', [WorkspaceController::class, 'show']);
-    Route::post('/update-workspace/{id}', [WorkspaceController::class, 'update']);
-    Route::get('/delete-workspace/{id}', [WorkspaceController::class, 'destroy']);
-
-    //workspace-user
-    Route::post('/workspace/{id}/join', [WorkspaceController::class, 'joinPublicWorkspace']);
-    Route::post('/workspace/{id}/add-member', [WorkspaceController::class, 'addMember']);
-    Route::post('/workspace/remove-members', [WorkspaceController::class, 'removeMember']);
-    Route::get('/workspace/{id}/members', [WorkspaceController::class, 'listMembers']);
-
+    Route::prefix('workspace')->group(function () {
+        Route::get('/list', [WorkspaceController::class, 'index']);
+        Route::post('/create', [WorkspaceController::class, 'store']);
+        Route::get('/{id}', [WorkspaceController::class, 'show']);
+        Route::post('/update/{id}', [WorkspaceController::class, 'update']);
+        Route::get('/delete/{id}', [WorkspaceController::class, 'destroy']);
+    
+        //workspace-user
+        Route::post('/{id}/join', [WorkspaceController::class, 'joinPublicWorkspace']);
+        Route::post('/{id}/add-member', [WorkspaceController::class, 'addMember']);
+        Route::post('/remove-members', [WorkspaceController::class, 'removeMember']);
+        Route::get('/{id}/members', [WorkspaceController::class, 'listMembers']);
+    });
+    
     //board
-    Route::post('/create-board', [BoardController::class, 'store']); // Tạo Board
-    Route::get('/board/{id}', [BoardController::class, 'show']);
     Route::get('/workspace/{id}/boards', [BoardController::class, 'index']); // Lấy danh sách Board
-    Route::post('/update-board/{id}', [BoardController::class, 'update']); // Cập nhật Board
-    Route::delete('/delete-board/{id}', [BoardController::class, 'destroy']); // Xóa Board
-
-    //board-user
-    Route::post('/board/{id}/join', [BoardController::class, 'joinPublicBoard']);
-    Route::post('/board/{id}/add-member', [BoardController::class, 'addMember']);
-    Route::post('/board/remove-members', [BoardController::class, 'removeMember']);
-    Route::get('/board/{id}/members', [BoardController::class, 'listMembers']);
-
+    Route::prefix('board')->group(function () {
+        Route::post('/create', [BoardController::class, 'store']); // Tạo Board
+        Route::get('/{id}', [BoardController::class, 'show']);
+        Route::post('/update/{id}', [BoardController::class, 'update']); // Cập nhật Board
+        Route::delete('/delete/{id}', [BoardController::class, 'destroy']); // Xóa Board
+        //board-user
+        Route::post('/board/{id}/join', [BoardController::class, 'joinPublicBoard']);
+        Route::post('/board/{id}/add-member', [BoardController::class, 'addMember']);
+        Route::post('/board/remove-members', [BoardController::class, 'removeMember']);
+        Route::get('/board/{id}/members', [BoardController::class, 'listMembers']);
+    });
+    
     //list
-    Route::post('/create-list', [ListBoardController::class, 'store']); // Tạo Board
-    Route::get('/list/{id}', [ListBoardController::class, 'show']);
-    Route::get('/board/{boardId}/lists', [ListBoardController::class, 'index']); // Lấy danh sách Board
-    Route::post('/update-list/{id}', [ListBoardController::class, 'update']); // Cập nhật Board
-    Route::delete('/delete-board/{id}', [ListBoardController::class, 'destroy']); // Xóa Board
-
+    Route::get('/board/{boardId}/lists', [ListBoardController::class, 'index']); // Lấy danh sách list
+    Route::prefix('list')->group(function () {
+        Route::post('/create', [ListBoardController::class, 'store']); // Tạo list
+        Route::get('/{id}', [ListBoardController::class, 'show']);
+        Route::post('/update/{id}', [ListBoardController::class, 'update']); // Cập nhật list
+        Route::delete('/delete/{id}', [ListBoardController::class, 'destroy']); // Xóa list
+    });
+    
     //card
     Route::get('/list/{list}/cards', [CardController::class, 'index']); // Lấy danh sách card theo list
-    Route::post('/create-card', [CardController::class, 'store']); // Tạo card mới
-    Route::post('/update-card/{card}', [CardController::class, 'update']); // Cập nhật card
-    Route::delete('/card/{card}', [CardController::class, 'destroy']); // Xóa card
-    Route::post('/card/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
-
+    Route::prefix('card')->group(function () {
+        Route::post('/create', [CardController::class, 'store']); // Tạo card mới
+        Route::post('/update/{card}', [CardController::class, 'update']); // Cập nhật card
+        Route::delete('/delete/{card}', [CardController::class, 'destroy']); // Xóa card
+        Route::post('/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
+    });
+    
+    //label
+    Route::prefix('label')->group(function () {
+        Route::post('/create', [LabelController::class, 'store']); // Tạo label
+        Route::get('/{id}', [LabelController::class, 'show']);
+        Route::get('/list', [LabelController::class, 'index']); // Lấy danh sách label
+        Route::post('/update/{id}', [LabelController::class, 'update']); // Cập nhật label
+        Route::delete('/delete/{id}', [LabelController::class, 'destroy']); // Xóa label
+    });
     //assign-member-to-card
     Route::post('/cards/{card}/assign-member', [CardController::class, 'assignMember']);
     Route::delete('/cards/{card}/members/{user}', [CardController::class, 'removeMember']);
-
-    //label
-    Route::post('create-label', [LabelController::class, 'store']); // Tạo Board
-    Route::get('/label/{id}', [LabelController::class, 'show']);
-    Route::get('labels', [LabelController::class, 'index']); // Lấy danh sách Board
-    Route::post('/update-label/{id}', [LabelController::class, 'update']); // Cập nhật Board
-    Route::delete('/delete-label/{id}', [LabelController::class, 'destroy']); // Xóa Board
-
+    
+    //assign-label-to-card
     Route::post('/cards/{cardId}/labels', [CardController::class, 'addLabel']);
     Route::delete('/cards/{cardId}/labels/{labelId}', [CardController::class, 'removeLabel']);
 
-    // Route::prefix('domain')->group(function () {
-    //     Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
-    //     Route::get('/create', [DomainController::class, 'createDomain'])->name('domain.create');
-    //     Route::get('/check', [DomainController::class, 'checkDomain'])->name('domain.check');
-    //     Route::get('/up', [DomainController::class, 'upDomain'])->name('domain.up');
-    //     Route::get('/search', [DomainController::class, 'searchDomain'])->name('domain.search');
-    //     Route::get('/delete', [DomainController::class, 'deleteDomain'])->name('domain.delete');
-    // });
+     Route::prefix('domain')->group(function () {
+         Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
+         Route::get('/create', [DomainController::class, 'createDomain'])->name('domain.create');
+         Route::get('/check', [DomainController::class, 'checkDomain'])->name('domain.check');
+         Route::get('/up', [DomainController::class, 'upDomain'])->name('domain.up');
+         Route::get('/search', [DomainController::class, 'searchDomain'])->name('domain.search');
+         Route::get('/delete', [DomainController::class, 'deleteDomain'])->name('domain.delete');
+     });
 
     Route::prefix('html-source')->group(function () {
         Route::get('/', [HtmlSourceController::class, 'listHtmlSource'])->name('html.source.list');
