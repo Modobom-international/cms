@@ -32,7 +32,7 @@ Route::post('/tracking-event', [UsersTrackingController::class, 'storeTrackingEv
 Route::post('/check-device', [UsersTrackingController::class, 'checkDevice']);
 Route::post('/save-html-source', [HtmlSourceController::class, 'storeHtmlSource']);
 Route::post('/push-system', [PushSystemController::class, 'storePushSystem']);
-Route::get('/get-push-system-config', [PushSystemController::class, 'storePushSystemSetting']);
+Route::post('/get-push-system-config', [PushSystemController::class, 'storePushSystemSetting']);
 Route::post('/add-user-active-push-system', [PushSystemController::class, 'storePushSystemUserActive']);
 Route::post('/push-system/save-config-links', [PushSystemController::class, 'storePushSystemConfig']);
 

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Jobs\StorePushSystem;
 use App\Enums\PushSystem;
 use App\Enums\Utility;
@@ -16,7 +15,6 @@ use App\Jobs\StorePushSystemConfig;
 use App\Jobs\StorePushSystemUserActive;
 use App\Jobs\StorePushSystemSetting;
 use App\Jobs\UpdatePushSystemConfig;
-use App\Models\PushSystemConfig;
 use App\Repositories\PushSystemCacheRepository;
 use App\Repositories\PushSystemConfigRepository;
 use App\Repositories\PushSystemUserActiveRepository;
