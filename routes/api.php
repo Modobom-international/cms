@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\HtmlSourceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
@@ -10,6 +11,8 @@ use App\Http\Controllers\API\WorkspaceController;
 use App\Http\Controllers\API\ListBoardController;
 use App\Http\Controllers\API\CardController;
 use App\Http\Controllers\API\LabelController;
+use App\Http\Controllers\API\CheckListController;
+use App\Http\Controllers\API\CheckListItemController;
 use App\Http\Controllers\API\UsersTrackingController;
 use App\Http\Controllers\API\CloudflareController;
 use App\Http\Controllers\API\PageController;
@@ -39,7 +42,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/change-password-user/{id}/', [UserController::class, 'updatePassword']);
     
     //workspace
-    Route::prefix('workspace')->group(function () {
+    Route::prefix('/workspace')->group(function () {
         Route::get('/list', [WorkspaceController::class, 'index']);
         Route::post('/create', [WorkspaceController::class, 'store']);
         Route::get('/{id}', [WorkspaceController::class, 'show']);
@@ -86,7 +89,7 @@ Route::middleware('auth:api')->group(function () {
     });
     
     //label
-    Route::prefix('label')->group(function () {
+    Route::prefix('/label')->group(function () {
         Route::post('/create', [LabelController::class, 'store']); // Tạo label
         Route::get('/{id}', [LabelController::class, 'show']);
         Route::get('/list', [LabelController::class, 'index']); // Lấy danh sách label
@@ -103,7 +106,22 @@ Route::middleware('auth:api')->group(function () {
     //assign-label-to-card
     Route::post('/cards/{cardId}/labels', [CardController::class, 'addLabel']);
     Route::delete('/cards/{cardId}/labels/{labelId}', [CardController::class, 'removeLabel']);
-
+    
+    // checkList
+    Route::get('/cards/{card}/checklists', [ChecklistController::class, 'index']);
+    Route::post('/cards/{card}/checklist/store', [ChecklistController::class, 'store']);
+    Route::post('/checklist/update/{id}', [ChecklistController::class, 'update']);
+    Route::delete('/checklist/delete/{id}', [ChecklistController::class, 'destroy']);
+    
+    //checkListItem
+    Route::prefix('/checklist')->group(function () {
+        Route::get('/{checklist}/checklistItem/list', [ChecklistItemController::class, 'index']);
+        Route::get('/{checklist}/checklistItem/store', [CheckListItemController::class, 'store']); // Chi tiết 1 checklist
+        Route::put('/{checklist}/checklistItem/update/{item}', [CheckListItemController::class, 'update']); // Cập nhật checklist
+        Route::delete('/{checklist}/checklistItem/delete/{item}', [CheckListItemController::class, 'destroy']); // Xoá checklist
+        Route::post('/checklistItem/toggle/{item}', [ChecklistItemController::class, 'toggle']); // Check/Uncheck
+    });
+    
      Route::prefix('domain')->group(function () {
          Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
          Route::get('/create', [DomainController::class, 'createDomain'])->name('domain.create');
