@@ -2,15 +2,24 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Jobs\SaveRequestGetSystemSetting;
-use App\Jobs\SaveUserActivePushSystem;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Jobs\StorePushSystem;
 use App\Enums\PushSystem;
 use App\Enums\Utility;
+use App\Http\Requests\PushSystemConfigRequest;
 use App\Http\Requests\PushSystemRequest;
+use App\Http\Requests\PushSystemUserActiveRequest;
+use App\Http\Requests\PushSystemSettingRequest;
+use App\Http\Requests\UpdatePushSystemConfigRequest;
+use App\Jobs\StorePushSystemConfig;
+use App\Jobs\StorePushSystemUserActive;
+use App\Jobs\StorePushSystemSetting;
+use App\Jobs\UpdatePushSystemConfig;
+use App\Models\PushSystemConfig;
 use App\Repositories\PushSystemCacheRepository;
+use App\Repositories\PushSystemConfigRepository;
+use App\Repositories\PushSystemUserActiveRepository;
 use Exception;
 
 class PushSystemController extends Controller
@@ -18,15 +27,24 @@ class PushSystemController extends Controller
     protected $pushSystem;
     protected $utility;
     protected $pushSystemCacheRepository;
+    protected $pushSystemUserActiveRepository;
+    protected $pushSystemConfigRepository;
 
-    public function __construct(PushSystem $pushSystem, Utility $utility, PushSystemCacheRepository $pushSystemCacheRepository)
-    {
+    public function __construct(
+        PushSystem $pushSystem,
+        Utility $utility,
+        PushSystemCacheRepository $pushSystemCacheRepository,
+        PushSystemUserActiveRepository $pushSystemUserActiveRepository,
+        PushSystemConfigRepository $pushSystemConfigRepository,
+    ) {
         $this->utility = $utility;
         $this->pushSystem = $pushSystem;
         $this->pushSystemCacheRepository = $pushSystemCacheRepository;
+        $this->pushSystemUserActiveRepository = $pushSystemUserActiveRepository;
+        $this->pushSystemConfigRepository = $pushSystemConfigRepository;
     }
 
-    public function saveData(PushSystemRequest $request)
+    public function storePushSystem(PushSystemRequest $request)
     {
         try {
             $params = $request->all();
@@ -49,314 +67,316 @@ class PushSystemController extends Controller
         }
     }
 
-    public function getSettings(Request $request)
+    public function storePushSystemSetting(PushSystemSettingRequest $request)
     {
         try {
+            $kwMKDTAC = PushSystem::pickKwMK(PushSystem::TELCO_DTAC);
+            $kwMKAIS = PushSystem::pickKwMK(PushSystem::TELCO_AIS);
+            $shareWeb = PushSystem::getShareWebConfig();
+            $linkWeb = PushSystem::pickLink($shareWeb);
+            $config = PushSystem::getPushStatusAndTypeConfig();
+
+            $arr = [
+                'pushweb' => [
+                    'status' => $config['status'],
+                    'type' => $config['type'],
+                    'shareweb' => $shareWeb,
+                    'linkweb' => $linkWeb,
+                ],
+                'pushsms' => [
+                    'status' => 'off',
+                    'time' => 3,
+                    'pushnow' => 'off',
+                    'ais' => [$kwMKAIS],
+                    'dtac' => [$kwMKDTAC],
+                ],
+
+            ];
+
+            $data = [
+                'ip' => $request->getClientIp(),
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'],
+                'created_date' => $this->utility->getCurrentVNTime('Y-m-d'),
+                'keyword_dtac' => $kwMKDTAC,
+                'keyword_ais' => $kwMKAIS,
+                'share_web' => $shareWeb,
+                'link_web' => $linkWeb,
+                'data' => $arr,
+            ];
+
+            StorePushSystemSetting::dispatch($data)->onQueue('store_push_system_setting');
+
             return response()->json([
                 'success' => true,
-                'data' => $response,
-                'message' => 'Lấy danh sách html source thành công',
-                'type' => 'list_html_source_success',
-            ], 200);
+                'data' => $data,
+                'message' => 'Lưu push system setting thành công',
+            ], 202);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Lấy danh sách html source không thành công',
-                'type' => 'list_html_source_fail',
-                'error' => $e->getMessage()
+                'message' => 'Lưu push system setting không thành công',
             ], 500);
         }
-
-        $kwMKDTAC = PushSystem::pickKwMK(PushSystem::TELCO_DTAC);
-        $kwMKAIS = PushSystem::pickKwMK(PushSystem::TELCO_AIS);
-        $shareWeb = PushSystem::getShareWebConfig();
-        $linkWeb = PushSystem::pickLink($shareWeb);
-        $config = PushSystem::getPushStatusAndTypeConfig();
-
-        $arr = [
-            'pushweb' => [
-                'status' => $config['status'],
-                'type' => $config['type'],
-                'shareweb' => $shareWeb,
-                'linkweb' => $linkWeb,
-            ],
-            'pushsms' => [
-                'status' => 'off',
-                'time' => 3,
-                'pushnow' => 'off',
-                'ais' => [$kwMKAIS],
-                'dtac' => [$kwMKDTAC],
-            ],
-
-        ];
-
-        $logData = [
-            'ip' => $request->getClientIp(),
-            'user_agent' => $_SERVER['HTTP_USER_AGENT'],
-            'created_date' => $this->utility->getCurrentVNTime('Y-m-d'),
-            'keyword_dtac' => $kwMKDTAC,
-            'keyword_ais' => $kwMKAIS,
-            'share_web' => $shareWeb,
-            'link_web' => $linkWeb,
-            'data' => $arr,
-        ];
-
-        SaveRequestGetSystemSetting::dispatch($logData)->onQueue('save_request_get_system_setting');
-
-        return response()->json($arr);
     }
 
     public function listPushSystem()
     {
-        $getDataCountries = $this->pushSystemCacheRepository->getByKeyLike('push_systems_users_country_%');
-        $getUserTotal = $this->pushSystemCacheRepository->getFirstByKey('push_systems_users_total');
-        $countUser = $getUserTotal->total;
-        $usersActiveCountry = $this->pushSystemCacheRepository->getByKeyLike('push_systems_users_active_country_' . now()->format('Y-m-d') . '_%')->toArray();
-        $totalActive = 0;
-        $activeByCountry = [];
+        try {
+            $getDataCountries = $this->pushSystemCacheRepository->getByKeyLike('push_systems_users_country_%');
+            $getUserTotal = $this->pushSystemCacheRepository->getFirstByKey('push_systems_users_total');
+            $countUser = $getUserTotal->total;
+            $usersActiveCountry = $this->pushSystemCacheRepository->getByKeyLike('push_systems_users_active_country_' . now()->format('Y-m-d') . '_%')->toArray();
+            $totalActive = 0;
+            $activeByCountry = [];
 
-        foreach ($usersActiveCountry as $item) {
-            $totalActive += $item->total;
-        }
+            foreach ($usersActiveCountry as $item) {
+                $totalActive += $item->total;
+            }
 
-        foreach ($getDataCountries as $country) {
-            $explode = explode('_', $country->key);
-            $activeByCountry[$explode[4]] = $country->total;
-        }
+            foreach ($getDataCountries as $country) {
+                $explode = explode('_', $country->key);
+                $activeByCountry[$explode[4]] = $country->total;
+            }
 
-        return view('push-system.list-push-system', compact('activeByCountry', 'countUser', 'totalActive', 'usersActiveCountry'));
-    }
-
-    public function configLinksPush()
-    {
-        $dataSystem = DB::table('push_systems_config')->first();
-
-        $strLink1 = null;
-        $strLink2 = null;
-
-        if (!empty($dataSystem)) {
-            $linkWeb1 = json_decode($dataSystem->link_web_1);
-            $linkWeb2 = json_decode($dataSystem->link_web_2);
-
-            $strLink1 = implode("\n", $linkWeb1);
-            $strLink2 = implode("\n", $linkWeb2);
-        }
-
-        return view('push-system.create-push-system', compact('dataSystem', 'strLink1', 'strLink2'));
-    }
-
-    public function saveConfigLinksPush(Request $request)
-    {
-        $request->validate([
-            'share_web' => 'required|numeric|min:0|max:100',
-            'link_web_1' => 'required',
-            'link_web_2' => 'required',
-        ]);
-
-        $params = $request->all();
-        $itemArrayLink1 = preg_split('/[\r\n]+/', $params['link_web_1'], -1, PREG_SPLIT_NO_EMPTY);
-        $itemArrayLink2 = preg_split('/[\r\n]+/', $params['link_web_2'], -1, PREG_SPLIT_NO_EMPTY);
-        $dataSystem = DB::table('push_systems_config')->first();
-        $dataPush =
-            [
-                'share_web' => $params['share_web'],
-                'link_web_1' => json_encode($itemArrayLink1),
-                'link_web_2' => json_encode($itemArrayLink2),
-            ];
-        if (!is_null($dataSystem)) {
-            $dataPush['updated_at'] = Common::getCurrentVNTime();
-            DB::table('push_systems_config')->update($dataPush);
-
-
-            DB::table('systems_config_histories')->insert($dataPush);
-        } else {
-            $dataPush['created_at'] = Common::getCurrentVNTime();
-            $dataPush['updated_at'] = Common::getCurrentVNTime();
-            DB::table('push_systems_config')->insert($dataPush);
-        }
-
-        return redirect()->route('push.system.config.link.push')->with('message', 'Config updated successfully');
-    }
-
-    public function addUserActive(Request $request)
-    {
-        $params = $request->all();
-        $params = array_change_key_case($params, CASE_LOWER);
-        $success = false;
-
-        if (!empty($params['token']) && !empty($params['country'])) {
-            $success = true;
-            SaveUserActivePushSystem::dispatch($params['token'], $params['country'])->onQueue('save_user_active_push_system');
-        }
-
-        return response()->json([
-            'success' => $success,
-        ]);
-    }
-
-    public function showConfigLinksPush()
-    {
-
-        $dataConfig = DB::table('push_systems_config')->first();
-        $linkWeb1 = json_decode($dataConfig->link_web_1);
-        $linkWeb2 = json_decode($dataConfig->link_web_2);
-
-        $strLink1 = implode("\n", $linkWeb1);
-        $strLink2 = implode("\n", $linkWeb2);
-
-
-        return view('push-system.show-config', compact('dataConfig', 'strLink1', 'strLink2'));
-    }
-
-    public function listUserActiveAjax()
-    {
-        $usersActiveCountry = DB::connection('mongodb')
-            ->table('push_systems_cache')
-            ->where('key', 'LIKE', 'push_systems_users_active_country_' . now()->format('Y-m-d') . '_%')
-            ->get()
-            ->toArray();
-        $totalActive = 0;
-
-        foreach ($usersActiveCountry as $item) {
-            $totalActive += $item->total;
-        }
-
-        $response = [
-            'total' => $totalActive,
-            'usersActiveCountry' => $usersActiveCountry,
-        ];
-
-        return response()->json($response);
-    }
-
-    public function addConfigSystemLink(Request $request)
-    {
-        $configDataRaw = DB::table('push_systems_config_new')->where('push_count', "!=", 0)->get();
-        $configPushRow = DB::table('push_systems_config_new')->where('push_count', 0)->first();
-
-        if (empty($configPushRow)) {
-            $dataInsert = [
-                'push_count' => 0,
-                'status' => 'on',
-                'type' => 'search',
-                'created_at' => Common::getCurrentVNTime(),
+            $data = [
+                'active_by_country' => $activeByCountry,
+                'count_user' => $countUser,
+                'total_active' => $totalActive,
+                'users_active_country' => $usersActiveCountry,
             ];
 
-            DB::table('push_systems_config_new')->insert($dataInsert);
-        }
-
-        $status = [
-            'on' => 'on',
-            'off' => 'off',
-        ];
-
-        $configData = [];
-        foreach ($configDataRaw as $item) {
-            $item->config_links = json_decode($item->config_links, true);
-            $configData[$item->push_count] = $item;
-        }
-
-        return view('push-system.config-system-link', compact('configData', 'configPushRow', 'status'));
-    }
-
-    public function getCurrentPushCountAjax()
-    {
-        $getCurrentPushCount = DB::table('push_systems_config_new')->select(DB::raw('max(push_count) as count'))->first('count');
-        $pushCount = !empty($getCurrentPushCount) ? intval($getCurrentPushCount->count) : 0;
-
-        return response()->json([
-            'pushCount' => $pushCount,
-            'success' => true,
-        ]);
-    }
-
-    public function saveConfigSystemLink(Request $request)
-    {
-        $params = $request->all();
-        if (empty($params['data']) || !isset($params['share']) || empty($params['push_index'])) {
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lấy danh sách push system thành công',
+                'type' => 'list_push_system_success',
+            ], 200);
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => "Invalid request",
-            ]);
+                'message' => 'Lấy danh sách push system không thành công',
+                'type' => 'list_push_system_fail',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $configPushRowFirst = DB::table('push_systems_config_new')->where('push_count', 0)->first();
-        $shareWeb = $params['share'];
-        $dataInsert = [
-            'status' => $configPushRowFirst->status ?? "on",
-            'type' => $configPushRowFirst->type ?? "search",
-            'push_count' => $params['push_index'],
-            'share' => $shareWeb,
-            'config_links' => json_encode($params['data']),
-            'created_at' => Common::getCurrentVNTime(),
-        ];
-        $resultInset = DB::table('push_systems_config_new')->insert($dataInsert);
-
-        return response()->json([
-            'success' => $resultInset,
-            'message' => "Data insert success",
-            'params' => $params,
-        ]);
     }
 
-    public function updateConfigSystemLinkItem(Request $request, $id)
+    public function storePushSystemUserActive(PushSystemUserActiveRequest $request)
     {
-        $params = $request->all();
-        if (empty($params['share']) || empty($params['data'])) {
+        try {
+            $params = $request->validated();
+            $params = array_change_key_case($params, CASE_LOWER);
+            $data = [
+                'token' => $params['token'] ?? null,
+                'country' => $params['country'] ?? null,
+                'activated_at' => $this->utility->getCurrentVNTime('Y-m-d H:i:s'),
+                'activated_date' => $this->utility->getCurrentVNTime('Y-m-d'),
+            ];
+
+            StorePushSystemUserActive::dispatch($data)->onQueue('store_push_system_user_active');
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lưu push system user active thành công',
+            ], 202);
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => "Invalid request",
-            ]);
+                'message' => 'Lưu push system user active không thành công',
+            ], 500);
         }
-
-        $resultUpdate = DB::table('push_systems_config_new')->where('id', $id)->update([
-            'share' => $params['share'],
-            'config_links' => json_encode($params['data']),
-            'updated_at' => Common::getCurrentVNTime(),
-        ]);
-
-        return response()->json([
-            'success' => $resultUpdate,
-            'message' => "Update Success",
-        ]);
     }
 
-    public function saveStatusLink(Request $request)
+    public function listPushSystemUserActive()
     {
-        $params = $request->all();
+        try {
+            $usersActiveCountry = $this->pushSystemCacheRepository->getByKeyLike('push_systems_users_active_country_' . now()->format('Y-m-d') . '_%')->toArray();
+            $totalActive = 0;
 
-        if (empty($params)) {
+            foreach ($usersActiveCountry as $item) {
+                $totalActive += $item->total;
+            }
+
+            $data = [
+                'total' => $totalActive,
+                'users_active_country' => $usersActiveCountry,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lấy danh sách push system user active thành công',
+                'type' => 'list_push_system_user_active_success',
+            ], 200);
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => "Invalid request",
-            ]);
+                'message' => 'Lấy danh sách push system user active không thành công',
+                'type' => 'list_push_system_user_active_fail',
+                'error' => $e->getMessage()
+            ], 500);
         }
+    }
 
-        $configRow = DB::table('push_systems_config_new')->where('push_count', 0)->first();
-        $dataPush = [
-            'status' => $params['status'],
-            'type' => $params['type'],
-        ];
+    public function storePushSystemConfigByAdmin()
+    {
+        try {
+            $configDataRaw = $this->pushSystemConfigRepository->getConfigDataRaw();
+            $configPushRow = $this->pushSystemConfigRepository->getConfigPushRow();
 
-        if (empty($configRow)) {
-            $dataPush['push_count'] = 0;
-            $dataPush['created_at'] = Common::getCurrentVNTime();
-            $resultInset = DB::table('push_systems_config_new')->insert($dataPush);
+            if (empty($configPushRow)) {
+                $dataInsert = [
+                    'push_count' => 0,
+                    'status' => 'on',
+                    'type' => 'search'
+                ];
+
+                StorePushSystemConfig::dispatch($dataInsert)->onQueue('store_push_system_config');
+            }
+
+            $status = [
+                'on' => 'on',
+                'off' => 'off',
+            ];
+
+            $configData = [];
+            foreach ($configDataRaw as $item) {
+                $item->config_links = json_decode($item->config_links, true);
+                $configData[$item->push_count] = $item;
+            }
+
+            $data = [
+                'config_data' => $configData,
+                'config_push_row' => $configPushRow,
+                'status' => $status
+            ];
 
             return response()->json([
-                'success' => $resultInset,
-                'message' => "Data insert success",
-                'params' => $params,
-            ]);
-        } else {
-            $dataPush['updated_at'] = Common::getCurrentVNTime();
-            $resultUpdate = DB::table('push_systems_config_new')->update($dataPush);
+                'success' => true,
+                'data' => $data,
+                'message' => 'Tạo push system config thành công',
+                'type' => 'store_push_system_config_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tạo push system config không thành công',
+                'type' => 'store_push_system_config_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getCountCurrentPush()
+    {
+        try {
+            $getCurrentPushCount = $this->pushSystemConfigRepository->getCurrentPushCount();
+            $pushCount = !empty($getCurrentPushCount) ? intval($getCurrentPushCount->count) : 0;
+
+            $data = [
+                'push_count' => $pushCount
+            ];
 
             return response()->json([
-                'success' => $resultUpdate,
-                'message' => "Data update success",
-                'params' => $params,
-            ]);
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lấy count current push thành công',
+                'type' => 'get_push_system_config_count_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy count current push không thành công',
+                'type' => 'get_push_system_config_count_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function storePushSystemConfig(PushSystemConfigRequest $request)
+    {
+        try {
+            $params = $request->validated();
+            $configPushRowFirst = $this->pushSystemConfigRepository->getConfigPushRow();
+            $shareWeb = $params['share'];
+            $data = [
+                'status' => $configPushRowFirst->status ?? "on",
+                'type' => $configPushRowFirst->type ?? "search",
+                'push_count' => $params['push_index'],
+                'share' => $shareWeb,
+                'config_links' => json_encode($params['data'])
+            ];
+
+            StorePushSystemConfig::dispatch($data)->onQueue('store_push_system_config');
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lưu push system config thành công',
+            ], 202);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lưu push system config không thành công',
+            ], 500);
+        }
+    }
+
+    public function updatePushSystemConfig(UpdatePushSystemConfigRequest $request, $id)
+    {
+        try {
+            $params = $request->validated();
+            $data = [
+                'share' => $params['share'],
+                'config_links' => json_encode($params['data']),
+                'updated_at' => Common::getCurrentVNTime(),
+            ];
+            $this->pushSystemConfigRepository->updateById($id, $data);
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Cập nhật push system config thành công',
+                'type' => 'update_push_system_config_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cập nhật push system config không thành công',
+                'type' => 'update_push_system_config_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function storeStatusLink(PushSystemConfigRequest $request)
+    {
+        try {
+            $params = $request->validated();
+            $configRow = $this->pushSystemConfigRepository->getConfigPushRow();
+            $data = [
+                'status' => $params['status'],
+                'type' => $params['type'],
+            ];
+
+            if (empty($configRow)) {
+                $data['push_count'] = 0;
+                StorePushSystemConfig::dispatch($data)->onQueue('store_push_system_config');
+            } else {
+                UpdatePushSystemConfig::dispatch($data, $configRow->id)->onQueue('store_push_system_config');
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lưu status link thành công',
+            ], 202);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lưu status link không thành công',
+            ], 500);
         }
     }
 }

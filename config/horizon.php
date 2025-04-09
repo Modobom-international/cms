@@ -290,6 +290,24 @@ return [
                 'maxProcesses' => 5,
                 'tries' => 0,
             ],
+
+            'supervisor-cms-11' => [
+                'connection' => 'redis',
+                'queue' => ['store_push_system_setting'],
+                'balance' => 'auto',
+                'minProcesses' => 1,
+                'maxProcesses' => 5,
+                'tries' => 0,
+            ],
+
+            'supervisor-cms-12' => [
+                'connection' => 'redis',
+                'queue' => ['store_push_system_user_active'],
+                'balance' => 'auto',
+                'minProcesses' => 1,
+                'maxProcesses' => 5,
+                'tries' => 0,
+            ],
         ],
     ],
 ];

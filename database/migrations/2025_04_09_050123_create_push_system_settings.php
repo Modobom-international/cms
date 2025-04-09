@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('request_get_system_settings', function (Blueprint $table) {
+        Schema::create('push_system_settings', function (Blueprint $table) {
             $table->id();
             $table->string('ip')->nullable();
             $table->text('user_agent')->nullable();
@@ -31,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('request_get_system_settings');
+        Schema::dropIfExists('push_system_settings');
     }
 };

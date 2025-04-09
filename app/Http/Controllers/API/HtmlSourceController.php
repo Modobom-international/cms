@@ -21,7 +21,7 @@ class HtmlSourceController extends Controller
         $this->utility = $utility;
     }
 
-    public function saveHtml(HtmlSourceRequest $request)
+    public function storeHtmlSource(HtmlSourceRequest $request)
     {
         try {
             $params = $request->validated();

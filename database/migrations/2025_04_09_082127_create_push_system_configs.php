@@ -11,8 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('push_system_caches', function (Blueprint $table) {
+        Schema::create('push_system_configs', function (Blueprint $table) {
             $table->id();
+            $table->string('push_count')->nullable();
+            $table->longText('config_links')->nullable();
+            $table->string('status', 5)->nullable();
+            $table->string('type', 10)->nullable();
+            $table->integer('share')->nullable();
             $table->timestamps();
         });
     }
@@ -22,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('push_system_caches');
+        Schema::dropIfExists('push_system_configs');
     }
 };

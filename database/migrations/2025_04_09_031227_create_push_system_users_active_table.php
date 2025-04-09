@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('push_system_users_active', function (Blueprint $table) {
             $table->id();
+            $table->string('token');
+            $table->string('country');
+            $table->dateTime('activated_at');
+            $table->date('activated_date');
             $table->timestamps();
         });
     }

@@ -30,13 +30,13 @@ Route::post('/collect-ai-training-data', [UsersTrackingController::class, 'store
 Route::post('/heartbeat', [UsersTrackingController::class, 'storeHeartbeat']);
 Route::post('/tracking-event', [UsersTrackingController::class, 'storeTrackingEvent']);
 Route::post('/check-device', [UsersTrackingController::class, 'checkDevice']);
-Route::post('/save-html-source', [HtmlSourceController::class, 'saveHtml']);
+Route::post('/save-html-source', [HtmlSourceController::class, 'storeHtmlSource']);
+Route::post('/push-system', [PushSystemController::class, 'storePushSystem']);
+Route::get('/get-push-system-config', [PushSystemController::class, 'storePushSystemSetting']);
+Route::post('/add-user-active-push-system', [PushSystemController::class, 'storePushSystemUserActive']);
+Route::post('/push-system/save-config-links', [PushSystemController::class, 'storePushSystemConfig']);
 
-Route::get('/get-push-system-config', [PushSystemController::class, 'getSettings']);
-Route::post('/add-user-active-push-system', [PushSystemController::class, 'addUserActive']);
-Route::post('/save-status-link', [PushSystemController::class, 'saveStatusLink']);
-Route::post('/push-system/save-config-links', [PushSystemController::class, 'saveConfigLinksPush']);
-Route::post('/push-system', [PushSystemController::class, 'saveData']);
+Route::post('/save-status-link', [PushSystemController::class, 'storeStatusLink']);
 
 Route::middleware('auth:api')->group(function () {
 
@@ -46,6 +46,14 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/change-password', [UserController::class, 'changePassword']);
     //admin change password for user
     Route::post('/change-password-user/{id}/', [UserController::class, 'updatePassword']);
+
+    // Page routes
+    Route::post('/create-page', [PageController::class, 'create']);
+    Route::post('/update-page', [PageController::class, 'update']);
+    Route::get('/page/{slug}', [PageController::class, 'getPage']);
+    Route::get('/pages', [PageController::class, 'getPages']);
+    Route::get('/sites/{siteId}/pages', [PageController::class, 'getPagesBySite']);
+    Route::post('/export-pages', [PageController::class, 'exportPage']);
 
     //workspace
     Route::prefix('/workspace')->group(function () {
@@ -178,22 +186,14 @@ Route::middleware('auth:api')->group(function () {
 
     Route::prefix('push-system')->group(function () {
         Route::get('/', [PushSystemController::class, 'listPushSystem'])->name('push.system.list');
-        Route::get('/config-link/add', [PushSystemController::class, 'addConfigSystemLink'])->name('push.system.config.link');
-        Route::get('/list-user-active', [PushSystemController::class, 'listUserActiveAjax'])->name('push.system.list.user.active.ajax');
-        Route::get('/show-config-links', [PushSystemController::class, 'showConfigLinksPush'])->name('push.system.show.config.link');
-        Route::get('/config-links', [PushSystemController::class, 'configLinksPush'])->name('push.system.edit.config.link');
+        Route::get('/config/store', [PushSystemController::class, 'storePushSystemConfigByAdmin'])->name('push.system.config.store');
+        Route::get('/user-active/list', [PushSystemController::class, 'listPushSystemUserActive'])->name('push.system.user.active.list');
+        Route::post('/config/update/{id}', [PushSystemController::class, 'updatePushSystemConfig'])->name('push.system.config.update');
+        Route::get('/count-current-push', [PushSystemController::class, 'getCountCurrentPush'])->name('push.system.count.current.push');
     });
 
     Route::prefix('html-source')->group(function () {
         Route::get('/', [HtmlSourceController::class, 'listHtmlSource'])->name('html.source.list');
         Route::get('/{id}', [HtmlSourceController::class, 'showHtmlSource'])->name('html.source.show');
     });
-
-    // Page routes
-    Route::post('/create-page', [PageController::class, 'create']);
-    Route::post('/update-page', [PageController::class, 'update']);
-    Route::get('/page/{slug}', [PageController::class, 'getPage']);
-    Route::get('/pages', [PageController::class, 'getPages']);
-    Route::get('/sites/{siteId}/pages', [PageController::class, 'getPagesBySite']);
-    Route::post('/export-pages', [PageController::class, 'exportPage']);
 });

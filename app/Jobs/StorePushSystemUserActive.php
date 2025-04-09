@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
-use DB;
-use App\Helper\Common;
+use App\Enums\Utility;
+use App\Repositories\PushSystemCacheRepository;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
@@ -14,64 +14,56 @@ class StorePushSystemUserActive implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    private $token;
-    private $country;
+    private $data;
 
-    public function __construct($token, $country)
+    public function __construct($data)
     {
-        $this->token = $token;
-        $this->country = $country;
+        $this->data = $data;
     }
 
-    public function handle()
+    public function handle(Utility $utility, PushSystemCacheRepository $pushSystemCacheRepository)
     {
-        DB::table('push_systems_users_active')->insert([
-            'token' => $this->token,
-            'country' => $this->country,
-            'activated_at' => Common::getCurrentVNTime(),
-            'activated_date' => Common::getCurrentVNTime('Y-m-d'),
-        ]);
+        $dataInsert = [
+            'token' => $this->data['token'],
+            'country' => $this->data['country'],
+            'activated_at' => $utility->getCurrentVNTime(),
+            'activated_date' => $utility->getCurrentVNTime('Y-m-d'),
+        ];
 
-        $getPushSystemCacheByCountry =  DB::connection('mongodb')
-            ->table('push_systems_cache')
-            ->where('key', 'push_systems_users_active_country_' . now()->format('Y-m-d') . '_' . $this->country)
-            ->first();
-
-        $getPushSystemCacheTotal =  DB::connection('mongodb')
-            ->table('push_systems_cache')
-            ->where('key', 'push_systems_users_active_total_' . now()->format('Y-m-d'))
-            ->first();
+        $pushSystemCacheRepository->create($dataInsert);
+        $getPushSystemCacheByCountry =  $pushSystemCacheRepository->getFirstByKeyLike('push_systems_users_active_country_' . now()->format('Y-m-d') . '_' . $this->data['country']);
+        $getPushSystemCacheTotal =  $pushSystemCacheRepository->getFirstByKeyLike('push_systems_users_active_total_' . now()->format('Y-m-d'));
 
         if (empty($getPushSystemCacheByCountry)) {
-            DB::connection('mongodb')
-                ->table('push_systems_cache')
-                ->insert([
-                    'key' => 'push_systems_users_active_country_' . now()->format('Y-m-d') . '_' . $this->country,
-                    'total' => 1,
-                ]);
+            $dataInsert = [
+                'key' => 'push_systems_users_active_country_' . now()->format('Y-m-d') . '_' . $this->data['country'],
+                'total' => 1,
+            ];
+
+            $pushSystemCacheRepository->create($dataInsert);
         } else {
-            DB::connection('mongodb')
-                ->table('push_systems_cache')
-                ->where('key', 'push_systems_users_active_country_' . now()->format('Y-m-d') . '_' . $this->country)
-                ->update([
-                    'total' => $getPushSystemCacheByCountry->total + 1,
-                ]);
+            $keyUpdate = 'push_systems_users_active_country_' . now()->format('Y-m-d') . '_' . $this->data['country'];
+            $dataUpdate = [
+                'total' => $getPushSystemCacheByCountry->total + 1,
+            ];
+
+            $pushSystemCacheRepository->updateTotalByKey($keyUpdate, $dataUpdate);
         }
 
         if (empty($getPushSystemCacheTotal)) {
-            DB::connection('mongodb')
-                ->table('push_systems_cache')
-                ->insert([
-                    'key' => 'push_systems_users_active_total_' . now()->format('Y-m-d'),
-                    'total' => 1,
-                ]);
+            $dataInsert = [
+                'key' => 'push_systems_users_active_total_' . now()->format('Y-m-d'),
+                'total' => 1,
+            ];
+
+            $pushSystemCacheRepository->create($dataInsert);
         } else {
-            DB::connection('mongodb')
-                ->table('push_systems_cache')
-                ->where('key', 'push_systems_users_active_total_' . now()->format('Y-m-d'))
-                ->update([
-                    'total' => $getPushSystemCacheTotal->total + 1,
-                ]);
+            $keyUpdate = 'push_systems_users_active_total_' . now()->format('Y-m-d');
+            $dataUpdate = [
+                'total' => $getPushSystemCacheByCountry->total + 1,
+            ];
+
+            $pushSystemCacheRepository->updateTotalByKey($keyUpdate, $dataUpdate);
         }
     }
 }

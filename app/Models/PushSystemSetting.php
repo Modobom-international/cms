@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class RequestGetSystemSetting extends Model
+class PushSystemSetting extends Model
 {
-    protected $table = 'request_get_system_settings';
+    protected $table = 'push_system_settings';
 
     protected $fillable = [
         'ip',
