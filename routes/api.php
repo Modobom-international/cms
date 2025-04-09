@@ -26,7 +26,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::post('/create-video-timeline', [UsersTrackingController::class, 'storeVideoTimeline']);
-Route::post('/collect-ai-training-data', [UsersTrackingController::class, 'storeTrainingData']);
+Route::post('/collect-ai-training-data', [UsersTrackingController::class, 'storeAiTrainingData']);
 Route::post('/heartbeat', [UsersTrackingController::class, 'storeHeartbeat']);
 Route::post('/tracking-event', [UsersTrackingController::class, 'storeTrackingEvent']);
 Route::post('/check-device', [UsersTrackingController::class, 'checkDevice']);
@@ -35,11 +35,9 @@ Route::post('/push-system', [PushSystemController::class, 'storePushSystem']);
 Route::post('/get-push-system-config', [PushSystemController::class, 'storePushSystemSetting']);
 Route::post('/add-user-active-push-system', [PushSystemController::class, 'storePushSystemUserActive']);
 Route::post('/push-system/save-config-links', [PushSystemController::class, 'storePushSystemConfig']);
-
 Route::post('/save-status-link', [PushSystemController::class, 'storeStatusLink']);
 
 Route::middleware('auth:api')->group(function () {
-
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [UserController::class, 'me']);
     Route::post('/update/user', [UserController::class, 'updateCurrentUser']);
