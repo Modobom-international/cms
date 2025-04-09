@@ -118,7 +118,10 @@ return [
             'port'     => env('DB_PORT_MONGO', 27017),
             'database' => env('DB_DATABASE_MONGO', 'cms'),
             'username' => env('DB_USERNAME_MONGO', 'root'),
-            'password' => env('DB_PASSWORD_MONGO', '')
+            'password' => env('DB_PASSWORD_MONGO', ''),
+            'options' => [
+                'authSource' => env('DB_AUTHENTICATION_DATABASE', 'admin'),
+            ],
         ],
 
     ],

@@ -14,6 +14,8 @@ use App\Http\Controllers\API\UsersTrackingController;
 use App\Http\Controllers\API\CloudflareController;
 use App\Http\Controllers\API\PageController;
 use App\Http\Controllers\API\SiteController;
+use App\Http\Controllers\API\HtmlSourceController;
+use App\Http\Controllers\API\PushSystemController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -26,8 +28,13 @@ Route::post('/collect-ai-training-data', [UsersTrackingController::class, 'store
 Route::post('/heartbeat', [UsersTrackingController::class, 'storeHeartbeat']);
 Route::post('/tracking-event', [UsersTrackingController::class, 'storeTrackingEvent']);
 Route::post('/check-device', [UsersTrackingController::class, 'checkDevice']);
+Route::post('/save-html-source', [HtmlSourceController::class, 'saveHtml']);
 
-// Page export routes
+Route::get('/get-push-system-config', [PushSystemController::class, 'getSettings']);
+Route::post('/add-user-active-push-system', [PushSystemController::class, 'addUserActive']);
+Route::post('/save-status-link', [PushSystemController::class, 'saveStatusLink']);
+Route::post('/push-system/save-config-links', [PushSystemController::class, 'saveConfigLinksPush']);
+Route::post('/push-system', [PushSystemController::class, 'saveData']);
 
 Route::middleware('auth:api')->group(function () {
 
@@ -37,7 +44,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/change-password', [UserController::class, 'changePassword']);
     //admin change password for user
     Route::post('/change-password-user/{id}/', [UserController::class, 'updatePassword']);
-    
+
     //workspace
     Route::prefix('workspace')->group(function () {
         Route::get('/list', [WorkspaceController::class, 'index']);
@@ -45,14 +52,14 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{id}', [WorkspaceController::class, 'show']);
         Route::post('/update/{id}', [WorkspaceController::class, 'update']);
         Route::get('/delete/{id}', [WorkspaceController::class, 'destroy']);
-    
+
         //workspace-user
         Route::post('/{id}/join', [WorkspaceController::class, 'joinPublicWorkspace']);
         Route::post('/{id}/add-member', [WorkspaceController::class, 'addMember']);
         Route::post('/remove-members', [WorkspaceController::class, 'removeMember']);
         Route::get('/{id}/members', [WorkspaceController::class, 'listMembers']);
     });
-    
+
     //board
     Route::get('/workspace/{id}/boards', [BoardController::class, 'index']); // Lấy danh sách Board
     Route::prefix('board')->group(function () {
@@ -66,7 +73,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/board/remove-members', [BoardController::class, 'removeMember']);
         Route::get('/board/{id}/members', [BoardController::class, 'listMembers']);
     });
-    
+
     //list
     Route::get('/board/{boardId}/lists', [ListBoardController::class, 'index']); // Lấy danh sách list
     Route::prefix('list')->group(function () {
@@ -75,7 +82,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/update/{id}', [ListBoardController::class, 'update']); // Cập nhật list
         Route::get('/delete/{id}', [ListBoardController::class, 'destroy']); // Xóa list
     });
-    
+
     //card
     Route::get('/list/{list}/cards', [CardController::class, 'index']); // Lấy danh sách card theo list
     Route::prefix('card')->group(function () {
@@ -84,7 +91,7 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/delete/{card}', [CardController::class, 'destroy']); // Xóa card
         Route::post('/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
     });
-    
+
     //label
     Route::prefix('label')->group(function () {
         Route::post('/create', [LabelController::class, 'store']); // Tạo label
@@ -93,25 +100,25 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/update/{id}', [LabelController::class, 'update']); // Cập nhật label
         Route::delete('/delete/{id}', [LabelController::class, 'destroy']); // Xóa label
     });
-    
+
     // member-card
     Route::post('/cards/{card}/join', [CardController::class, 'join']);
     Route::post('/cards/{card}/leave', [CardController::class, 'leave']);
     Route::post('/cards/{card}/assign-members', [CardController::class, 'assignMember']);
     Route::delete('/cards/{card}/members/{user}', [CardController::class, 'removeMember']);
-    
+
     //assign-label-to-card
     Route::post('/cards/{cardId}/labels', [CardController::class, 'addLabel']);
     Route::delete('/cards/{cardId}/labels/{labelId}', [CardController::class, 'removeLabel']);
 
-     Route::prefix('domain')->group(function () {
-         Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
-         Route::get('/create', [DomainController::class, 'createDomain'])->name('domain.create');
-         Route::get('/check', [DomainController::class, 'checkDomain'])->name('domain.check');
-         Route::get('/up', [DomainController::class, 'upDomain'])->name('domain.up');
-         Route::get('/search', [DomainController::class, 'searchDomain'])->name('domain.search');
-         Route::get('/delete', [DomainController::class, 'deleteDomain'])->name('domain.delete');
-     });
+    Route::prefix('domain')->group(function () {
+        Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
+        Route::get('/create', [DomainController::class, 'createDomain'])->name('domain.create');
+        Route::get('/check', [DomainController::class, 'checkDomain'])->name('domain.check');
+        Route::get('/up', [DomainController::class, 'upDomain'])->name('domain.up');
+        Route::get('/search', [DomainController::class, 'searchDomain'])->name('domain.search');
+        Route::get('/delete', [DomainController::class, 'deleteDomain'])->name('domain.delete');
+    });
 
     Route::prefix('html-source')->group(function () {
         Route::get('/', [HtmlSourceController::class, 'listHtmlSource'])->name('html.source.list');
@@ -150,6 +157,19 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/deploy', [CloudflareController::class, 'createDeployment'])->name('cloudflare.create.deployment');
         Route::post('/domain/apply', [CloudflareController::class, 'applyDomain'])->name('cloudflare.apply.domain');
         Route::post('/deploy-exports', [CloudflareController::class, 'deployExports'])->name('cloudflare.deploy.exports');
+    });
+
+    Route::prefix('push-system')->group(function () {
+        Route::get('/', [PushSystemController::class, 'listPushSystem'])->name('push.system.list');
+        Route::get('/config-link/add', [PushSystemController::class, 'addConfigSystemLink'])->name('push.system.config.link');
+        Route::get('/list-user-active', [PushSystemController::class, 'listUserActiveAjax'])->name('push.system.list.user.active.ajax');
+        Route::get('/show-config-links', [PushSystemController::class, 'showConfigLinksPush'])->name('push.system.show.config.link');
+        Route::get('/config-links', [PushSystemController::class, 'configLinksPush'])->name('push.system.edit.config.link');
+    });
+
+    Route::prefix('html-source')->group(function () {
+        Route::get('/', [HtmlSourceController::class, 'listHtmlSource'])->name('html.source.list');
+        Route::get('/{id}', [HtmlSourceController::class, 'showHtmlSource'])->name('html.source.show');
     });
 
     // Page routes

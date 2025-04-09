@@ -28,9 +28,9 @@ final class Utility
         return new LengthAwarePaginator($paginatedItems, $items->count(), $perPage, $page, $options);
     }
 
-    public function getCurrentVNTime($timezone = 'Asia/Ho_Chi_Minh', $format = 'Y-m-d H:i:s')
+    public function getCurrentVNTime($format = 'Y-m-d H:i:s')
     {
-        return (new \DateTime())->setTimezone(new \DateTimeZone($timezone))->format($format);
+        return (new \DateTime())->setTimezone(new \DateTimeZone('Asia/Ho_Chi_Minh'))->format($format);
     }
 
     public function http($url, $params)

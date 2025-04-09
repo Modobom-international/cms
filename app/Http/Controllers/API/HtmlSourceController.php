@@ -3,60 +3,53 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use Exception;
-use App\Helper\Common;
+use App\Helper\Utility;
+use App\Http\Requests\HtmlSourceRequest;
 use App\Jobs\StoreHtmlSource;
 use App\Repositories\HtmlSourceRepository;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Exception;
 
 class HtmlSourceController extends Controller
 {
     protected $htmlSourceRepository;
+    protected $utility;
 
-    public function __construct(HtmlSourceRepository $htmlSourceRepository)
+    public function __construct(HtmlSourceRepository $htmlSourceRepository, Utility $utility)
     {
         $this->htmlSourceRepository = $htmlSourceRepository;
+        $this->utility = $utility;
     }
 
-    public function saveHtml(Request $request)
+    public function saveHtml(HtmlSourceRequest $request)
     {
         try {
-            $params = $request->all();
+            $params = $request->validated();
             $params = array_change_key_case($params, CASE_LOWER);
-            $result = [];
-
-            if (empty($params['url']) || empty($params['source']) || strpos($params['url'], 'youtube') !== false) {
-                $result['success'] = false;
-
-                return response()->json($result);
-            }
 
             $data = [
-                'appId' => $params['app_id'] ?? null,
+                'app_id' => $params['app_id'] ?? null,
                 'version' => $params['version'] ?? null,
                 'note' => $params['note'] ?? null,
-                'deviceId' => $params['device_id'] ?? null,
+                'device_id' => $params['device_id'] ?? null,
                 'country' => $params['country'] ?? null,
                 'platform' => $params['platform'] ?? null,
                 'source' => $params['source'],
-                'url' => $params['url']
+                'url' => $params['url'],
+                'created_date' => $this->utility->getCurrentVNTime('Y-m-d'),
             ];
 
-            StoreHtmlSource::dispatch($data)->onQueue('create_html_source');
-            $result['success'] = true;
+            StoreHtmlSource::dispatch($data)->onQueue('store_html_source');
 
             return response()->json([
                 'success' => true,
-                'data' => $result,
+                'data' => $params,
                 'message' => 'Lưu html source thành công',
-                'type' => 'store_html_source_success',
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Lưu html source không thành công',
-                'type' => 'store_html_source_fail',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -66,12 +59,12 @@ class HtmlSourceController extends Controller
     {
         try {
             $input = $request->all();
-            $date = $request->get('date') ?? Common::getCurrentVNTime('Y-m-d');
+            $date = $request->get('date') ?? $this->utility->getCurrentVNTime('Y-m-d');
             $app = $request->get('app');
             $country = $request->get('country');
             $device = $request->get('device');
             $textSource = $request->get('textSource');
-            $listHtmlSource = $this->htmlSourceRepository->get();
+            $listHtmlSource = $this->htmlSourceRepository->all();
             $filter = [
                 'country' => $country,
                 'app' => $app,
@@ -81,8 +74,8 @@ class HtmlSourceController extends Controller
             ];
 
             $dateFormat = date('Y-m-d');
-            $apps = $this->htmlSourceRepository->getAppsID();
-            $countries = $this->htmlSourceRepository->getCountry();
+            $apps = $this->htmlSourceRepository->getApps();
+            $countries = $this->htmlSourceRepository->getCountries();
             $dataPaginate = $this->htmlSourceRepository->getList($filter);
             $count = count($listHtmlSource);
 
@@ -127,7 +120,7 @@ class HtmlSourceController extends Controller
     public function showHtmlSource($id)
     {
         try {
-            $dataHtmlSource = DB::table('html_sources')->where('id', $id)->first();
+            $dataHtmlSource = $this->htmlSourceRepository->getByID($id);
 
             return response()->json([
                 'success' => true,
