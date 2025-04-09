@@ -43,4 +43,29 @@ return [
         'wrangler_path' => env('WRANGLER_PATH', '/usr/local/bin/wrangler'),
     ],
 
+    'telegram-bot-api' => [
+        'token' => env('TELEGRAM_BOT_TOKEN', 'TOKEN'),
+    ],
+
+    'godaddy' => [
+        'api_key'    => env('GODADDY_API_KEY'),
+        'api_secret' => env('GODADDY_API_SECRET'),
+        'api_url'    => env('GODADDY_API_URL'),
+        'shopper_id'    => env('GODADDY_SHOPPER_ID'),
+    ],
+
+    'godaddy_tuan' => [
+        'api_key'    => env('GODADDY_TUAN_API_KEY'),
+        'api_secret' => env('GODADDY_TUAN_API_SECRET'),
+        'api_url'    => env('GODADDY_TUAN_API_URL'),
+        'shopper_id'    => env('GODADDY_TUAN_SHOPPER_ID'),
+    ],
+
+    'godaddy_linh' => [
+        'api_key'    => env('GODADDY_LINH_API_KEY'),
+        'api_secret' => env('GODADDY_LINH_API_SECRET'),
+        'api_url'    => env('GODADDY_LINH_API_URL'),
+        'shopper_id'    => env('GODADDY_LINH_SHOPPER_ID'),
+    ],
+
 ];

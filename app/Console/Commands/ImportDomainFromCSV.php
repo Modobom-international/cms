@@ -1,14 +1,11 @@
 <?php
 
-namespace App\Console\Commands\Domains;
+namespace App\Console\Commands;
 
-use Exception;
-use App\Enums\ListServer;
 use App\Enums\Utility;
-use App\Repositories\UserRepository;
-use GuzzleHttp\Client;
+use App\Repositories\DomainRepository;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
+use GuzzleHttp\Client;
 
 class ImportDomainFromCSV extends Command
 {
@@ -17,21 +14,21 @@ class ImportDomainFromCSV extends Command
     protected $apiSecret;
     protected $apiUrl;
     protected $utility;
-    protected $userRepository;
-    protected $signature = 'domains:import-domain-from-csv';
+
+    protected $signature = 'domain:import-from-csv';
     protected $description = 'Import domain from CSV file';
 
-    public function __construct(Utility $utility, UserRepository $userRepository)
+    public function __construct(Utility $utility, DomainRepository $domainRepository)
     {
         $this->utility = $utility;
-        $this->userRepository = $userRepository;
+        $this->domainRepository = $domainRepository;
         parent::__construct();
     }
 
     public function handle()
     {
-        $listIP = ListServer::LIST_SERVER;
         $count = 1;
+        $listIP = explode(',', env('LIST_IP', '127.0.0.1,localhost'));
 
         $listKey = [
             'tuan' => [
@@ -47,8 +44,6 @@ class ImportDomainFromCSV extends Command
         ];
 
         foreach ($listIP as $server) {
-            $dbInfoPath = public_path('db-info/DBinfo-' . $server . '.txt');
-
             if (($handle = fopen(public_path('import-domain/' . $server . '.csv'), 'r')) !== false) {
                 while (($row = fgetcsv($handle)) !== false) {
                     if ($count <= 2) {
@@ -61,28 +56,11 @@ class ImportDomainFromCSV extends Command
                         continue;
                     }
 
-                    if ($server == '139.162.44.151') {
-                        $domain = $row[2];
-                        $admin_password = $row[3];
-                        $db_name = $row[6];
-                        $ftp_user = $row[5];
-                    } else if ($server == '139.177.186.184') {
-                        $domain = $row[2];
-                        $admin_password = $row[4];
-                        $db_name = $row[6];
-                        $ftp_user = $row[5];
-                    } else {
-                        $domain = $row[2];
-                        $admin_password = $row[3];
-                        $db_name = $row[6];
-                        $ftp_user = $row[5];
-                    }
+                    $domain = $row[2];
 
                     $this->apiKey = $listKey['tuan']['apiKey'];
                     $this->apiSecret = $listKey['tuan']['apiSecret'];
                     $this->apiUrl = $listKey['tuan']['apiUrl'];
-                    $linesAfter = 10;
-                    $public_html = `/home/` . $domain . "/public_html";
                     $result = $this->getDetailDomain($domain);
 
                     dump('---------- Bắt đầu với domain : ' . $domain);
@@ -110,8 +88,6 @@ class ImportDomainFromCSV extends Command
                             dump('Skip domain');
                             continue;
                         } else {
-                            $getUser = $this->userRepository->getUserByEmail('tranlinh.modobom@gmail.com');
-                            $provider = $getUser->id;
                         }
                     } else if (array_key_exists('error', $result)) {
                         $count++;
@@ -120,61 +96,18 @@ class ImportDomainFromCSV extends Command
                         dump('Skip domain');
                         continue;
                     } else {
-                        $getUser = $this->userRepository->getUserByEmail('vutuan.modobom@gmail.com');
-                        $provider = $getUser->id;
                     }
 
-                    if (file_exists($dbInfoPath)) {
-                        $lines = file($dbInfoPath, FILE_IGNORE_NEW_LINES);
-                        $found = false;
-                        $output = [];
-
-                        foreach ($lines as $index => $line) {
-                            if (strpos($line, $domain) !== false) {
-                                $found = true;
-                                $output = array_slice($lines, $index, $linesAfter + 1);
-                                break;
-                            }
-                        }
-
-                        if ($found) {
-                            dump("Tìm thấy thông tin domain!");
-                        } else {
-                            $count++;
-                            dump("Không tìm thấy về thông tin domain!");
-                            dump('Skip domain');
-                            continue;
-                        }
-                    } else {
-                        $count++;
-                        dump("File thông tin server không tồn tại!");
-                        dump('Skip domain');
-                        continue;
-                    }
-
-                    $explodeDBUser = explode(':', $output[2]);
-                    $explodeDBPassword = explode(':', $output[3]);
-                    $dbUser = trim($explodeDBUser[1]);
-                    $dbPassword = trim($explodeDBPassword[1]);
+                    dd($result);
 
                     $data = [
                         'domain' => $domain,
-                        'admin_username' => 'admin',
-                        'admin_password' => $admin_password,
-                        'db_name' => $db_name,
-                        'db_user' => $dbUser,
-                        'db_password' => $dbPassword,
-                        'public_html' => $public_html,
-                        'ftp_user' => $ftp_user,
-                        'server' => $server,
-                        'status' => 1,
-                        'provider' => $provider,
-                        'created_at' => $this->utility->covertDateTimeToMongoBSONDateGMT7($this->utility->getCurrentVNTime())
+                        'time_expired' => 'admin',
+                        'registrar' => 'Godaddy',
+                        'is_locked' => false,
                     ];
 
-                    DB::connection('mongodb')
-                        ->table('domains')
-                        ->insert($data);
+                    $this->domainRepository->create($data);
 
                     dump('Domain import thành công');
 

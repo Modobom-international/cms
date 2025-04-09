@@ -20,3 +20,4 @@ composer.lock
 /storage
 /app/Console/Commands/Test.php
 /public/storage
+/public/import-domain
