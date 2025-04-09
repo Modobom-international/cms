@@ -25,4 +25,9 @@ class Card extends Model
     {
         return $this->belongsToMany(Label::class, 'card_labels') ->withTimestamps();
     }
+    
+    public function checklists()
+    {
+        return $this->hasMany(Checklist::class);
+    }
 }
