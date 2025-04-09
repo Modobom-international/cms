@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Enums\UsersTracking;
 use App\Http\Controllers\Controller;
 use App\Enums\Utility;
 use App\Jobs\StoreAiTrainingData;
@@ -41,46 +40,73 @@ class UsersTrackingController extends Controller
         $this->geolocationService = $geolocationService;
     }
 
-    public function viewUsersTracking(Request $request)
+    public function listTrackingEvent(Request $request)
     {
-        $domain = $request->get('domain');
-        $date = $request->get('date');
+        try {
+            $domain = $request->get('domain');
+            $date = $request->get('date');
 
-        if (!isset($domain)) {
-            $domain = $this->domainRepository->getFirstDomain();
+            if (!isset($domain)) {
+                $domain = $this->domainRepository->getFirstDomain();
+            }
+
+            if (!isset($date)) {
+                $date = $this->utility->getCurrentVNTime('Y-m-d');
+            }
+
+            $query = $this->trackingEventRepository->getTrackingEventByDomain($domain, $date);
+            $data = $this->utility->paginate($query->groupBy('uuid'));
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lấy danh sách tracking event thành công',
+                'type' => 'list_tracking_event_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy danh sách tracking event không thành công',
+                'type' => 'list_tracking_event_fail',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        if (!isset($date)) {
-            $date = $this->utility->getCurrentVNTime('Y-m-d');
-        }
-
-        $query = $this->trackingEventRepository->getTrackingEventByDomain($domain, $date);
-
-        $data = $this->utility->paginate($query->groupBy('uuid'));
-
-        return view('users_tracking.index', compact('data'));
     }
 
     public function getDetailTracking(Request $request)
     {
-        $uuid = $request->get('uuid');
-        $getTracking = DB::connection('mongodb')
-            ->table('users_tracking')
-            ->where('uuid', $uuid)
-            ->orderBy('timestamp', 'asc')
-            ->get();
+        try {
+            $uuid = $request->get('uuid');
+            $getTracking = DB::connection('mongodb')
+                ->table('users_tracking')
+                ->where('uuid', $uuid)
+                ->orderBy('timestamp', 'asc')
+                ->get();
 
-        $userAgent = $getTracking[0]->user_agent;
-        $parser = Parser::create();
-        $result = $parser->parse($userAgent);
+            $userAgent = $getTracking[0]->user_agent;
+            $parser = Parser::create();
+            $result = $parser->parse($userAgent);
 
-        $data = [
-            'browser' => $result->ua->family,
-            'os' => $result->os->family,
-            'device' => $result->device->family
-        ];
+            $data = [
+                'browser' => $result->ua->family,
+                'os' => $result->os->family,
+                'device' => $result->device->family
+            ];
 
-        return response()->json($data);
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lấy danh sách html source thành công',
+                'type' => 'list_html_source_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy danh sách html source không thành công',
+                'type' => 'list_html_source_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function checkDevice(Request $request)
@@ -99,107 +125,159 @@ class UsersTrackingController extends Controller
 
             $match = $this->deviceFingerprintRepository->getDeviceFingerprint($deviceData);
 
-            return response()->json(['is_excluded' => $match]);
+            return response()->json([
+                'success' => true,
+                'is_excluded' => $match,
+                'message' => 'Kiểm tra thiết bị thành công',
+            ], 202);
         } catch (Exception $e) {
-            return response()->json(['error' => $e, 'is_excluded' => true]);
+            return response()->json([
+                'success' => true,
+                'is_excluded' => true,
+                'message' => 'Kiểm tra thiết bị không thành công',
+            ], 202);
         }
     }
 
     public function storeHeartbeat(Request $request)
     {
-        $userInfo = $request->input('userInfo');
+        try {
+            $userInfo = $request->input('userInfo');
 
-        $data = [
-            'uuid' => $request->input('uuid'),
-            'timestamp' => $request->input('timestamp'),
-            'domain' => $request->input('domain'),
-            'path' => $request->input('path'),
-            'user_info' => $userInfo
-        ];
-
-        StoreHeartBeat::dispatch($data)->onQueue('store_heartbeat');
-        if (isset($userInfo['geolocation']) && isset($userInfo['geolocation']['latitude'])) {
-            $dataQueue = [
-                'latitude' => $userInfo['geolocation']['latitude'],
-                'longitude' => $userInfo['geolocation']['longitude'],
-                'type' => 'heartbeat',
+            $data = [
+                'uuid' => $request->input('uuid'),
+                'timestamp' => $request->input('timestamp'),
+                'domain' => $request->input('domain'),
+                'path' => $request->input('path'),
+                'user_info' => $userInfo
             ];
 
-            StoreGeolocation::dispatch($dataQueue)->onQueue('store_geolocation');
-        }
+            StoreHeartBeat::dispatch($data)->onQueue('store_heartbeat');
+            if (isset($userInfo['geolocation']) && isset($userInfo['geolocation']['latitude'])) {
+                $dataQueue = [
+                    'latitude' => $userInfo['geolocation']['latitude'],
+                    'longitude' => $userInfo['geolocation']['longitude'],
+                    'type' => 'heartbeat',
+                ];
 
-        return response()->json(['status' => 'success']);
+                StoreGeolocation::dispatch($dataQueue)->onQueue('store_geolocation');
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lưu heart beat thành công',
+            ], 202);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lưu heart beat không thành công',
+            ], 500);
+        }
     }
 
     public function storeVideoTimeline(Request $request)
     {
-        $userInfo = $request->input('userInfo');
+        try {
+            $userInfo = $request->input('userInfo');
 
-        $data = [
-            'uuid' => $request->input('uuid'),
-            'domain' => $request->input('domain'),
-            'path' => $request->input('path'),
-            'start_time' => $request->input('startTime'),
-            'end_time' => $request->input('endTime'),
-            'total_time' => $request->input('totalTime'),
-            'timeline' => $request->input('timeline'),
-            'user_info' => $userInfo
-        ];
-
-        StoreVideoTimeline::dispatch($data)->onQueue('store_video_timeline');
-        if (isset($userInfo['geolocation']) && isset($userInfo['geolocation']['latitude'])) {
-            $dataQueue = [
-                'latitude' => $userInfo['geolocation']['latitude'],
-                'longitude' => $userInfo['geolocation']['longitude'],
-                'type' => 'video_timeline',
+            $data = [
+                'uuid' => $request->input('uuid'),
+                'domain' => $request->input('domain'),
+                'path' => $request->input('path'),
+                'start_time' => $request->input('startTime'),
+                'end_time' => $request->input('endTime'),
+                'total_time' => $request->input('totalTime'),
+                'timeline' => $request->input('timeline'),
+                'user_info' => $userInfo
             ];
 
-            StoreGeolocation::dispatch($dataQueue)->onQueue('store_geolocation');
-        }
+            StoreVideoTimeline::dispatch($data)->onQueue('store_video_timeline');
+            if (isset($userInfo['geolocation']) && isset($userInfo['geolocation']['latitude'])) {
+                $dataQueue = [
+                    'latitude' => $userInfo['geolocation']['latitude'],
+                    'longitude' => $userInfo['geolocation']['longitude'],
+                    'type' => 'video_timeline',
+                ];
 
-        return response()->json(['status' => 'success']);
+                StoreGeolocation::dispatch($dataQueue)->onQueue('store_geolocation');
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lưu video timeline thành công',
+            ], 202);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lưu video timeline không thành công',
+            ], 500);
+        }
     }
 
     public function storeAiTrainingData(Request $request)
     {
-        $data = [
-            'uuid' => $request->input('uuid'),
-            'domain' => $request->input('domain'),
-            'session_start' => $request->input('sessionStart'),
-            'session_end' => $request->input('sessionEnd'),
-            'events' => $request->input('events')
-        ];
+        try {
+            $data = [
+                'uuid' => $request->input('uuid'),
+                'domain' => $request->input('domain'),
+                'session_start' => $request->input('sessionStart'),
+                'session_end' => $request->input('sessionEnd'),
+                'events' => $request->input('events')
+            ];
 
-        StoreAiTrainingData::dispatch($data)->onQueue('store_ai_training_data');
+            StoreAiTrainingData::dispatch($data)->onQueue('store_ai_training_data');
 
-        return response()->json(['status' => 'success']);
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lưu ai training data thành công',
+            ], 202);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lưu ai training data không thành công',
+            ], 500);
+        }
     }
 
     public function storeTrackingEvent(Request $request)
     {
-        $user = $request->input('user');
+        try {
+            $user = $request->input('user');
 
-        $data = [
-            'uuid' => $request->input('uuid'),
-            'event_name' => $request->input('eventName'),
-            'event_data' => $request->input('eventData'),
-            'timestamp' => $request->input('timestamp'),
-            'user' => $user,
-            'domain' => $request->input('domain'),
-            'path' => $request->input('path')
-        ];
-
-        StoreTrackingEvent::dispatch($data)->onQueue('store_tracking_event');
-        if (isset($user['geolocation']) && isset($user['geolocation']['latitude'])) {
-            $dataQueue = [
-                'latitude' => $user['geolocation']['latitude'],
-                'longitude' => $user['geolocation']['longitude'],
-                'type' => 'tracking_event',
+            $data = [
+                'uuid' => $request->input('uuid'),
+                'event_name' => $request->input('eventName'),
+                'event_data' => $request->input('eventData'),
+                'timestamp' => $request->input('timestamp'),
+                'user' => $user,
+                'domain' => $request->input('domain'),
+                'path' => $request->input('path')
             ];
 
-            StoreGeolocation::dispatch($dataQueue)->onQueue('store_geolocation');
-        }
+            StoreTrackingEvent::dispatch($data)->onQueue('store_tracking_event');
+            if (isset($user['geolocation']) && isset($user['geolocation']['latitude'])) {
+                $dataQueue = [
+                    'latitude' => $user['geolocation']['latitude'],
+                    'longitude' => $user['geolocation']['longitude'],
+                    'type' => 'tracking_event',
+                ];
 
-        return response()->json(['status' => 'success']);
+                StoreGeolocation::dispatch($dataQueue)->onQueue('store_geolocation');
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lưu tracking event thành công',
+            ], 202);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lưu tracking event không thành công',
+            ], 500);
+        }
     }
 }

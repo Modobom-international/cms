@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('html_sources', function (Blueprint $table) {
             $table->id();
-            $table->string('app_id', 255)->nullable();
-            $table->string('version', 255)->nullable();
+            $table->string('app_id')->nullable();
+            $table->string('version')->nullable();
             $table->string('note')->nullable();
             $table->string('device_id', 191)->nullable();
             $table->string('country', 191)->nullable();

@@ -13,16 +13,16 @@ return new class extends Migration
     {
         Schema::create('push_systems', function (Blueprint $table) {
             $table->id();
-            $table->string('token', 255)->nullable();
-            $table->string('app', 255)->nullable();
-            $table->string('platform', 255)->nullable();
-            $table->string('device', 255)->nullable();
-            $table->string('country', 255)->nullable();
-            $table->string('keyword', 255)->nullable();
-            $table->string('shortcode', 255)->nullable();
-            $table->string('telcoid', 255)->nullable();
-            $table->string('network', 255)->nullable();
-            $table->string('permission', 255)->nullable();
+            $table->string('token')->nullable();
+            $table->string('app')->nullable();
+            $table->string('platform')->nullable();
+            $table->string('device')->nullable();
+            $table->string('country')->nullable();
+            $table->string('keyword')->nullable();
+            $table->string('shortcode')->nullable();
+            $table->string('telcoid')->nullable();
+            $table->string('network')->nullable();
+            $table->string('permission')->nullable();
             $table->date('created_date');
             $table->timestamps();
         });

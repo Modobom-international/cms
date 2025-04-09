@@ -2,37 +2,73 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Helper\Common;
-use App\Helper\PushSubsAgain;
-use App\Helper\PushSystem;
 use App\Jobs\SaveRequestGetSystemSetting;
 use App\Jobs\SaveUserActivePushSystem;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use App\Jobs\StorePushSystem;
+use App\Enums\PushSystem;
+use App\Enums\Utility;
+use App\Http\Requests\PushSystemRequest;
+use App\Repositories\PushSystemCacheRepository;
+use Exception;
 
 class PushSystemController extends Controller
 {
-    public function saveData(Request $request)
+    protected $pushSystem;
+    protected $utility;
+    protected $pushSystemCacheRepository;
+
+    public function __construct(PushSystem $pushSystem, Utility $utility, PushSystemCacheRepository $pushSystemCacheRepository)
     {
-        $params = $request->all();
-        $params = array_change_key_case($params, CASE_LOWER);
-        $success = false;
+        $this->utility = $utility;
+        $this->pushSystem = $pushSystem;
+        $this->pushSystemCacheRepository = $pushSystemCacheRepository;
+    }
 
-        if (!empty($params)) {
-            $success = true;
-            StorePushSystem::dispatch($params)->onQueue('store_push_system');
+    public function saveData(PushSystemRequest $request)
+    {
+        try {
+            $params = $request->all();
+            $params = array_change_key_case($params, CASE_LOWER);
+
+            if (!empty($params)) {
+                StorePushSystem::dispatch($params)->onQueue('store_push_system');
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $params,
+                'message' => 'Lưu push system thành công',
+            ], 202);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lưu dữ liệu không thành công'
+            ], 500);
         }
-
-        return response()->json([
-            'success' => $success,
-        ]);
     }
 
     public function getSettings(Request $request)
     {
-        $kwMKDTAC = PushSubsAgain::pickKwMK(PushSubsAgain::TELCO_DTAC);
-        $kwMKAIS = PushSubsAgain::pickKwMK(PushSubsAgain::TELCO_AIS);
+        try {
+            return response()->json([
+                'success' => true,
+                'data' => $response,
+                'message' => 'Lấy danh sách html source thành công',
+                'type' => 'list_html_source_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy danh sách html source không thành công',
+                'type' => 'list_html_source_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+
+        $kwMKDTAC = PushSystem::pickKwMK(PushSystem::TELCO_DTAC);
+        $kwMKAIS = PushSystem::pickKwMK(PushSystem::TELCO_AIS);
         $shareWeb = PushSystem::getShareWebConfig();
         $linkWeb = PushSystem::pickLink($shareWeb);
         $config = PushSystem::getPushStatusAndTypeConfig();
@@ -57,8 +93,7 @@ class PushSystemController extends Controller
         $logData = [
             'ip' => $request->getClientIp(),
             'user_agent' => $_SERVER['HTTP_USER_AGENT'],
-            'created_at' => Common::getCurrentVNTime(),
-            'created_date' => Common::getCurrentVNTime('Y-m-d'),
+            'created_date' => $this->utility->getCurrentVNTime('Y-m-d'),
             'keyword_dtac' => $kwMKDTAC,
             'keyword_ais' => $kwMKAIS,
             'share_web' => $shareWeb,
@@ -73,22 +108,10 @@ class PushSystemController extends Controller
 
     public function listPushSystem()
     {
-        $getDataCountries = DB::connection('mongodb')
-            ->table('push_systems_cache')
-            ->where('key', 'LIKE', 'push_systems_users_country_%')
-            ->get();
-
-        $getUserTotal = DB::connection('mongodb')
-            ->table('push_systems_cache')
-            ->where('key', 'push_systems_users_total')
-            ->first();
-
+        $getDataCountries = $this->pushSystemCacheRepository->getByKeyLike('push_systems_users_country_%');
+        $getUserTotal = $this->pushSystemCacheRepository->getFirstByKey('push_systems_users_total');
         $countUser = $getUserTotal->total;
-        $usersActiveCountry = DB::connection('mongodb')
-            ->table('push_systems_cache')
-            ->where('key', 'LIKE', 'push_systems_users_active_country_' . now()->format('Y-m-d') . '_%')
-            ->get()
-            ->toArray();
+        $usersActiveCountry = $this->pushSystemCacheRepository->getByKeyLike('push_systems_users_active_country_' . now()->format('Y-m-d') . '_%')->toArray();
         $totalActive = 0;
         $activeByCountry = [];
 

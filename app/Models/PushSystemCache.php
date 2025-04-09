@@ -11,17 +11,7 @@ class PushSystemCache extends Model
     protected $collection = 'push_system_caches';
 
     protected $fillable = [
-        'token',
-        'app',
-        'platform',
-        'device',
-        'country',
-        'keyword',
-        'shortcode',
-        'telcoid',
-        'network',
-        'permission',
-        'created_at',
-        'created_date'
+        'key',
+        'total',
     ];
 }

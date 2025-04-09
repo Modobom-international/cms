@@ -50,4 +50,15 @@ final class Utility
     {
         return new \MongoDB\BSON\UTCDateTime(((new \DateTime($date))->getTimestamp() + (7 * 3600)) * 1000);
     }
+
+    public function getDomainFromUrl($url)
+    {
+        $arr = parse_url($url);
+
+        if (!empty($arr['host'])) {
+            return $arr['host'];
+        }
+
+        return null;
+    }
 }

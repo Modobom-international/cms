@@ -3,8 +3,7 @@
 namespace App\Jobs;
 
 use App\Enums\Utility;
-use DB;
-use App\Helper\Common;
+use App\Repositories\PushSystemCacheRepository;
 use App\Repositories\PushSystemRepository;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
@@ -16,89 +15,69 @@ class StorePushSystem implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    private $params;
+    private $data;
 
-    /**
-     * Create a new job instance.
-     *
-     * @param $params
-     */
-    public function __construct($params)
+    public function __construct($data)
     {
-        $this->params = $params;
+        $this->data = $data;
     }
 
-    /**
-     * Execute the job.
-     *
-     * @return void
-     */
-    public function handle(Utility $utility, PushSystemRepository $pushSystemRepository)
+    public function handle(Utility $utility, PushSystemRepository $pushSystemRepository, PushSystemCacheRepository $pushSystemCacheRepository)
     {
         $dataInsert = [
-            'token' => $this->params['token'] ?? null,
-            'app' => $this->params['app'] ?? null,
-            'platform' => $this->params['platform'] ?? null,
-            'device' => $this->params['device'] ?? null,
-            'country' => $this->params['country'] ?? null,
-            'keyword' => $this->params['keyword'] ?? null,
-            'shortcode' => $this->params['shortcode'] ?? null,
-            'telcoid' => $this->params['telcoid'] ?? null,
-            'network' => $this->params['network'] ?? null,
-            'permission' => $this->params['permission'] ?? null,
-            'created_at' => $utility->getCurrentVNTime(),
-            'created_date' => Common::getCurrentVNTime('Y-m-d'),
+            'token' => $this->data['token'] ?? null,
+            'app' => $this->data['app'] ?? null,
+            'platform' => $this->data['platform'] ?? null,
+            'device' => $this->data['device'] ?? null,
+            'country' => $this->data['country'] ?? null,
+            'keyword' => $this->data['keyword'] ?? null,
+            'shortcode' => $this->data['shortcode'] ?? null,
+            'telcoid' => $this->data['telcoid'] ?? null,
+            'network' => $this->data['network'] ?? null,
+            'permission' => $this->data['permission'] ?? null,
+            'created_date' => $utility->getCurrentVNTime('Y-m-d'),
         ];
-        $resultInsert = false;
 
         try {
-            $resultInsert = $pushSystemRepository->create($dataInsert);
-
-            $getUserTotal = DB::connection('mongodb')
-                ->table('push_systems_cache')
-                ->where('key', 'push_systems_users_total')
-                ->first();
+            $pushSystemRepository->create($dataInsert);
+            $getUserTotal = $pushSystemCacheRepository->getFirstByKey('push_systems_users_total');
 
             if (empty($getUserTotal)) {
-                DB::connection('mongodb')
-                    ->table('push_systems_cache')
-                    ->insert([
-                        'key' => 'push_systems_users_total',
-                        'total' => 1,
-                    ]);
+                $data = [
+                    'key' => 'push_systems_users_total',
+                    'total' => 1,
+                ];
+
+                $pushSystemCacheRepository->create($data);
             } else {
-                DB::connection('mongodb')
-                    ->table('push_systems_cache')
-                    ->where('key', 'push_systems_users_total')
-                    ->update([
-                        'total' => $getUserTotal->total + 1,
-                    ]);
+                $data = [
+                    'total' => $getUserTotal->total + 1,
+                ];
+
+                $pushSystemCacheRepository->updateTotalByKey('push_systems_users_total', $data);
             }
 
-            $getDataCountries = DB::connection('mongodb')
-                ->table('push_systems_cache')
-                ->where('key', 'LIKE', 'push_systems_users_country_%' . $this->params['country'])
-                ->first();
+            $getDataCountries = $pushSystemCacheRepository->getFirstByKeyLike('push_systems_users_country_' . $this->data['country']);
 
             if (empty($getDataCountries)) {
-                DB::connection('mongodb')
-                    ->table('push_systems_cache')
-                    ->insert([
-                        'key' => 'push_systems_users_country_' . $this->params['country'],
-                        'total' => 1,
-                    ]);
-            } else {
-                DB::connection('mongodb')
-                    ->table('push_systems_cache')
-                    ->where('key', 'push_systems_users_country_' . $this->params['country'])
-                    ->update([
-                        'total' => $getDataCountries->total + 1,
-                    ]);
-            }
-        } catch (\Exception $ex) {
-            dump(Common::getCurrentVNTime() . ' - Error while save push system params. params:  ' . json_encode($this->params) . ', ' . $ex->getMessage());
-        }
+                $data = [
+                    'key' => 'push_systems_users_country_' . $this->data['country'],
+                    'total' => 1,
+                ];
 
-        dump('Saving push system data: ' . json_encode($this->params) . ', result insert: ' . $resultInsert);
+                $pushSystemCacheRepository->create($data);
+            } else {
+                $data = [
+                    'total' => $getDataCountries->total + 1,
+                ];
+
+                $pushSystemCacheRepository->updateTotalByKey('push_systems_users_country_' . $this->data['country'], $data);
+            }
+        } catch (\Throwable $e) {
+            Log::error("Job failed: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'data' => $this->data,
+            ]);
+        }
     }
 }

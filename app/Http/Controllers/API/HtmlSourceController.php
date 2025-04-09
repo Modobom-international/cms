@@ -45,12 +45,11 @@ class HtmlSourceController extends Controller
                 'success' => true,
                 'data' => $params,
                 'message' => 'Lưu html source thành công',
-            ], 200);
+            ], 202);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Lưu html source không thành công',
-                'error' => $e->getMessage()
+                'message' => 'Lưu html source không thành công'
             ], 500);
         }
     }

@@ -143,7 +143,7 @@ Route::middleware('auth:api')->group(function () {
     });
 
     Route::prefix('users-tracking')->group(function () {
-        Route::get('/', [UsersTrackingController::class, 'viewUsersTracking'])->name('users.tracking.list');
+        Route::get('/', [UsersTrackingController::class, 'listTrackingEvent'])->name('users.tracking.list');
         Route::get('/get-detail-tracking', [UsersTrackingController::class, 'getDetailTracking'])->name('users.tracking.detail');
     });
 
