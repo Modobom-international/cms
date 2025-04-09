@@ -65,7 +65,7 @@ class AuthController extends Controller
     }
 
     // Đăng nhập user
-    public function login(Request $request)
+    public function login(Request $request) 
     {
         try {
             $request->validate([
@@ -74,20 +74,29 @@ class AuthController extends Controller
             ]);
 
             $credentials = $request->only('email', 'password');
-
             if (Auth::attempt($credentials)) {
                 $user = Auth::user();
-                $token = $user->createToken('Personal Access Token')->accessToken;
+                
+                try {
+                    $token = $user->createToken('Personal Access Token')->accessToken;
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Error generating access token',
+                        'type' => 'token_generation_error',
+                        'error' => $e->getMessage()
+                    ], 500);
+                }
 
                 $deviceData = [
                     'user_agent' => $request->header('User-Agent'),
-                    'platform' => $request->input('platform') ?? 'web',
+                    'platform' => $request->input('platform') ?? 'web', 
                     'language' => $request->input('language') ?? 'en',
                     'cookies_enabled' => $request->input('cookies_enabled') ?? true,
                     'screen_width' => $request->input('screen_width') ?? 1920,
                     'screen_height' => $request->input('screen_height') ?? 1080,
                     'timezone' => $request->input('timezone') ?? 'Asia/Ho_Chi_Minh',
-                    'fingerprint' => $request->input('fingerprint') ?? '1234567890',
+                    'fingerprint' => $request->input('fingerprint') ?? rand(10000000, 99999999),
                 ];
 
                 if (!$user->deviceFingerprints()->where('fingerprint', $deviceData['fingerprint'])->exists()) {
@@ -109,11 +118,13 @@ class AuthController extends Controller
                 'message' => 'Thông tin đăng nhập không đúng',
                 'type' => 'email_or_password_incorrect',
             ], 401);
+
         } catch (\Exception $e) {
-            response()->json([
+            return response()->json([
                 'success' => false,
                 'message' => 'Lỗi khi đăng nhập tài khoản',
                 'type' => 'error_login',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
