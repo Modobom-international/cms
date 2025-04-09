@@ -60,17 +60,14 @@ class SiteController extends Controller
             $branch = $request->branch ?? 'main';
 
             $cloudflareResult = $this->cloudflareService->createPagesProject($projectName, $branch);
-
-            if (isset($cloudflareResult['error'])) {
+            if ($cloudflareResult['success'] === false) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Failed to create Cloudflare project',
-                    'error' => $cloudflareResult['error']
+                    'error' => $cloudflareResult['errors']
                 ], 500);
             }
-
-            // Create site record in database
-            $site = Site::create([
+            $site = [
                 'name' => $request->name,
                 'domain' => $request->domain,
                 'description' => $request->description,
@@ -78,31 +75,30 @@ class SiteController extends Controller
                 'branch' => $branch,
                 'user_id' => auth()->id(),
                 'status' => 'active'
-            ]);
-
+            ];
             // Apply custom domain if provided
             if ($request->domain) {
                 // Apply domain to Pages project
                 $domainResult = $this->cloudflareService->applyPagesDomain($projectName, $request->domain);
-                $site->cloudflare_domain_status = isset($domainResult['error']) ? 'failed' : 'active';
-
-                if (!isset($domainResult['error'])) {
+                $site['cloudflare_domain_status'] = isset($domainResult['error']) ? 'failed' : 'active';
+                if ($domainResult['success']) {
                     // Get project details to get the Pages subdomain
                     $projectDetails = $this->cloudflareService->getPagesProject($projectName);
-                    if (!isset($projectDetails['error']) && isset($projectDetails['result']['subdomain'])) {
+                    if ($projectDetails['success'] && isset($projectDetails['result']['subdomain'])) {
                         // Set up DNS CNAME record
                         $dnsResult = $this->cloudflareService->setupDomainDNS(
                             $request->domain,
                             $projectDetails['result']['subdomain']
                         );
-                        if (isset($dnsResult['error'])) {
-                            $site->cloudflare_domain_status = 'dns_failed';
+                        if ($dnsResult['success'] === false) {
+                            $site['cloudflare_domain_status'] = 'dns_failed';
                         }
                     }
                 }
-
-                // $site->save();
+                Site::create($site);
             }
+
+            // Create site record in database
 
             return response()->json([
                 'success' => true,

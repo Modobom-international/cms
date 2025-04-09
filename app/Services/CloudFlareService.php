@@ -235,7 +235,6 @@ class CloudFlareService
         // Extract root domain for zone lookup
         $rootDomain = $this->getRootDomain($domain);
         $zoneId = $this->getZoneId($rootDomain);
-        Log::info('Zone ID: ' . $zoneId);
         if (!$zoneId) {
             return ['error' => 'Zone ID not found for domain: ' . $rootDomain];
         }
@@ -248,7 +247,6 @@ class CloudFlareService
                 'name' => $dnsName === '@' ? $rootDomain : $domain,
                 // 'type' => 'CNAME'
             ]);
-            Log::info('Existing records: ' . json_encode($existingRecords));
             $recordData = [
                 'type' => 'CNAME',
                 'name' => $dnsName,
@@ -268,15 +266,8 @@ class CloudFlareService
                 'json' => $recordData
             ]);
 
-            Log::info('DNS record created successfully', [
-                'zone_id' => $zoneId,
-                'record_data' => $recordData,
-                'response' => json_decode($response->getBody(), true)
-            ]);
-
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
-            Log::error('Error creating DNS record: ' . $e->getMessage());
             return $this->handleException($e);
         }
     }
