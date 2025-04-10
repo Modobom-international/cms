@@ -6,6 +6,8 @@ use App\Enums\Utility;
 use App\Repositories\DomainRepository;
 use Illuminate\Console\Command;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
+use Carbon\Carbon;
 
 class ImportDomainFromCSV extends Command
 {
@@ -56,7 +58,12 @@ class ImportDomainFromCSV extends Command
                         continue;
                     }
 
-                    $domain = $row[2];
+                    $domain = trim($row[2]);
+
+                    if (!preg_match('/^[^.\s]{1,63}(\.[^.\s]{1,63}){1,2}$/', $domain)) {
+                        dump("Domain '$domain' không hợp lệ, bỏ qua");
+                        continue;
+                    }
 
                     $this->apiKey = $listKey['tuan']['apiKey'];
                     $this->apiSecret = $listKey['tuan']['apiSecret'];
@@ -98,13 +105,16 @@ class ImportDomainFromCSV extends Command
                     } else {
                     }
 
-                    dd($result);
-
                     $data = [
-                        'domain' => $domain,
-                        'time_expired' => 'admin',
+                        'domain' => $result['domain'],
+                        'time_expired' => Carbon::parse($result['expires'])->format('Y-m-d H:i:s'),
                         'registrar' => 'Godaddy',
                         'is_locked' => false,
+                        'renewable' => $result['renewable'] ?? false,
+                        'status' => $result['status'] ?? null,
+                        'name_servers' => json_encode($result['nameServers']) ?? null,
+                        'renew_deadline' => Carbon::parse($result['renewDeadline'])->format('Y-m-d H:i:s') ?? null,
+                        'registrar_created_at' => Carbon::parse($result['registrarCreatedAt'])->format('Y-m-d H:i:s') ?? null,
                     ];
 
                     $this->domainRepository->create($data);
@@ -141,7 +151,7 @@ class ImportDomainFromCSV extends Command
                 $response = $this->client->get("/v1/domains/{$domain}");
 
                 return json_decode($response->getBody(), true);
-            } catch (Exception $e) {
+            } catch (RequestException $e) {
                 $error = $this->handleException($e);
 
                 if (isset($error['code']) && $error['code'] === 'TOO_MANY_REQUESTS') {
@@ -158,7 +168,7 @@ class ImportDomainFromCSV extends Command
         return ['error' => 'SKIP_DOMAIN'];
     }
 
-    public function handleException(Exception $e)
+    public function handleException(RequestException $e)
     {
         if ($e->hasResponse()) {
             $response = json_decode($e->getResponse()->getBody()->getContents(), true);
