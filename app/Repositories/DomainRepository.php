@@ -26,8 +26,12 @@ class DomainRepository extends BaseRepository
         return $this->model->where('domain', $domain)->first();
     }
 
-    public function getDomainBySearch()
+    public function getDomainBySearch($search)
     {
-        return $this->model->where('domain', 'LIKE', '%' . $domain . '%')->get();
+        if ($search == null) {
+            return $this->model->where('is_locked', false)->get();
+        }
+
+        return $this->model->where('is_locked', false)->where('domain', 'LIKE', '%' . $search . '%')->get();
     }
 }

@@ -248,7 +248,7 @@ return [
 
             'supervisor-cms-6' => [
                 'connection' => 'redis',
-                'queue' => ['store_heart_beat'],
+                'queue' => ['store_video_timeline'],
                 'balance' => 'auto',
                 'minProcesses' => 1,
                 'maxProcesses' => 5,
@@ -257,7 +257,7 @@ return [
 
             'supervisor-cms-7' => [
                 'connection' => 'redis',
-                'queue' => ['store_video_timeline'],
+                'queue' => ['store_geolocation'],
                 'balance' => 'auto',
                 'minProcesses' => 1,
                 'maxProcesses' => 5,
@@ -266,7 +266,7 @@ return [
 
             'supervisor-cms-8' => [
                 'connection' => 'redis',
-                'queue' => ['store_geolocation'],
+                'queue' => ['store_html_source'],
                 'balance' => 'auto',
                 'minProcesses' => 1,
                 'maxProcesses' => 5,
@@ -275,7 +275,7 @@ return [
 
             'supervisor-cms-9' => [
                 'connection' => 'redis',
-                'queue' => ['store_html_source'],
+                'queue' => ['store_push_system'],
                 'balance' => 'auto',
                 'minProcesses' => 1,
                 'maxProcesses' => 5,
@@ -284,7 +284,7 @@ return [
 
             'supervisor-cms-10' => [
                 'connection' => 'redis',
-                'queue' => ['store_push_system'],
+                'queue' => ['store_push_system_setting'],
                 'balance' => 'auto',
                 'minProcesses' => 1,
                 'maxProcesses' => 5,
@@ -293,7 +293,7 @@ return [
 
             'supervisor-cms-11' => [
                 'connection' => 'redis',
-                'queue' => ['store_push_system_setting'],
+                'queue' => ['store_push_system_user_active'],
                 'balance' => 'auto',
                 'minProcesses' => 1,
                 'maxProcesses' => 5,
@@ -302,7 +302,7 @@ return [
 
             'supervisor-cms-12' => [
                 'connection' => 'redis',
-                'queue' => ['store_push_system_user_active'],
+                'queue' => ['store_heartbeat'],
                 'balance' => 'auto',
                 'minProcesses' => 1,
                 'maxProcesses' => 5,

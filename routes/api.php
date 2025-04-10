@@ -18,6 +18,8 @@ use App\Http\Controllers\API\PageController;
 use App\Http\Controllers\API\SiteController;
 use App\Http\Controllers\API\HtmlSourceController;
 use App\Http\Controllers\API\PushSystemController;
+use App\Http\Controllers\API\DomainController;
+use App\Http\Controllers\API\ActivityLogController;
 use App\Http\Middleware\ExcludeDomainTracking;
 
 Route::get('/user', function (Request $request) {
@@ -139,7 +141,6 @@ Route::middleware('auth:api')->group(function () {
 
     Route::prefix('domain')->group(function () {
         Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
-        Route::get('/search', [DomainController::class, 'searchDomain'])->name('domain.search');
     });
 
     Route::prefix('html-source')->group(function () {
@@ -195,7 +196,6 @@ Route::middleware('auth:api')->group(function () {
     });
 
     Route::prefix('activity-log')->group(function () {
-        Route::get('/', [ActivityLogController::class, 'index'])->name('activity.log.list');
-        Route::get('/{id}', [ActivityLogController::class, 'show'])->name('activity.log.show');
+        Route::get('/', [ActivityLogController::class, 'listActivityLog'])->name('activity.log.list');
     });
 });

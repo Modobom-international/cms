@@ -17,7 +17,7 @@ final class Utility
         }
     }
 
-    public function paginate($items, $perPage = 15, $path = null, $pageName = 'page', $page = null, $options = [])
+    public function paginate($items, $perPage = 15, $path = null, $page = null, $pageName = 'page', $options = [])
     {
         $page = $page ?: Paginator::resolveCurrentPage($pageName);
         $items = $items instanceof Collection ? $items : Collection::make($items);
