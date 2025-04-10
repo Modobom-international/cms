@@ -18,10 +18,13 @@ use App\Jobs\UpdatePushSystemConfig;
 use App\Repositories\PushSystemCacheRepository;
 use App\Repositories\PushSystemConfigRepository;
 use App\Repositories\PushSystemUserActiveRepository;
+use App\Traits\LogsActivity;
 use Exception;
 
 class PushSystemController extends Controller
 {
+    use LogsActivity;
+    
     protected $pushSystem;
     protected $utility;
     protected $pushSystemCacheRepository;

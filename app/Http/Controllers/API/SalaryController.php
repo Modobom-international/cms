@@ -5,9 +5,12 @@ namespace App\Http\Controllers\API;
 use App\Repositories\Salary\SalaryRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Traits\LogsActivity;
 
 class SalaryController extends Controller
 {
+    use LogsActivity;
+    
     protected $salaryRepository;
 
     public function __construct(SalaryRepository $salaryRepository)

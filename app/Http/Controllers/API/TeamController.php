@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Enums\ActivityAction;
 use App\Http\Controllers\Controller;
-use App\Models\ActivityLog;
+use App\Traits\LogsActivity;
 use App\Repositories\Permission\PermissionRepository;
 use App\Repositories\Team\TeamRepository;
 use Exception;

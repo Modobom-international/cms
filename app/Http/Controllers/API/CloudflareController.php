@@ -7,6 +7,7 @@ use App\Repositories\SiteRepository;
 use App\Services\CloudFlareService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Traits\LogsActivity;
 
 class CloudflareController extends Controller
 {

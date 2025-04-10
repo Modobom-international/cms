@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\PageRequest;
 use Auth;
 use Illuminate\Http\Request;
-use App\Models\Page;
+use App\Traits\LogsActivity;
 use App\Repositories\PageRepository;
 use App\Repositories\PageExportRepository;
 use App\Repositories\SiteRepository;
@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Validator;
 
 class PageController extends Controller
 {
+    use LogsActivity;
+    
     protected $pageRepository;
     protected $pageExportRepository;
     protected $siteRepository;

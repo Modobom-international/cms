@@ -16,9 +16,12 @@ use Illuminate\Support\Facades\Auth;
 use App\Enums\Utility;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use App\Traits\LogsActivity;
 
 class ListBoardController extends Controller
 {
+    use LogsActivity;
+    
     protected $boardRepository;
     protected $workspaceUserRepository;
     protected $utility;
