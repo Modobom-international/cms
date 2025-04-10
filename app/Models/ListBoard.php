@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\LogsModelActivity;
 
 class ListBoard extends Model
 {
+    use HasFactory, LogsModelActivity;
 
-    use HasFactory;
     protected $table = 'lists';
     /**
      * The attributes that are mass assignable.

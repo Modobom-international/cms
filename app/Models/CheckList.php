@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\LogsModelActivity;
 
 class Checklist extends Model
 {
+    use LogsModelActivity;
+
     protected $fillable = ['card_id', 'title'];
     
     public function card()

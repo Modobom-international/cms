@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\LogsModelActivity;
 
 class PageExport extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsModelActivity;
 
     /**
      * The attributes that are mass assignable.

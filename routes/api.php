@@ -136,11 +136,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::prefix('domain')->group(function () {
         Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
-        Route::get('/create', [DomainController::class, 'createDomain'])->name('domain.create');
-        Route::get('/check', [DomainController::class, 'checkDomain'])->name('domain.check');
-        Route::get('/up', [DomainController::class, 'upDomain'])->name('domain.up');
         Route::get('/search', [DomainController::class, 'searchDomain'])->name('domain.search');
-        Route::get('/delete', [DomainController::class, 'deleteDomain'])->name('domain.delete');
     });
 
     Route::prefix('html-source')->group(function () {
@@ -193,5 +189,10 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('html-source')->group(function () {
         Route::get('/', [HtmlSourceController::class, 'listHtmlSource'])->name('html.source.list');
         Route::get('/{id}', [HtmlSourceController::class, 'showHtmlSource'])->name('html.source.show');
+    });
+
+    Route::prefix('activity-log')->group(function () {
+        Route::get('/', [ActivityLogController::class, 'index'])->name('activity-log.list');
+        Route::get('/{id}', [ActivityLogController::class, 'show'])->name('activity-log.show');
     });
 });

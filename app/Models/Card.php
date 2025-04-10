@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\LogsModelActivity;
 
 class Card extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsModelActivity;
     
     protected $fillable = ['list_id', 'title', 'description', 'position'];
     

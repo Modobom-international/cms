@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Validator;
 
 class CloudflareController extends Controller
 {
+    use LogsActivity;
+    
     protected $cloudflareService;
     protected $siteRepository;
 
