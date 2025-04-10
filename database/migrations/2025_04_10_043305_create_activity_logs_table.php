@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('action');
             $table->json('details')->nullable();
             $table->bigInteger('user_id')->nullable();
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }

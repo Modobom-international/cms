@@ -10,6 +10,7 @@ class ActivityLog extends Model
         'action',
         'details',
         'user_id',
+        'description'
     ];
 
     protected $casts = [

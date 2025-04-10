@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Enums\ActivityAction;
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Repositories\Permission\PermissionRepository;
 use App\Repositories\Team\TeamRepository;
 use Exception;
@@ -10,6 +12,8 @@ use Illuminate\Http\Request;
 
 class TeamController extends Controller
 {
+    use LogsActivity;
+
     protected $teamRepository;
     protected $permissionRepository;
     protected $utility;
@@ -44,6 +48,8 @@ class TeamController extends Controller
 
             $teams = $this->utility->paginate($teams);
 
+            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách team');
+
             return response()->json([
                 'success' => true,
                 'data' => $data,
@@ -70,6 +76,8 @@ class TeamController extends Controller
 
                 $permissions[$prefix][] = $permission;
             }
+
+            $this->logActivity(ActivityAction::CREATE_RECORD, ['filters' => $input], 'Thêm bản ghi mới của team');
 
             return response()->json([
                 'success' => true,

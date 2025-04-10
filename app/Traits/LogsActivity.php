@@ -6,13 +6,8 @@ use App\Services\ActivityLogger;
 
 trait LogsActivity
 {
-    protected function logActivity(string $action, array $details = [], ?int $userId = null): void
+    protected function logActivity(string $action, array $details = [], string $description = null, ?int $userId = null): void
     {
-        app(ActivityLogger::class)->log($action, $details, $userId);
-    }
-
-    protected function logAccessView(string $reportType, array $extraDetails = []): void
-    {
-        app(ActivityLogger::class)->logAccessView($reportType, $extraDetails);
+        app(ActivityLogger::class)->log($action, $details, $description, $userId);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Enums\ActivityAction;
 use App\Http\Controllers\Controller;
 use App\Helper\Utility;
 use App\Traits\LogsActivity;
@@ -103,9 +104,7 @@ class HtmlSourceController extends Controller
                 'count' => $count,
             ];
 
-            $this->logAccessView($reportType, [
-                'filters' => $input,
-            ]);
+            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách html source');
 
             return response()->json([
                 'success' => true,
@@ -127,6 +126,8 @@ class HtmlSourceController extends Controller
     {
         try {
             $dataHtmlSource = $this->htmlSourceRepository->getByID($id);
+
+            $this->logActivity(ActivityAction::SHOW_RECORD, ['filters' => $input], 'Xem chi tiết bản ghi html source');
 
             return response()->json([
                 'success' => true,
