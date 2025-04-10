@@ -25,6 +25,7 @@ class DomainController extends Controller
     public function listDomain(Request $request)
     {
         try {
+            $input = $request->all();
             $search = $request->get('search');
             $pageSize = $request->get('pageSize') ?? 10;
             $page = $request->get('page') ?? 1;
