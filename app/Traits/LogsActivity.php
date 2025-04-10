@@ -11,8 +11,8 @@ trait LogsActivity
         app(ActivityLogger::class)->log($action, $details, $userId);
     }
 
-    protected function logViewReport(string $reportType, array $extraDetails = []): void
+    protected function logAccessView(string $reportType, array $extraDetails = []): void
     {
-        app(ActivityLogger::class)->logViewReport($reportType, $extraDetails);
+        app(ActivityLogger::class)->logAccessView($reportType, $extraDetails);
     }
 }

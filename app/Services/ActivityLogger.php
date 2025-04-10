@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ActivityAction;
 use App\Events\UserActivityLogged;
 use Illuminate\Support\Facades\Auth;
 
@@ -20,16 +21,9 @@ class ActivityLogger
         ));
     }
 
-    public function logExportCsv(string $fileName, array $extraDetails = []): void
+    public function logAccessView(string $reportType, array $extraDetails = []): void
     {
-        $this->log('export_csv', array_merge([
-            'file_name' => $fileName,
-        ], $extraDetails));
-    }
-
-    public function logViewReport(string $reportType, array $extraDetails = []): void
-    {
-        $this->log('view_report', array_merge([
+        $this->log(ActivityAction::ACCESS_VIEW, array_merge([
             'report_type' => $reportType,
         ], $extraDetails));
     }

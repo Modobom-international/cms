@@ -6,12 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Domain extends Model
 {
-    protected $table = 'domains';
-    
     protected $fillable = [
         'domain',
         'time_expired',
         'registrar',
-        'is_locked'
+        'is_locked',
+        'renewable',
+        'status',
+        'name_servers',
+        'renew_deadline',
+        'registrar_created_at'
     ];
 }

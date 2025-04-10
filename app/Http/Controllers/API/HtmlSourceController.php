@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Helper\Utility;
+use App\Traits\LogsActivity;
 use App\Http\Requests\HtmlSourceRequest;
 use App\Jobs\StoreHtmlSource;
 use App\Repositories\HtmlSourceRepository;
@@ -12,6 +13,8 @@ use Exception;
 
 class HtmlSourceController extends Controller
 {
+    use LogsActivity;
+
     protected $htmlSourceRepository;
     protected $utility;
 
@@ -99,6 +102,10 @@ class HtmlSourceController extends Controller
                 'country' => $country,
                 'count' => $count,
             ];
+
+            $this->logAccessView($reportType, [
+                'filters' => $input,
+            ]);
 
             return response()->json([
                 'success' => true,

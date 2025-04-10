@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class HtmlSource extends Model
 {
-    protected $table = 'html_sources';
-
     protected $fillable = [
         'app_id',
         'version',
