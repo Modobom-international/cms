@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Enums\Domain;
 use App\Http\Controllers\Controller;
 use App\Enums\Utility;
+use App\Enums\ActivityAction;
 use App\Jobs\StoreAiTrainingData;
 use App\Jobs\StoreHeartBeat;
 use App\Jobs\StoreTrackingEvent;
@@ -16,11 +17,14 @@ use App\Repositories\DomainRepository;
 use App\Jobs\StoreGeolocation;
 use App\Services\GeolocationService;
 use UAParser\Parser;
+use App\Traits\LogsActivity;
 use DB;
 use Exception;
 
 class UsersTrackingController extends Controller
 {
+    use LogsActivity;
+
     protected $deviceFingerprintRepository;
     protected $trackingEventRepository;
     protected $domainRepository;
@@ -44,19 +48,20 @@ class UsersTrackingController extends Controller
     public function listTrackingEvent(Request $request)
     {
         try {
+            $input = $request->all();
+            $pageSize = $request->get('pageSize') ?? 10;
+            $page = $request->get('page') ?? 1;
             $domain = $request->get('domain');
             $date = $request->get('date');
-
-            if (!isset($domain)) {
-                $domain = $this->domainRepository->getFirstDomain();
-            }
 
             if (!isset($date)) {
                 $date = $this->utility->getCurrentVNTime('Y-m-d');
             }
 
+            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách users tracking');
+
             $query = $this->trackingEventRepository->getTrackingEventByDomain($domain, $date);
-            $data = $this->utility->paginate($query->groupBy('uuid'));
+            $data = $this->utility->paginate($query->groupBy('uuid'), $pageSize, $page);
 
             return response()->json([
                 'success' => true,
