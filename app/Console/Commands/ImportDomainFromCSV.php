@@ -65,6 +65,13 @@ class ImportDomainFromCSV extends Command
                         continue;
                     }
 
+                    $checkDomain = $this->domainRepository->getByDomain($domain);
+
+                    if ($checkDomain) {
+                        dump("Domain '$domain' đã tồn tại trong hệ thống, bỏ qua");
+                        continue;
+                    }
+
                     $this->apiKey = $listKey['tuan']['apiKey'];
                     $this->apiSecret = $listKey['tuan']['apiSecret'];
                     $this->apiUrl = $listKey['tuan']['apiUrl'];

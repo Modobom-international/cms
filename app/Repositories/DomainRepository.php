@@ -20,4 +20,9 @@ class DomainRepository extends BaseRepository
     {
         return $this->model->where('is_locked', false)->get();
     }
+
+    public function getByDomain($domain)
+    {
+        return $this->model->where('domain', $domain)->first();
+    }
 }

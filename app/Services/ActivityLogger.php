@@ -16,8 +16,8 @@ class ActivityLogger
             details: array_merge($details, [
                 'logged_at' => now()->toDateTimeString(),
             ]),
-            userId: $userId,
-            description: $description
+            description: $description,
+            userId: $userId
         ));
     }
 }
