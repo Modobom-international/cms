@@ -33,6 +33,7 @@ class ActivityLogController extends Controller
                 'action' => $action
             ];
 
+            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách activity log');
             $activityLogs = $this->activityLogRepository->getByFilter($filter);
             $response = $this->utility->paginate($activityLogs);
 

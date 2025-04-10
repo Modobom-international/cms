@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\Cors;
 use App\Http\Middleware\RestrictBrowserAccess;
+use App\Http\Middleware\ExcludeDomainTracking;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -20,6 +21,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(Cors::class);
         $middleware->group('api', [
             Cors::class,
+        ]);
+
+        $middleware->alias([
+            'exclude.domain.tracking' => ExcludeDomainTracking::class,
+            'cors' => Cors::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
