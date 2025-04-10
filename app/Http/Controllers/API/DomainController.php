@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Repositories\DomainRepository;
 use App\Traits\LogsActivity;
 use App\Enums\Utility;
+use App\Enums\ActivityAction;
 
 class DomainController extends Controller
 {
@@ -21,11 +22,14 @@ class DomainController extends Controller
         $this->utility = $utility;
     }
 
-    public function listDomain()
+    public function listDomain(Request $request)
     {
         try {
-            $domains = $this->domainRepository->getAllDomain();
+            $input = $request->all();
+            $domains = $this->domainRepository->getAllDomain($filter);
             $response = $this->utility->paginate($domains);
+
+            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách domain');
 
             return response()->json([
                 'success' => true,

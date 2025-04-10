@@ -192,7 +192,7 @@ Route::middleware('auth:api')->group(function () {
     });
 
     Route::prefix('activity-log')->group(function () {
-        Route::get('/', [ActivityLogController::class, 'index'])->name('activity-log.list');
-        Route::get('/{id}', [ActivityLogController::class, 'show'])->name('activity-log.show');
+        Route::get('/', [ActivityLogController::class, 'index'])->name('activity.log.list');
+        Route::get('/{id}', [ActivityLogController::class, 'show'])->name('activity.log.show');
     });
 });

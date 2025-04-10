@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Repositories\ActivityLogRepository;
+use Illuminate\Http\Request;
 use App\Traits\LogsActivity;
 use App\Enums\Utility;
 
@@ -19,10 +20,20 @@ class ActivityLogController extends Controller
         $this->utility = $utility;
     }
 
-    public function listActivityLog()
+    public function listActivityLog(Request $request)
     {
         try {
-            $activityLogs = $this->activityLogRepository->all();
+            $date = $request->get('date') ?? $this->utility->getCurrentVNTime('Y-m-d');
+            $user_id = $request->get('user_id');
+            $action = $request->get('action');
+
+            $filter = [
+                'date' => $date,
+                'user_id' => $user_id,
+                'action' => $action
+            ];
+
+            $activityLogs = $this->activityLogRepository->getByFilter($filter);
             $response = $this->utility->paginate($activityLogs);
 
             return response()->json([
