@@ -20,7 +20,7 @@ class ExcludeDomainTracking
 
         if (in_array($domain, Domain::LIST_EXCLUDE_TRACKING)) {
             return response()->json([
-                'message' => 'Tracking is not allowed for this domain'
+                'message' => 'Domain không nằm trong danh sách được phép tracking.',
             ], Response::HTTP_FORBIDDEN);
         }
 

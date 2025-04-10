@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Enums\Domain;
 use App\Http\Controllers\Controller;
 use App\Enums\Utility;
 use App\Jobs\StoreAiTrainingData;
@@ -142,6 +143,13 @@ class UsersTrackingController extends Controller
     public function storeHeartbeat(Request $request)
     {
         try {
+            if (in_array($request->input('domain'), Domain::LIST_EXCLUDE_TRACKING)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tên miền không nằm trong danh sách được phép tracking',
+                ], 403);
+            }
+
             $userInfo = $request->input('userInfo');
 
             $data = [
@@ -179,6 +187,13 @@ class UsersTrackingController extends Controller
     public function storeVideoTimeline(Request $request)
     {
         try {
+            if (in_array($request->input('domain'), Domain::LIST_EXCLUDE_TRACKING)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tên miền không nằm trong danh sách được phép tracking',
+                ], 403);
+            }
+
             $userInfo = $request->input('userInfo');
 
             $data = [
@@ -219,6 +234,13 @@ class UsersTrackingController extends Controller
     public function storeAiTrainingData(Request $request)
     {
         try {
+            if (in_array($request->input('domain'), Domain::LIST_EXCLUDE_TRACKING)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tên miền không nằm trong danh sách được phép tracking',
+                ], 403);
+            }
+
             $data = [
                 'uuid' => $request->input('uuid'),
                 'domain' => $request->input('domain'),
@@ -245,6 +267,13 @@ class UsersTrackingController extends Controller
     public function storeTrackingEvent(Request $request)
     {
         try {
+            if (in_array($request->input('domain'), Domain::LIST_EXCLUDE_TRACKING)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tên miền không nằm trong danh sách được phép tracking',
+                ], 403);
+            }
+
             $user = $request->input('user');
 
             $data = [

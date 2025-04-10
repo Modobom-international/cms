@@ -18,6 +18,7 @@ use App\Http\Controllers\API\PageController;
 use App\Http\Controllers\API\SiteController;
 use App\Http\Controllers\API\HtmlSourceController;
 use App\Http\Controllers\API\PushSystemController;
+use App\Http\Middleware\ExcludeDomainTracking;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -25,7 +26,7 @@ Route::get('/user', function (Request $request) {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::group(['middleware' => ['exclude.domain.tracking']], function () {
+Route::group(['middleware' => [ExcludeDomainTracking::class]], function () {
     Route::post('/create-video-timeline', [UsersTrackingController::class, 'storeVideoTimeline']);
     Route::post('/collect-ai-training-data', [UsersTrackingController::class, 'storeAiTrainingData']);
     Route::post('/heartbeat', [UsersTrackingController::class, 'storeHeartbeat']);
