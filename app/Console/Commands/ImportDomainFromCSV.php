@@ -111,7 +111,7 @@ class ImportDomainFromCSV extends Command
                         'registrar' => 'Godaddy',
                         'is_locked' => false,
                         'renewable' => $result['renewable'] ?? false,
-                        'status' => $result['status'] ?? null,
+                        'status' => $result['status'] ?? 'active',
                         'name_servers' => json_encode($result['nameServers']) ?? null,
                         'renew_deadline' => Carbon::parse($result['renewDeadline'])->format('Y-m-d H:i:s') ?? null,
                         'registrar_created_at' => Carbon::parse($result['registrarCreatedAt'])->format('Y-m-d H:i:s') ?? null,
