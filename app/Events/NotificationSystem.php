@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -12,8 +12,8 @@ class NotificationSystem implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $connection = 'redis';
-    public $queue = 'notification_system_board_cast';
-    private $data;
+    public $queue = 'notification_system';
+    public $data;
 
     public function __construct($data)
     {
@@ -22,7 +22,12 @@ class NotificationSystem implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        return new Channel('notification-system');
+        return new PrivateChannel('notifications.' . $this->data['email']);
+    }
+
+    public function broadcastAs()
+    {
+        return 'NewNotification';
     }
 
     public function broadcastWith()
