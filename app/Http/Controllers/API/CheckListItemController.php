@@ -10,6 +10,7 @@ use App\Repositories\CheckListRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\ChecklistItemRequest;
+use Illuminate\Support\Facades\Validator;
 
 class ChecklistItemController extends Controller
 {
@@ -25,11 +26,18 @@ class ChecklistItemController extends Controller
         $this->checkListItemRepository = $checkListItemRepository;
         $this->checkListRepository = $checkListRepository;
     }
-    protected function userHasAccessToChecklist(Checklist $checklist)
+    
+    protected function userHasAccessToChecklist(Checklist $checklist): bool
     {
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
         $boardId = optional($checklist->card->listBoard)->board_id;
-        
-        return $boardId && Auth::user()->boards()->where('board_id', $boardId)->exists();
+        if (!$boardId) {
+            return false;
+        }
+        return $user->boards()->where('board_id', $boardId)->exists();
     }
     
     public function index($checklistId)
@@ -82,8 +90,8 @@ class ChecklistItemController extends Controller
             }
             
             $item = [
-                'content' => $input('content'),
-                'is_completed' => CheckListItem::COMPLETE,
+                'content' => $input['content'],
+                'is_completed' => CheckListItem::NOT_COMPETE,
                 'checklist_id' => $checklistId,
             ];
             
@@ -108,6 +116,7 @@ class ChecklistItemController extends Controller
     public function update(ChecklistItemRequest $request, $checklistId, $itemId)
     {
         try {
+        
         $input = $request->except('token');
         $checkList = $this->checkListRepository->show($checklistId);
         if (!$checkList) {
@@ -133,13 +142,11 @@ class ChecklistItemController extends Controller
                 'type' => 'unauthorized',
             ], 403);
         }
-    
-        $checkListItem = $this->checkListItemRepository->updateItem($input, $item);
+        $checkListItem = $this->checkListItemRepository->updateItem($input, $itemId);
         
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật thành công',
-            'data' => $checkListItem,
             'type' => 'success_update_item'
         ]);
         } catch (\Exception $e) {
@@ -154,6 +161,16 @@ class ChecklistItemController extends Controller
     
     public function toggle(Request $request, $checklistId, $itemId)
     {
+        // Validate the incoming request
+        $validator = Validator::make($request->all(), [
+            'is_completed' => 'required|integer',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 422);
+        }
         $checkList = $this->checkListRepository->show($checklistId);
         if (!$checkList) {
             return response()->json([
