@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\LogsModelActivity;
 
-class Checklist extends Model
+class CheckList extends Model
 {
     use LogsModelActivity;
 
@@ -18,6 +18,6 @@ class Checklist extends Model
     
     public function items()
     {
-        return $this->hasMany(ChecklistItem::class);
+        return $this->hasMany(CheckListItem::class);
     }
 }

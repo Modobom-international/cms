@@ -9,7 +9,7 @@ use App\Repositories\CheckListRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class ChecklistController extends Controller
+class CheckListController extends Controller
 {
     protected $cardRepository;
     protected $checkListRepository;

@@ -219,7 +219,7 @@ return [
                 'nice' => 0,
             ],
 
-            'supervisor-cms-5' => [
+            'supervisor-cms-3' => [
                 'connection' => 'redis',
                 'queue' => ['store_tracking_event'],
                 'balance' => 'auto',
@@ -228,7 +228,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-6' => [
+            'supervisor-cms-4' => [
                 'connection' => 'redis',
                 'queue' => ['store_ai_training_data'],
                 'balance' => 'auto',
@@ -237,7 +237,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-7' => [
+            'supervisor-cms-5' => [
                 'connection' => 'redis',
                 'queue' => ['store_video_timeline'],
                 'balance' => 'auto',
@@ -246,16 +246,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-8' => [
-                'connection' => 'redis',
-                'queue' => ['store_geolocation'],
-                'balance' => 'auto',
-                'minProcesses' => 1,
-                'maxProcesses' => 5,
-                'tries' => 0,
-            ],
-
-            'supervisor-cms-9' => [
+            'supervisor-cms-6' => [
                 'connection' => 'redis',
                 'queue' => ['store_html_source'],
                 'balance' => 'auto',
@@ -264,7 +255,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-10' => [
+            'supervisor-cms-7' => [
                 'connection' => 'redis',
                 'queue' => ['store_push_system'],
                 'balance' => 'auto',
@@ -273,7 +264,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-11' => [
+            'supervisor-cms-8' => [
                 'connection' => 'redis',
                 'queue' => ['store_push_system_setting'],
                 'balance' => 'auto',
@@ -282,7 +273,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-12' => [
+            'supervisor-cms-9' => [
                 'connection' => 'redis',
                 'queue' => ['store_push_system_user_active'],
                 'balance' => 'auto',
@@ -291,7 +282,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-13' => [
+            'supervisor-cms-10' => [
                 'connection' => 'redis',
                 'queue' => ['store_heartbeat'],
                 'balance' => 'auto',
@@ -300,7 +291,7 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-14' => [
+            'supervisor-cms-11' => [
                 'connection' => 'redis',
                 'queue' => ['store_notification_system'],
                 'balance' => 'auto',

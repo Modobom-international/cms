@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Enums\Domain;
 use App\Http\Controllers\Controller;
 use App\Enums\Utility;
 use App\Enums\ActivityAction;
@@ -14,7 +13,6 @@ use Illuminate\Http\Request;
 use App\Repositories\DeviceFingerprintRepository;
 use App\Repositories\TrackingEventRepository;
 use App\Repositories\DomainRepository;
-use App\Jobs\StoreGeolocation;
 use App\Services\GeolocationService;
 use UAParser\Parser;
 use App\Traits\LogsActivity;
@@ -148,13 +146,6 @@ class UsersTrackingController extends Controller
     public function storeHeartbeat(Request $request)
     {
         try {
-            if (in_array($request->input('domain'), Domain::LIST_EXCLUDE_TRACKING)) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Tên miền không nằm trong danh sách được phép tracking',
-                ], 403);
-            }
-
             $userInfo = $request->input('userInfo');
 
             $data = [
@@ -166,15 +157,6 @@ class UsersTrackingController extends Controller
             ];
 
             StoreHeartBeat::dispatch($data)->onQueue('store_heartbeat');
-            if (isset($userInfo['geolocation']) && isset($userInfo['geolocation']['latitude'])) {
-                $dataQueue = [
-                    'latitude' => $userInfo['geolocation']['latitude'],
-                    'longitude' => $userInfo['geolocation']['longitude'],
-                    'type' => 'heartbeat',
-                ];
-
-                StoreGeolocation::dispatch($dataQueue)->onQueue('store_geolocation');
-            }
 
             return response()->json([
                 'success' => true,
@@ -192,13 +174,6 @@ class UsersTrackingController extends Controller
     public function storeVideoTimeline(Request $request)
     {
         try {
-            if (in_array($request->input('domain'), Domain::LIST_EXCLUDE_TRACKING)) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Tên miền không nằm trong danh sách được phép tracking',
-                ], 403);
-            }
-
             $userInfo = $request->input('userInfo');
 
             $data = [
@@ -213,15 +188,6 @@ class UsersTrackingController extends Controller
             ];
 
             StoreVideoTimeline::dispatch($data)->onQueue('store_video_timeline');
-            if (isset($userInfo['geolocation']) && isset($userInfo['geolocation']['latitude'])) {
-                $dataQueue = [
-                    'latitude' => $userInfo['geolocation']['latitude'],
-                    'longitude' => $userInfo['geolocation']['longitude'],
-                    'type' => 'video_timeline',
-                ];
-
-                StoreGeolocation::dispatch($dataQueue)->onQueue('store_geolocation');
-            }
 
             return response()->json([
                 'success' => true,
@@ -239,13 +205,6 @@ class UsersTrackingController extends Controller
     public function storeAiTrainingData(Request $request)
     {
         try {
-            if (in_array($request->input('domain'), Domain::LIST_EXCLUDE_TRACKING)) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Tên miền không nằm trong danh sách được phép tracking',
-                ], 403);
-            }
-
             $data = [
                 'uuid' => $request->input('uuid'),
                 'domain' => $request->input('domain'),
@@ -272,13 +231,6 @@ class UsersTrackingController extends Controller
     public function storeTrackingEvent(Request $request)
     {
         try {
-            if (in_array($request->input('domain'), Domain::LIST_EXCLUDE_TRACKING)) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Tên miền không nằm trong danh sách được phép tracking',
-                ], 403);
-            }
-
             $user = $request->input('user');
 
             $data = [
@@ -292,15 +244,6 @@ class UsersTrackingController extends Controller
             ];
 
             StoreTrackingEvent::dispatch($data)->onQueue('store_tracking_event');
-            if (isset($user['geolocation']) && isset($user['geolocation']['latitude'])) {
-                $dataQueue = [
-                    'latitude' => $user['geolocation']['latitude'],
-                    'longitude' => $user['geolocation']['longitude'],
-                    'type' => 'tracking_event',
-                ];
-
-                StoreGeolocation::dispatch($dataQueue)->onQueue('store_geolocation');
-            }
 
             return response()->json([
                 'success' => true,

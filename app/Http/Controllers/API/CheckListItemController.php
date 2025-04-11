@@ -8,9 +8,9 @@ use App\Http\Requests\CheckCompletedRequest;
 use App\Models\Checklist;
 use App\Repositories\CheckListItemRepository;
 use App\Repositories\CheckListRepository;
-use App\Http\Requests\ChecklistItemRequest;
+use App\Http\Requests\CheckListItemRequest;
 
-class ChecklistItemController extends Controller
+class CheckListItemController extends Controller
 {
     
     protected $checkListItemRepository;
@@ -66,7 +66,7 @@ class ChecklistItemController extends Controller
         ],201);
     }
     
-    public function store(ChecklistItemRequest $request, $checklistId)
+    public function store(CheckListItemRequest $request, $checklistId)
     {
         try {
             $input = $request->except('token');
@@ -111,7 +111,7 @@ class ChecklistItemController extends Controller
         }
     }
     
-    public function update(ChecklistItemRequest $request, $checklistId, $itemId)
+    public function update(CheckListItemRequest $request, $checklistId, $itemId)
     {
         try {
         

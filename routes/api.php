@@ -21,13 +21,10 @@ use App\Http\Controllers\API\SiteController;
 use App\Http\Controllers\API\PushSystemController;
 use App\Http\Controllers\API\DomainController;
 use App\Http\Controllers\API\ActivityLogController;
+use App\Http\Controllers\API\NotificationController;
 use App\Http\Middleware\ExcludeDomainTracking;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 Route::middleware(ExcludeDomainTracking::class)->group(function () {
     Route::post('/create-video-timeline', [UsersTrackingController::class, 'storeVideoTimeline']);
@@ -43,11 +40,14 @@ Route::middleware(ExcludeDomainTracking::class)->group(function () {
     Route::post('/save-status-link', [PushSystemController::class, 'storeStatusLink']);
 });
 
-Route::middleware('auth:api')->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [UserController::class, 'me']);
+    Route::get('/notifications', [NotificationController::class, 'getNotifications']);
+    Route::post('/refresh-token', [AuthController::class, 'refreshToken']);
     Route::post('/update/user', [UserController::class, 'updateCurrentUser']);
     Route::post('/change-password', [UserController::class, 'changePassword']);
+    
     //admin change password for user
     Route::post('/change-password-user/{id}/', [UserController::class, 'updatePassword']);
 
@@ -126,14 +126,14 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/cards/{cardId}/labels/{labelId}', [CardController::class, 'removeLabel']);
 
     // checkList
-    Route::get('/cards/{card}/checklists', [ChecklistController::class, 'index']);
-    Route::post('/cards/{card}/checklist/store', [ChecklistController::class, 'store']);
-    Route::post('/checklist/update/{id}', [ChecklistController::class, 'update']);
-    Route::delete('/checklist/delete/{id}', [ChecklistController::class, 'destroy']);
+    Route::get('/cards/{card}/checklists', [CheckListController::class, 'index']);
+    Route::post('/cards/{card}/checklist/store', [CheckListController::class, 'store']);
+    Route::post('/checklist/update/{id}', [CheckListController::class, 'update']);
+    Route::delete('/checklist/delete/{id}', [CheckListController::class, 'destroy']);
 
     //checkListItem
     Route::prefix('/checklist')->group(function () {
-        Route::get('/{checklist}/checklist-item/list', [ChecklistItemController::class, 'index']);
+        Route::get('/{checklist}/checklist-item/list', [CheckListItemController::class, 'index']);
         Route::post('/{checklist}/checklist-item/store', [CheckListItemController::class, 'store']); // Chi tiết 1 checklist
         Route::post('/{checklist}/checklist-item/update/{item}', [CheckListItemController::class, 'update']); // Cập nhật checklist
         Route::delete('/{checklist}/checklist-item/delete/{item}', [CheckListItemController::class, 'destroy']); // Xoá checklist

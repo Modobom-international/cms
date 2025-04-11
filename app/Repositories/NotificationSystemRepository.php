@@ -10,4 +10,9 @@ class NotificationSystemRepository extends BaseRepository
     {
         return NotificationSystem::class;
     }
+
+    public function getByEmail($email)
+    {
+        return $this->model->where('email', $email)->orderBy('unread')->limit(4)->get();
+    }
 }

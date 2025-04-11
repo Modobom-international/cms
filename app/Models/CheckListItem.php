@@ -4,14 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class ChecklistItem extends Model
+class CheckListItem extends Model
 {
     protected $fillable = ['checklist_id', 'content', 'is_completed'];
 
     
     public function checklist()
     {
-        return $this->belongsTo(Checklist::class);
+        return $this->belongsTo(CheckList::class);
     }
 }
 

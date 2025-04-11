@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Enums\Users;
 use App\Repositories\UserRepository;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
@@ -19,53 +17,8 @@ class AuthController extends Controller
         $this->userRepository = $userRepository;
     }
 
-    // Đăng ký user
-    public function register(Request $request)
-    {
-        try {
-            // Validate the incoming request
-            $validator = Validator::make($request->all(), [
-                'name' => 'required|string|max:255',
-                'email' => 'required|string|email|unique:users',
-                'password' => 'required|string|min:8',
-                'type_user' => 'required',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $input = $request->all();
-            $dataUser = [
-                'name' => $input['name'],
-                'email' => $input['email'],
-                'password' => bcrypt($input['password']),
-                'role' => Users::USER,
-                'type_user' => $input['type_user'],
-            ];
-
-            $user = $this->userRepository->createUser($dataUser);
-
-            $token = $user->createToken('Personal Access Token')->accessToken;
-            return response()->json([
-                'success' => true,
-                'message' => 'Đăng kí thành công',
-                'type' => 'register_success',
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Lỗi khi đăng kí tài khoản',
-                'type' => 'error_register',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
     // Đăng nhập user
-    public function login(Request $request) 
+    public function login(Request $request)
     {
         try {
             $request->validate([
@@ -76,9 +29,9 @@ class AuthController extends Controller
             $credentials = $request->only('email', 'password');
             if (Auth::attempt($credentials)) {
                 $user = Auth::user();
-                
+
                 try {
-                    $token = $user->createToken('Personal Access Token')->accessToken;
+                    $token = $user->createToken('auth_token')->plainTextToken;
                 } catch (\Exception $e) {
                     return response()->json([
                         'success' => false,
@@ -90,7 +43,7 @@ class AuthController extends Controller
 
                 $deviceData = [
                     'user_agent' => $request->header('User-Agent'),
-                    'platform' => $request->input('platform') ?? 'web', 
+                    'platform' => $request->input('platform') ?? 'web',
                     'language' => $request->input('language') ?? 'en',
                     'cookies_enabled' => $request->input('cookies_enabled') ?? true,
                     'screen_width' => $request->input('screen_width') ?? 1920,
@@ -118,7 +71,6 @@ class AuthController extends Controller
                 'message' => 'Thông tin đăng nhập không đúng',
                 'type' => 'email_or_password_incorrect',
             ], 401);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -139,5 +91,29 @@ class AuthController extends Controller
             'message' => 'Đăng xuất thành công',
             'type' => 'logout_success',
         ], 200);
+    }
+
+    public function refreshToken(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $user->currentAccessToken()->delete();
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'token' => $token,
+                'message' => 'Lấy token thành công',
+                'type' => 'get_token_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'token' => null,
+                'message' => 'Lấy token không thành công',
+                'type' => 'get_token_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
