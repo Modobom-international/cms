@@ -27,7 +27,7 @@ class NotificationSystem implements ShouldBroadcast
 
     public function broadcastAs()
     {
-        return 'NewNotification';
+        return 'NotificationSystem';
     }
 
     public function broadcastWith()

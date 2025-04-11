@@ -17,7 +17,6 @@
 
     let mouseMovements = 0;
     let keyPresses = 0;
-    let lastInteractionTime = getCurrentTimeInGMT7();
     let userStartTime = getCurrentTimeInGMT7();
     let totalTimeOnsite = 0;
     let startTime = getCurrentTimeInGMT7();
@@ -67,7 +66,6 @@
     });
 
     function isBot() {
-        const currentTime = getCurrentTimeInGMT7();
         const userAgent = navigator.userAgent.toLowerCase();
         const botPatterns = [
             /bot/i, /spider/i, /crawler/i, /slurp/i, /googlebot/i,
@@ -82,7 +80,6 @@
         );
 
         const botDetected = botPatterns.some(pattern => pattern.test(userAgent)) || isSuspicious;
-        lastInteractionTime = currentTime;
         return botDetected;
     }
 
