@@ -29,7 +29,7 @@ Route::get('/user', function (Request $request) {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::group(['middleware' => [ExcludeDomainTracking::class]], function () {
+Route::middleware(ExcludeDomainTracking::class)->group(function () {
     Route::post('/create-video-timeline', [UsersTrackingController::class, 'storeVideoTimeline']);
     Route::post('/collect-ai-training-data', [UsersTrackingController::class, 'storeAiTrainingData']);
     Route::post('/heartbeat', [UsersTrackingController::class, 'storeHeartbeat']);

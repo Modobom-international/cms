@@ -19,6 +19,7 @@ class RestrictBrowserAccess
         'api/get-push-system-config',
         'api/add-user-active-push-system',
         'api/push-system/save-config-links',
+        'horizon'
     ];
 
     /**
