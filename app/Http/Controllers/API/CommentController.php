@@ -7,7 +7,6 @@ use App\Http\Requests\CommentRequest;
 use App\Models\Card;
 use App\Repositories\CardRepository;
 use App\Repositories\CommentRepository;
-use Illuminate\Http\Request;
 
 class CommentController extends Controller
 {

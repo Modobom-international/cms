@@ -29,11 +29,11 @@ class RestrictBrowserAccess
     public function handle(Request $request, Closure $next): Response
     {
 
-//        if (!in_array($request->path(), $this->except)) {
-//            if ($request->header('Accept') === 'text/html' || !$request->expectsJson()) {
-//                return response()->view('welcome');
-//            }
-//        }
+        if (!in_array($request->path(), $this->except)) {
+            if ($request->header('Accept') === 'text/html' || !$request->expectsJson()) {
+                return response()->view('welcome');
+            }
+        }
 
         return $next($request);
     }

@@ -141,7 +141,7 @@ Route::middleware('auth:api')->group(function () {
     });
     
     //comment
-    Route::prefix('card/{card}/comment')->group(function () {
+    Route::prefix('/card/{card}/comment')->group(function () {
         Route::get('/list', [CommentController::class, 'index']); // Lấy tất cả comment (kèm replies)
         Route::post('/create', [CommentController::class, 'store']); // Tạo comment hoặc reply
         Route::post('{comment}/reply', [CommentController::class, 'reply']); // Tạo comment hoặc reply

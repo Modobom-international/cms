@@ -4,13 +4,11 @@ namespace App\Http\Controllers\API;
 
 use App\Enums\CheckListItem;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CheckCompletedRequest;
 use App\Models\Checklist;
 use App\Repositories\CheckListItemRepository;
 use App\Repositories\CheckListRepository;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\ChecklistItemRequest;
-use Illuminate\Support\Facades\Validator;
 
 class ChecklistItemController extends Controller
 {
@@ -142,7 +140,7 @@ class ChecklistItemController extends Controller
                 'type' => 'unauthorized',
             ], 403);
         }
-        $checkListItem = $this->checkListItemRepository->updateItem($input, $itemId);
+        $this->checkListItemRepository->updateItem($input, $itemId);
         
         return response()->json([
             'success' => true,
@@ -159,18 +157,10 @@ class ChecklistItemController extends Controller
         }
     }
     
-    public function toggle(Request $request, $checklistId, $itemId)
+    public function toggle(CheckCompletedRequest $request, $checklistId, $itemId)
     {
         // Validate the incoming request
-        $validator = Validator::make($request->all(), [
-            'is_completed' => 'required|integer',
-        ]);
-    
-        if ($validator->fails()) {
-            return response()->json([
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        $input = $request->except('token');
         $checkList = $this->checkListRepository->show($checklistId);
         if (!$checkList) {
             return response()->json([
