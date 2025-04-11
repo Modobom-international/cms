@@ -30,4 +30,9 @@ class Card extends Model
     {
         return $this->hasMany(Checklist::class);
     }
+    
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
 }

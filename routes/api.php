@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\API\CommentController;
+use App\Http\Controllers\API\HtmlSourceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
@@ -16,7 +18,6 @@ use App\Http\Controllers\API\UsersTrackingController;
 use App\Http\Controllers\API\CloudflareController;
 use App\Http\Controllers\API\PageController;
 use App\Http\Controllers\API\SiteController;
-use App\Http\Controllers\API\HtmlSourceController;
 use App\Http\Controllers\API\PushSystemController;
 
 Route::get('/user', function (Request $request) {
@@ -127,11 +128,20 @@ Route::middleware('auth:api')->group(function () {
 
     //checkListItem
     Route::prefix('/checklist')->group(function () {
-        Route::get('/{checklist}/checklistItem/list', [ChecklistItemController::class, 'index']);
-        Route::get('/{checklist}/checklistItem/store', [CheckListItemController::class, 'store']); // Chi tiết 1 checklist
-        Route::put('/{checklist}/checklistItem/update/{item}', [CheckListItemController::class, 'update']); // Cập nhật checklist
-        Route::delete('/{checklist}/checklistItem/delete/{item}', [CheckListItemController::class, 'destroy']); // Xoá checklist
-        Route::post('/checklistItem/toggle/{item}', [ChecklistItemController::class, 'toggle']); // Check/Uncheck
+        Route::get('/{checklist}/checklist-item/list', [ChecklistItemController::class, 'index']);
+        Route::post('/{checklist}/checklist-item/store', [CheckListItemController::class, 'store']); // Chi tiết 1 checklist
+        Route::post('/{checklist}/checklist-item/update/{item}', [CheckListItemController::class, 'update']); // Cập nhật checklist
+        Route::delete('/{checklist}/checklist-item/delete/{item}', [CheckListItemController::class, 'destroy']); // Xoá checklist
+        Route::post('/{checklist}/checklist-item/toggle/{item}', [ChecklistItemController::class, 'toggle']); // Check/Uncheck
+    });
+    
+    //comment
+    Route::prefix('card/{card}/comment')->group(function () {
+        Route::get('/list', [CommentController::class, 'index']); // Lấy tất cả comment (kèm replies)
+        Route::post('/create', [CommentController::class, 'store']); // Tạo comment hoặc reply
+        Route::post('{comment}/reply', [CommentController::class, 'reply']); // Tạo comment hoặc reply
+        Route::post('/update/{comment}', [CommentController::class, 'update']); // Cập nhật comment
+        Route::delete('/delete/{comment}', [CommentController::class, 'destroy']); // Xóa comment
     });
 
     Route::prefix('domain')->group(function () {

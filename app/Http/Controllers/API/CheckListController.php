@@ -46,11 +46,11 @@ class ChecklistController extends Controller
     }
     
     // Tạo checklist mới
-    public function store(ChecklistRequest $request)
+    public function store(ChecklistRequest $request, $cardId)
     {
         try{
             $input = $request->except('token');
-            $card = $this->cardRepository->show($input['card_id']);
+            $card = $this->cardRepository->show($cardId);
             if (!$card) {
                 return response()->json([
                     'success' => false,
