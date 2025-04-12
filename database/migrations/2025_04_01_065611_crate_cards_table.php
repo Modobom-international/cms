@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('cards', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('list_id')->constrained('lists')->onDelete('cascade');
+            $table->foreignId('list_id');
             $table->string('title');
             $table->text('description')->nullable();
             $table->integer('position')->default(1);
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('cards');
     }
 };
