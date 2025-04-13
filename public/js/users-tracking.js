@@ -304,24 +304,6 @@
             pageLoadTime: performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart
         };
 
-        let geolocation = null;
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    geolocation = {
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                        accuracy: position.coords.accuracy,
-                        city: null
-                    };
-                },
-                (error) => {
-                    console.warn('Geolocation error:', error.message);
-                },
-                { timeout: 5000 }
-            );
-        }
-
         let batteryInfo = null;
         if (navigator.getBattery) {
             navigator.getBattery().then(battery => {
@@ -337,7 +319,6 @@
         return {
             ...basicInfo,
             ...additionalInfo,
-            geolocation: geolocation,
             battery: batteryInfo
         };
     }

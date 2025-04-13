@@ -13,7 +13,6 @@ use Illuminate\Http\Request;
 use App\Repositories\DeviceFingerprintRepository;
 use App\Repositories\TrackingEventRepository;
 use App\Repositories\DomainRepository;
-use App\Services\GeolocationService;
 use UAParser\Parser;
 use App\Traits\LogsActivity;
 use DB;
@@ -27,20 +26,17 @@ class UsersTrackingController extends Controller
     protected $trackingEventRepository;
     protected $domainRepository;
     protected $utility;
-    protected $geolocationService;
 
     public function __construct(
         DeviceFingerprintRepository $deviceFingerprintRepository,
         TrackingEventRepository $trackingEventRepository,
         DomainRepository $domainRepository,
-        Utility $utility,
-        GeolocationService $geolocationService
+        Utility $utility
     ) {
         $this->deviceFingerprintRepository = $deviceFingerprintRepository;
         $this->trackingEventRepository = $trackingEventRepository;
         $this->domainRepository = $domainRepository;
         $this->utility = $utility;
-        $this->geolocationService = $geolocationService;
     }
 
     public function listTrackingEvent(Request $request)
