@@ -17,4 +17,10 @@ class HeartBeatRepository extends BaseRepository
             ->where('domain', $domain)
             ->first();
     }
+
+    public function getCurrentUsersActive($domain)
+    {
+        return $this->model->where('domain', $domain)
+            ->count();
+    }
 }

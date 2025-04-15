@@ -43,12 +43,12 @@ Route::middleware(ExcludeDomainTracking::class)->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [UserController::class, 'me']);
-    
+
     Route::get('/notifications', [NotificationController::class, 'getNotifications']);
     Route::post('/refresh-token', [AuthController::class, 'refreshToken']);
     Route::post('/update/user', [UserController::class, 'updateCurrentUser']);
     Route::post('/change-password', [UserController::class, 'changePassword']);
-    
+
     //admin change password for user
     Route::post('/change-password-user/{id}/', [UserController::class, 'updatePassword']);
 
@@ -140,7 +140,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{checklist}/checklist-item/delete/{item}', [CheckListItemController::class, 'destroy']); // Xoá checklist
         Route::post('/{checklist}/checklist-item/toggle/{item}', [ChecklistItemController::class, 'toggle']); // Check/Uncheck
     });
-    
+
     //comment
     Route::prefix('/card/{card}/comment')->group(function () {
         Route::get('/list', [CommentController::class, 'index']); // Lấy tất cả comment (kèm replies)
@@ -162,6 +162,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('users-tracking')->group(function () {
         Route::get('/', [UsersTrackingController::class, 'listTrackingEvent'])->name('users.tracking.list');
         Route::get('/get-detail-tracking', [UsersTrackingController::class, 'getDetailTracking'])->name('users.tracking.detail');
+        Route::get('/get-current-users-active', [UsersTrackingController::class, 'getCurrentUsersActive'])->name('users.tracking.get.current.users.active');
     });
 
     Route::prefix('team')->group(function () {

@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use App\Repositories\DeviceFingerprintRepository;
 use App\Repositories\TrackingEventRepository;
 use App\Repositories\DomainRepository;
+use App\Repositories\HeartBeatRepository;
 use UAParser\Parser;
 use App\Traits\LogsActivity;
 use DB;
@@ -25,17 +26,20 @@ class UsersTrackingController extends Controller
     protected $deviceFingerprintRepository;
     protected $trackingEventRepository;
     protected $domainRepository;
+    protected $heartBeatRepository;
     protected $utility;
 
     public function __construct(
         DeviceFingerprintRepository $deviceFingerprintRepository,
         TrackingEventRepository $trackingEventRepository,
         DomainRepository $domainRepository,
+        HeartBeatRepository $heartBeatRepository,
         Utility $utility
     ) {
         $this->deviceFingerprintRepository = $deviceFingerprintRepository;
         $this->trackingEventRepository = $trackingEventRepository;
         $this->domainRepository = $domainRepository;
+        $this->heartBeatRepository = $heartBeatRepository;
         $this->utility = $utility;
     }
 
@@ -250,6 +254,25 @@ class UsersTrackingController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Lưu tracking event không thành công',
+            ], 500);
+        }
+    }
+
+    public function getCurrentUsersActive()
+    {
+        try {
+            $domain = request()->input('domain');
+            $activeUsers = $this->heartBeatRepository->getCurrentUsersActive($domain);
+
+            return response()->json([
+                'success' => true,
+                'data' => $activeUsers,
+                'message' => 'Lấy số lượng current users active thành công',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy số lượng current users active không thành công',
             ], 500);
         }
     }
