@@ -43,6 +43,7 @@ Route::middleware(ExcludeDomainTracking::class)->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [UserController::class, 'me']);
+    
     Route::get('/notifications', [NotificationController::class, 'getNotifications']);
     Route::post('/refresh-token', [AuthController::class, 'refreshToken']);
     Route::post('/update/user', [UserController::class, 'updateCurrentUser']);

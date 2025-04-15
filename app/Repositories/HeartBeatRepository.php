@@ -10,4 +10,11 @@ class HeartBeatRepository extends BaseRepository
     {
         return HeartBeat::class;
     }
+
+    public function getByUuidAndDomain($uuid, $domain)
+    {
+        return $this->model->where('uuid', $uuid)
+            ->where('domain', $domain)
+            ->first();
+    }
 }

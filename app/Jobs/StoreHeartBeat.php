@@ -30,7 +30,12 @@ class StoreHeartBeat implements ShouldQueue
     public function handle(HeartBeatRepository $heartBeatRepository): void
     {
         try {
-            $heartBeatRepository->create($this->data);
+            $getUsersTracking = $heartBeatRepository->getByUuidAndDomain($this->data['uuid'], $this->data['domain']);
+            if ($getUsersTracking) {
+                $heartBeatRepository->updateById($getUsersTracking->id, $this->data);
+            } else {
+                $heartBeatRepository->create($this->data);
+            }
         } catch (\Throwable $e) {
             Log::error("Job failed: " . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
