@@ -59,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/pages', [PageController::class, 'getPages']);
     Route::get('/sites/{siteId}/pages', [PageController::class, 'getPagesBySite']);
     Route::post('/export-pages/{pageId}', [PageController::class, 'exportPage']);
+    Route::delete('/pages/{pageId}', [PageController::class, 'destroy']);
 
     //workspace
     Route::prefix('/workspace')->group(function () {

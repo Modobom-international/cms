@@ -103,4 +103,6 @@ class PageRepository extends BaseRepository
             ->latest()
             ->get();
     }
+
+
 }

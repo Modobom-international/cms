@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PageRequest;
+use App\Services\CloudFlareService;
 use Auth;
 use Illuminate\Http\Request;
 use App\Traits\LogsActivity;
@@ -11,6 +12,7 @@ use App\Repositories\PageRepository;
 use App\Repositories\PageExportRepository;
 use App\Repositories\SiteRepository;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class PageController extends Controller
 {
@@ -19,15 +21,18 @@ class PageController extends Controller
     protected $pageRepository;
     protected $pageExportRepository;
     protected $siteRepository;
+    protected $cloudflareService;
 
     public function __construct(
         PageRepository $pageRepository,
         PageExportRepository $pageExportRepository,
-        SiteRepository $siteRepository
+        SiteRepository $siteRepository,
+        CloudFlareService $cloudflareService
     ) {
         $this->pageRepository = $pageRepository;
         $this->pageExportRepository = $pageExportRepository;
         $this->siteRepository = $siteRepository;
+        $this->cloudflareService = $cloudflareService;
     }
 
     /**
@@ -302,5 +307,90 @@ class PageController extends Controller
             'success' => true,
             'message' => 'Export cancelled, any running jobs will complete but future ones are cancelled'
         ]);
+    }
+
+    /**
+     * Delete a page and its associated files
+     *
+     * @param int $pageId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function destroy($pageId)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Find the page and its associated site
+            $page = $this->pageRepository->find($pageId);
+            if (!$page) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Page not found'
+                ], 404);
+            }
+
+            $site = $this->siteRepository->findWithRelations($page->site_id);
+            if (!$site) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Associated site not found'
+                ], 404);
+            }
+            // Delete the exported files if project exists
+            if ($site->cloudflare_project_name) {
+                $this->cloudflareService->deletePageFiles(
+                    $site->cloudflare_project_name,
+                    $page->slug
+                );
+            }
+
+
+            // Delete the page from database
+            $this->pageRepository->deleteById($pageId);
+
+            // Trigger site redeployment if project exists
+            if ($site->cloudflare_project_name) {
+                try {
+                    // Dispatch the deployment job
+                    dispatch(new \App\Jobs\DeployExportsJob(
+                        $site->cloudflare_project_name,
+                        $site->cloudflare_project_name
+                    ));
+
+                    DB::commit();
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Page deleted successfully and deployment job has been queued',
+                        'job_details' => [
+                            'project' => $site->cloudflare_project_name,
+                            'directory' => $site->cloudflare_project_name,
+                            'queue' => 'deployments'
+                        ]
+                    ]);
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to queue deployment job',
+                        'error' => $e->getMessage()
+                    ], 500);
+                }
+            }
+
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'message' => 'Page deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Failed to delete page: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete page',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
