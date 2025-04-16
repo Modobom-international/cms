@@ -112,8 +112,8 @@ class CommentController extends Controller
                 'type' => 'comment_not_found',
             ], 404);
         }
-        
-        $card = $this->cardRepository->show($comment->card);
+    
+        $card = $this->cardRepository->show($comment->card_id);
         if (!$card) {
             return response()->json([
                 'success' => false,
@@ -121,7 +121,7 @@ class CommentController extends Controller
                 'type' => 'card_not_found',
             ], 404);
         }
-        if (!$this->userHasAccessToCard($comment->card)) {
+        if (!$this->userHasAccessToCard($card)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Bạn không có quyền update',
@@ -205,7 +205,7 @@ class CommentController extends Controller
             ], 404);
         }
     
-        $card = $this->cardRepository->show($comment->card);
+        $card = $this->cardRepository->show($comment->card_id);
         if (!$card) {
             return response()->json([
                 'success' => false,
@@ -214,7 +214,7 @@ class CommentController extends Controller
             ], 404);
         }
         // Kiểm tra quyền user trong board chứa card
-        if (!$this->userHasAccessToCard($comment->card)) {
+        if (!$this->userHasAccessToCard($card)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Bạn không có quyền update',

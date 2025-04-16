@@ -146,11 +146,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('/card/{card}/comment')->group(function () {
         Route::get('/list', [CommentController::class, 'index']); // Lấy tất cả comment (kèm replies)
         Route::post('/create', [CommentController::class, 'store']); // Tạo comment hoặc reply
-        Route::post('{comment}/reply', [CommentController::class, 'reply']); // Tạo comment hoặc reply
-        Route::post('/update/{comment}', [CommentController::class, 'update']); // Cập nhật comment
-        Route::delete('/delete/{comment}', [CommentController::class, 'destroy']); // Xóa comment
     });
-
+    Route::post('/comment/{comment}/reply', [CommentController::class, 'reply']); // Tạo comment hoặc reply
+    Route::post('/comment/update/{comment}', [CommentController::class, 'update']); // Cập nhật comment
+    Route::delete('/comment/delete/{comment}', [CommentController::class, 'destroy']); // Xóa comment
+    
     Route::prefix('domain')->group(function () {
         Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
     });
