@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Validator;
 class PageController extends Controller
 {
     use LogsActivity;
-    
+
     protected $pageRepository;
     protected $pageExportRepository;
     protected $siteRepository;
@@ -68,11 +68,14 @@ class PageController extends Controller
 
     /**
      * Update an existing page
+     * 
+     * @param Request $request
+     * @param int $pageId
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function update(Request $request)
+    public function update(Request $request, $pageId)
     {
         $validator = Validator::make($request->all(), [
-            'slug' => 'required|string',
             'content' => 'required|string',
         ]);
 
@@ -85,7 +88,7 @@ class PageController extends Controller
         }
 
         try {
-            $page = $this->pageRepository->findBySlug($request->slug);
+            $page = $this->pageRepository->find($pageId);
 
             if (!$page) {
                 return response()->json([
@@ -116,14 +119,14 @@ class PageController extends Controller
     }
 
     /**
-     * Get a page by its slug
+     * Get a page by its ID
      * 
-     * @param string $slug The page slug
+     * @param int $pageId The page ID
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getPage($slug)
+    public function getPage($pageId)
     {
-        $page = $this->pageRepository->findBySlug($slug);
+        $page = $this->pageRepository->find($pageId);
         if ($page) {
             return response()->json([
                 'success' => true,
@@ -188,12 +191,12 @@ class PageController extends Controller
      * Create a new page export request and trigger the exporter
      *
      * @param  \Illuminate\Http\Request  $request
+     * @param  int  $pageId
      * @return \Illuminate\Http\JsonResponse
      */
-    public function exportPage(Request $request)
+    public function exportPage(Request $request, $pageId)
     {
         $validator = Validator::make($request->all(), [
-            'slug' => 'required|string',
             'html_file' => 'required|file|mimes:html,htm',
             'site_id' => 'required|exists:sites,id'
         ]);
@@ -216,16 +219,23 @@ class PageController extends Controller
                 ], 404);
             }
 
-            $page = $this->pageRepository->findBySlugAndSite($request->slug, $site->id);
+            $page = $this->pageRepository->find($pageId);
             if (!$page) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Page not found for this site'
+                    'message' => 'Page not found'
                 ], 404);
             }
 
+            if ($page->site_id !== $site->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Page does not belong to this site'
+                ], 403);
+            }
+
             // Create site-specific export directory structure
-            $exportPath = 'exports/' . $site->cloudflare_project_name . '/' . $request->slug;
+            $exportPath = 'exports/' . $site->cloudflare_project_name . '/' . $page->slug;
 
             // Store the HTML file
             $htmlFile = $request->file('html_file');
@@ -234,7 +244,7 @@ class PageController extends Controller
 
             // Create the export request through repository
             $exportRequest = $this->pageExportRepository->create([
-                'slugs' => $request->slug,
+                'slugs' => $page->slug,
                 'result_path' => $filePath,
                 'status' => 'completed',
                 'site_id' => $site->id
