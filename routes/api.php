@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\API\CommentController;
 use App\Http\Controllers\API\HtmlSourceController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BoardController;
@@ -32,6 +31,7 @@ Route::middleware(ExcludeDomainTracking::class)->group(function () {
     Route::post('/heartbeat', [UsersTrackingController::class, 'storeHeartbeat']);
     Route::post('/tracking-event', [UsersTrackingController::class, 'storeTrackingEvent']);
     Route::post('/check-device', [UsersTrackingController::class, 'checkDevice']);
+    
     Route::post('/save-html-source', [HtmlSourceController::class, 'storeHtmlSource']);
     Route::post('/push-system', [PushSystemController::class, 'storePushSystem']);
     Route::post('/get-push-system-config', [PushSystemController::class, 'storePushSystemSetting']);

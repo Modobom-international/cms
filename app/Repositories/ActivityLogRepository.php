@@ -13,7 +13,9 @@ class ActivityLogRepository extends BaseRepository
 
     public function getByFilter($filter)
     {
-        $query = $this->model->whereDate('created_at', $filter['date']);
+        $query = $this->model->with(['users' => function ($query) {
+            $query->select('id', 'email');
+        }])->whereDate('created_at', $filter['date']);
 
         if (isset($filter['action'])) {
             $query->where('action', $filter['action']);
@@ -23,6 +25,10 @@ class ActivityLogRepository extends BaseRepository
             $query->where('user_id', $filter['user_id']);
         }
 
-        return $query->orderBy('created_at', 'desc')->get();
+        return $query->orderBy('created_at', 'desc')->get()->map(function ($item) {
+            $item->user_email = $item->users->email ?? null;
+            unset($item->users);
+            return $item;
+        });
     }
 }
