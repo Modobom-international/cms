@@ -6,6 +6,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\File;
 
 class CloudFlareService
 {
@@ -446,5 +447,28 @@ class CloudFlareService
         }
 
         return ['error' => 'Something went wrong'];
+    }
+
+    /**
+     * Delete files for a specific page from Cloudflare Pages
+     *
+     * @param string $projectName
+     * @param string $pageSlug
+     * @return bool
+     */
+    public function deletePageFiles($projectName, $pageSlug)
+    {
+        try {
+            $exportPath = storage_path('app/public/exports/' . $projectName . '/' . $pageSlug);
+
+            if (File::exists($exportPath)) {
+                File::deleteDirectory($exportPath);
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            \Log::error('Failed to delete page files: ' . $e->getMessage());
+            throw $e;
+        }
     }
 }

@@ -31,7 +31,7 @@ Route::middleware(ExcludeDomainTracking::class)->group(function () {
     Route::post('/heartbeat', [UsersTrackingController::class, 'storeHeartbeat']);
     Route::post('/tracking-event', [UsersTrackingController::class, 'storeTrackingEvent']);
     Route::post('/check-device', [UsersTrackingController::class, 'checkDevice']);
-    
+
     Route::post('/save-html-source', [HtmlSourceController::class, 'storeHtmlSource']);
     Route::post('/push-system', [PushSystemController::class, 'storePushSystem']);
     Route::post('/get-push-system-config', [PushSystemController::class, 'storePushSystemSetting']);
@@ -54,11 +54,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Page routes
     Route::post('/create-page', [PageController::class, 'create']);
-    Route::post('/update-page', [PageController::class, 'update']);
-    Route::get('/page/{slug}', [PageController::class, 'getPage']);
+    Route::post('/update-page/{pageId}', [PageController::class, 'update']);
+    Route::get('/page/{pageId}', [PageController::class, 'getPage']);
     Route::get('/pages', [PageController::class, 'getPages']);
     Route::get('/sites/{siteId}/pages', [PageController::class, 'getPagesBySite']);
-    Route::post('/export-pages', [PageController::class, 'exportPage']);
+    Route::post('/export-pages/{pageId}', [PageController::class, 'exportPage']);
+    Route::delete('/pages/{pageId}', [PageController::class, 'destroy']);
 
     //workspace
     Route::prefix('/workspace')->group(function () {

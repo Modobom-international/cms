@@ -11,6 +11,12 @@ class PageRepository extends BaseRepository
         return Page::class;
     }
 
+    /**
+     * Find a page by its ID
+     *
+     * @param int $id
+     * @return \App\Models\Page|null
+     */
     public function find($id)
     {
         return $this->model->find($id);
@@ -32,6 +38,14 @@ class PageRepository extends BaseRepository
         return $this->model->create($data);
     }
 
+    /**
+     * Update a page
+     *
+     * @param array $data
+     * @param int $id
+     * @return bool
+     * @throws \Exception
+     */
     public function update($data, $id)
     {
         $page = $this->find($id);
@@ -89,4 +103,6 @@ class PageRepository extends BaseRepository
             ->latest()
             ->get();
     }
+
+
 }
