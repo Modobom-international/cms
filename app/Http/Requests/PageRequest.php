@@ -25,7 +25,13 @@ class PageRequest extends FormRequest
         return [
             'site_id' => 'required|integer',
             'name' => 'required|string',
-            'slug' => 'required|string|unique:pages,slug',
+            'slug' => [
+                'required',
+                'string',
+                Rule::unique('pages')->where(function ($query) {
+                    return $query->where('site_id', $this->site_id);
+                })
+            ],
             'content' => 'required|string',
         ];
     }
@@ -36,8 +42,8 @@ class PageRequest extends FormRequest
             'site_id.required' => __('validation.required'),
             'name.required' => __('validation.required'),
             'slug.required' => __('validation.required'),
+            'slug.unique' => 'This slug is already in use within this site',
             'content.required' => __('validation.required'),
-            'slug.unique' => __('validation.unique'),
         ];
     }
 }
