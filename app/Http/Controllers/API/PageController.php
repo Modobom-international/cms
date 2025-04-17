@@ -13,6 +13,7 @@ use App\Repositories\PageExportRepository;
 use App\Repositories\SiteRepository;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class PageController extends Controller
 {
@@ -254,6 +255,36 @@ class PageController extends Controller
                 'status' => 'completed',
                 'site_id' => $site->id
             ]);
+            
+            // Create _headers file in the root directory of the site exports
+            $rootExportPath = 'exports/' . $site->cloudflare_project_name;
+            $headersContent = <<<EOT
+/{$page->slug}/index.html
+  Cache-Control: public, max-age=31536000, immutable
+
+/{$page->slug}/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/{$page->slug}/*.css
+  Cache-Control: public, max-age=31536000, immutable
+EOT;
+
+            // Check if _headers file exists
+            $headersFilePath = storage_path('app/public/' . $rootExportPath . '/_headers');
+            if (file_exists($headersFilePath)) {
+                // Read existing content
+                $existingContent = file_get_contents($headersFilePath);
+                
+                // Only add new rules if they don't already exist
+                if (strpos($existingContent, "/{$page->slug}/index.html") === false) {
+                    $headersContent = $existingContent . $headersContent;
+                } else {
+                    $headersContent = $existingContent;
+                }
+            }
+            
+            // Store the _headers file
+            Storage::disk('public')->put($rootExportPath . '/_headers', $headersContent);
 
             return response()->json([
                 'success' => true,
