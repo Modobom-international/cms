@@ -170,7 +170,7 @@ class CommentController extends Controller
         if (!$this->userHasAccessToCard($comment->card)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền update',
+                'message' => 'Bạn không có quyền ',
                 'type' => 'unauthorized',
             ], 403);
         }

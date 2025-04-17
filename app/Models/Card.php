@@ -36,4 +36,9 @@ class Card extends Model
     {
         return $this->hasMany(Comment::class);
     }
+    
+    public function dueDate()
+    {
+        return $this->hasOne(DueDate::class);
+    }
 }
