@@ -267,6 +267,8 @@ class PageController extends Controller
 
 /{$page->slug}/*.css
   Cache-Control: public, max-age=31536000, immutable
+
+
 EOT;
 
             // Check if _headers file exists
@@ -277,7 +279,7 @@ EOT;
                 
                 // Only add new rules if they don't already exist
                 if (strpos($existingContent, "/{$page->slug}/index.html") === false) {
-                    $headersContent = $existingContent . $headersContent;
+                    $headersContent = $existingContent . "\n" . $headersContent;
                 } else {
                     $headersContent = $existingContent;
                 }
