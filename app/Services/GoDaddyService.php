@@ -73,6 +73,65 @@ class GoDaddyService
         }
     }
 
+    public function updateNameservers($domain)
+    {
+        try {
+            $statusContinue = false;
+            foreach ($this->apiConfigs as $configKey => $config) {
+                $this->setClient($configKey);
+                $response = $this->getDomainDetails($domain);
+                if (array_key_exists('error', $response)) {
+                    continue;
+                } else {
+                    $statusContinue = true;
+                }
+            }
+
+            if ($statusContinue) {
+                $body = [
+                    "nameServers" => [
+                        'ben.ns.cloudflare.com',
+                        'jean.ns.cloudflare.com',
+                    ]
+                ];
+
+                $getCustomerID = $this->getCustomerID();
+                $customerID = $getCustomerID['customerId'];
+
+                $response = $this->client->put("/v2/customers/{$customerID}/domains/{$domain}/nameServers", [
+                    'json' => $body
+                ]);
+
+                return json_decode($response->getBody(), true);
+            } else {
+                return $this->handleException($e);
+            }
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    public function getCustomerID()
+    {
+        try {
+            $response = $this->client->get("/v1/shoppers/{$this->shopperID}?includes=customerId");
+
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    public function getDomainDetails($domain)
+    {
+        try {
+            $response = $this->client->get("/v1/domains/{$domain}");
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
+    }
+
     private function handleException(RequestException $e)
     {
         if ($e->hasResponse()) {

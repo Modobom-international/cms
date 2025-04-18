@@ -8,6 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Services\GoDaddyService;
+use App\Services\CloudFlareService;
 use App\Events\RefreshDomain;
 use App\Repositories\DomainRepository;
 use Carbon\Carbon;
@@ -19,7 +20,7 @@ class RefreshDomainInPlatform implements ShouldQueue
 
     public function __construct() {}
 
-    public function handle(GoDaddyService $goDaddyService, DomainRepository $domainRepository)
+    public function handle(GoDaddyService $goDaddyService, CloudFlareService $cloudFlareService, DomainRepository $domainRepository)
     {
         try {
             $result = $goDaddyService->getListDomain();
@@ -30,6 +31,8 @@ class RefreshDomainInPlatform implements ShouldQueue
             }
 
             if (array_key_exists('error', $result)) {
+                $this->messageEventHandler('Lỗi không lấy được danh sách domain từ Godaddy ...');
+
                 return $this->error($result['error']);
             }
 
@@ -41,6 +44,10 @@ class RefreshDomainInPlatform implements ShouldQueue
                 $this->messageEventHandler('Bắt đầu đồng bộ dữ liệu ...');
                 foreach ($listNonExist as $index => $domain) {
                     $infoDomain = $result['data'][$index];
+                    $nameServer = [
+                        'ben.ns.cloudflare.com',
+                        'jean.ns.cloudflare.com',
+                    ];
 
                     $data = [
                         'domain' => $domain,
@@ -49,14 +56,38 @@ class RefreshDomainInPlatform implements ShouldQueue
                         'is_locked' => false,
                         'renewable' => $infoDomain['renewable'] ?? false,
                         'status' => $infoDomain['status'] ?? 'active',
-                        'name_servers' => json_encode($infoDomain['nameServers']) ?? null,
+                        'name_servers' => json_encode($nameServer) ?? null,
                         'renew_deadline' => Carbon::parse($infoDomain['renewDeadline'])->format('Y-m-d H:i:s') ?? null,
                         'registrar_created_at' => Carbon::parse($infoDomain['registrarCreatedAt'])->format('Y-m-d H:i:s') ?? null,
                     ];
 
                     $domainRepository->create($data);
 
-                    $this->messageEventHandler('- Thêm domain ' . $domain . ' vào hệ thống thành công ...');
+                    $this->messageEventHandler('Thêm domain ' . $domain . ' vào hệ thống thành công ...');
+
+                    $result = $cloudFlareService->addDomain(
+                        $domain
+                    );
+
+                    if (array_key_exists('error', $result)) {
+                        $this->messageEventHandler('Thêm domain ' . $domain . ' vào Cloudflare không thành công  ...');
+
+                        return;
+                    } else {
+                        $this->messageEventHandler('Thêm domain ' . $domain . ' vào Cloudflare thành công ...');
+                    }
+
+                    $result = $goDaddyService->updateNameservers(
+                        $domain
+                    );
+
+                    if (is_array($result) and array_key_exists('error', $result)) {
+                        $this->messageEventHandler('Sửa DNS ' . $domain . ' trên Godaddy không thành công  ...');
+
+                        return;
+                    } else {
+                        $this->messageEventHandler('Sửa DNS ' . $domain . ' trên Godaddy thành công  ...');
+                    }
                 }
             } else {
                 $this->messageEventHandler('Không có domain mới.');

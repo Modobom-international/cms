@@ -93,6 +93,6 @@ class User extends Authenticatable
 
     public function teams()
     {
-        return $this->belongsToMany(Team::class, 'team_id', 'id');
+        return $this->belongsToMany(Team::class, 'user_team', 'user_id', 'team_id');
     }
 }

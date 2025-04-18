@@ -10,6 +10,7 @@ use App\Repositories\PermissionRepository;
 use App\Repositories\TeamRepository;
 use Exception;
 use Illuminate\Http\Request;
+use App\Enums\Utility;
 
 class TeamController extends Controller
 {
@@ -26,7 +27,7 @@ class TeamController extends Controller
         $this->utility  = $utility;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         try {
             $input = $request->all();

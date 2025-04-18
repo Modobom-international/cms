@@ -51,13 +51,27 @@ class UserRepository extends BaseRepository
         $query = $this->model->with('teams');
 
         if (isset($filter['team'])) {
-            $query->where('team', 'LIKE', '%' . $filter['search'] . '%');
+            $query->whereHas('teams', function ($q) use ($filter) {
+                $q->where('name', 'LIKE', '%' . $filter['team'] . '%');
+            });
         }
 
         if (isset($filter['search'])) {
             $query->where('name', 'LIKE', '%' . $filter['search'] . '%');
         }
 
-        return $query->get();
+        $users = $query->get();
+
+        $users = $users->map(function ($user) {
+            if(isset($user->teams->name)) {
+                $user->team_user = $user->teams->name;
+            } else {
+                $user->team_user = null;
+            }
+            
+            return $user;
+        });
+
+        return $users;
     }
 }
