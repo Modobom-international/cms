@@ -6,6 +6,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 
 class CloudFlareService
 {
@@ -581,5 +582,60 @@ class CloudFlareService
                 'error' => $this->handleException($e)
             ];
         }
+    }
+
+    /**
+     * Warm cache for specific paths on a domain
+     *
+     * @param string $domain
+     * @param array $paths
+     * @return array
+     */
+    public function warmCache(string $domain, array $paths = [])
+    {
+        $results = [];
+        
+        // Ensure domain has https:// prefix
+        $domain = !str_starts_with($domain, 'http') ? "https://{$domain}" : $domain;
+
+        foreach ($paths as $path) {
+            if (empty($path)) {
+                continue;
+            }
+            
+            $normalizedPath = rtrim($path, '/') . '/';
+            $url = rtrim($domain, '/') . '/' . ltrim($normalizedPath, '/');
+            Log::info('Warming cache for URL: ' . $url);
+            try {
+                $response = Http::withHeaders([
+                    'User-Agent' => 'CacheWarmerBot/1.0'
+                ])
+                ->withOptions([
+                    'allow_redirects' => [
+                        'max' => 10,     // Increase max redirects
+                        'strict' => true,
+                        'referer' => true,
+                        'protocols' => ['http', 'https']
+                    ],
+                    'timeout' => 30,    // Increase timeout to 30 seconds
+                ])
+                ->get($url);
+
+                $results[] = [
+                    'url' => $url,
+                    'status' => $response->status(),
+                    'success' => $response->successful()
+                ];
+            } catch (\Exception $e) {
+                $results[] = [
+                    'url' => $url,
+                    'status' => 'error',
+                    'error' => $e->getMessage(),
+                    'success' => false
+                ];
+            }
+        }
+
+        return $results;
     }
 }
