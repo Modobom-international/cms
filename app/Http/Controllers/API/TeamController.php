@@ -95,9 +95,10 @@ class TeamController extends Controller
                 $team->permissions()->sync($permissions);
             }
 
+            $this->logActivity(ActivityAction::CREATE_RECORD, ['filters' => $input], 'Thêm team');
+
             return response()->json([
                 'success' => true,
-                'data' => $request->all(),
                 'message' => 'Tạo team thành công',
                 'type' => 'store_team_success',
             ], 200);
@@ -131,16 +132,17 @@ class TeamController extends Controller
                 $team->permissions()->sync($permissions);
             }
 
+            $this->logActivity(ActivityAction::UPDATE_RECORD, ['filters' => $input], 'Cập nhật team');
+
             return response()->json([
                 'success' => true,
-                'data' => $request->all(),
-                'message' => 'Lấy thông tin team thành công',
+                'message' => 'Cập nhật thông tin team thành công',
                 'type' => 'update_team_success',
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Lấy thông tin team không thành công',
+                'message' => 'Cập nhật thông tin team không thành công',
                 'type' => 'update_team_fail',
                 'error' => $e->getMessage()
             ], 500);
@@ -150,11 +152,21 @@ class TeamController extends Controller
     public function destroy($id)
     {
         try {
+            $team = $this->teamRepository->getByID($id);
+            if (!$team) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy team',
+                    'type' => 'team_not_found',
+                ], 404);
+            }
+
             $this->teamRepository->deleteById($id);
+
+            $this->logActivity(ActivityAction::DELETE_RECORD, ['filters' => $input], 'Xóa team');
 
             return response()->json([
                 'success' => true,
-                'data' => [],
                 'message' => 'Xóa team thành công',
                 'type' => 'delete_team_success',
             ], 200);
@@ -180,6 +192,8 @@ class TeamController extends Controller
                     $permissions[$prefix][] = $permission->name;
                 }
             }
+
+            $this->logActivity(ActivityAction::GET_PERMISSiON_BY_TEAM, ['filters' => $input], 'Lấy danh sách quyền của team');
 
             return response()->json([
                 'success' => true,
