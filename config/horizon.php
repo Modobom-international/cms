@@ -299,6 +299,24 @@ return [
                 'maxProcesses' => 5,
                 'tries' => 0,
             ],
+
+            'supervisor-cms-12' => [
+                'connection' => 'redis',
+                'queue' => ['refresh_domain'],
+                'balance' => 'auto',
+                'minProcesses' => 1,
+                'maxProcesses' => 5,
+                'tries' => 0,
+            ],
+
+            'supervisor-cms-13' => [
+                'connection' => 'redis',
+                'queue' => ['notify_refresh_domain'],
+                'balance' => 'auto',
+                'minProcesses' => 1,
+                'maxProcesses' => 5,
+                'tries' => 0,
+            ],
         ],
     ],
 ];

@@ -159,8 +159,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/due-date/delete/{id}', [DueDateController::class, 'destroy']); // Xoá due date
     Route::patch('/due-date/toggle-complete/{id}', [DueDateController::class, 'toggleComplete']);
 
-    Route::prefix('domain')->group(function () {
+    Route::prefix('domains')->group(function () {
         Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
+        Route::get('/refresh', [DomainController::class, 'refreshDomain'])->name('domain.refresh');
     });
 
     Route::prefix('html-source')->group(function () {
@@ -182,14 +183,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/get-permission-by-team', [TeamController::class, 'getPermissionByTeam'])->name('team.get.permission');
     });
 
-    Route::prefix('user')->group(function () {
+    Route::prefix('users')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('user.list');
         Route::get('/{id}', [UserController::class, 'show'])->name('user.show');
         Route::post('/update/{id}', [UserController::class, 'update'])->name('user.update');
         Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('user.destroy');
     });
 
-    // Site routes
     Route::prefix('sites')->group(function () {
         Route::get('/', [SiteController::class, 'index'])->name('sites.list');
         Route::post('/', [SiteController::class, 'store'])->name('sites.store');
@@ -198,7 +198,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', [SiteController::class, 'destroy'])->name('sites.destroy');
     });
 
-    // Cloudflare Pages API routes
     Route::prefix('cloudflare')->group(function () {
         Route::get('/projects', [CloudflareController::class, 'getProjects'])->name('cloudflare.get.projects');
         Route::post('/project/create', [CloudflareController::class, 'createProject'])->name('cloudflare.create.project');

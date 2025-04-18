@@ -331,7 +331,7 @@ class UserController extends Controller
                 $filter['search'] = $search;
             }
 
-            $query = $this->userRepository->getUsersByFilter();
+            $query = $this->userRepository->getUsersByFilter($filter);
             $data = $this->utility->paginate($query, $pageSize, $page);
 
             $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách users');

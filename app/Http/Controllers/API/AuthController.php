@@ -17,7 +17,6 @@ class AuthController extends Controller
         $this->userRepository = $userRepository;
     }
 
-    // Đăng nhập user
     public function login(Request $request)
     {
         try {
@@ -81,7 +80,6 @@ class AuthController extends Controller
         }
     }
 
-    // Đăng xuất user
     public function logout(Request $request)
     {
         $request->user()->token()->revoke();

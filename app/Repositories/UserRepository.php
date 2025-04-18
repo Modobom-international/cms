@@ -10,12 +10,12 @@ class UserRepository extends BaseRepository
     {
         return User::class;
     }
-    
+
     public function createUser($dataUser)
     {
         return $this->model->create($dataUser);
     }
-    
+
     public function getUserByID($id)
     {
         return $this->model->where('id', $id)->first();
@@ -30,7 +30,7 @@ class UserRepository extends BaseRepository
     {
         return $this->model->where('email', $dataEmail)->first();
     }
-    
+
     public function showInfo($id)
     {
         return $this->model->with('workspaces')->where('id', $id)->first();
@@ -40,9 +40,24 @@ class UserRepository extends BaseRepository
     {
         return $this->model->where('email', $email)->update($input);
     }
-    
+
     public function find($user)
     {
         return $this->model->find($user);
+    }
+
+    public function getUsersByFilter($filter = [])
+    {
+        $query = $this->model->with('teams');
+
+        if (isset($filter['team'])) {
+            $query->where('team', 'LIKE', '%' . $filter['search'] . '%');
+        }
+
+        if (isset($filter['search'])) {
+            $query->where('name', 'LIKE', '%' . $filter['search'] . '%');
+        }
+
+        return $query->get();
     }
 }

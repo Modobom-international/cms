@@ -12,27 +12,34 @@ class GoDaddyService
     protected $apiSecret;
     protected $apiUrl;
     protected $shopperID;
-    protected $email;
 
-    public function __construct($email)
+    protected $apiConfigs = [];
+
+    public function __construct()
     {
-        $this->email = $email;
-        if ($this->email == 'vutuan.modobom@gmail.com') {
-            $this->apiKey = config('services.godaddy_tuan.api_key');
-            $this->apiSecret = config('services.godaddy_tuan.api_secret');
-            $this->apiUrl = config('services.godaddy_tuan.api_url');
-            $this->shopperID = config('services.godaddy_tuan.shopper_id');
-        } else if ($this->email == 'tranlinh.modobom@gmail.com') {
-            $this->apiKey = config('services.godaddy_linh.api_key');
-            $this->apiSecret = config('services.godaddy_linh.api_secret');
-            $this->apiUrl = config('services.godaddy_linh.api_url');
-            $this->shopperID = config('services.godaddy_linh.shopper_id');
-        } else {
-            $this->apiKey = config('services.godaddy.api_key');
-            $this->apiSecret = config('services.godaddy.api_secret');
-            $this->apiUrl = config('services.godaddy.api_url');
-            $this->shopperID = config('services.godaddy.shopper_id');
-        }
+        $this->apiUrl = config('services.godaddy.api_url');
+        $this->apiConfigs = [
+            'tuan' => [
+                'api_key' => config('services.godaddy_tuan.api_key'),
+                'api_secret' => config('services.godaddy_tuan.api_secret'),
+
+                'shopper_id' => config('services.godaddy_tuan.shopper_id'),
+            ],
+            'linh' => [
+                'api_key' => config('services.godaddy_linh.api_key'),
+                'api_secret' => config('services.godaddy_linh.api_secret'),
+                'api_url' => config('services.godaddy_linh.api_url'),
+                'shopper_id' => config('services.godaddy_linh.shopper_id'),
+            ],
+        ];
+    }
+
+    protected function setClient($configKey)
+    {
+        $config = $this->apiConfigs[$configKey];
+        $this->apiKey = $config['api_key'];
+        $this->apiSecret = $config['api_secret'];
+        $this->shopperID = $config['shopper_id'];
 
         $this->client = new Client([
             'base_uri' => $this->apiUrl,
@@ -43,66 +50,24 @@ class GoDaddyService
         ]);
     }
 
-    public function getDomains()
+    public function getListDomain()
     {
         try {
-            $response = $this->client->get('/v1/domains');
-            return json_decode($response->getBody(), true);
-        } catch (RequestException $e) {
-            return $this->handleException($e);
-        }
-    }
+            foreach ($this->apiConfigs as $configKey => $config) {
+                $this->setClient($configKey);
+                $response = $this->client->get('/v1/domains');
+                $result = json_decode($response->getBody(), true);
 
-    public function getDomainDetails($domain)
-    {
-        try {
-            $response = $this->client->get("/v1/domains/{$domain}");
-            return json_decode($response->getBody(), true);
-        } catch (RequestException $e) {
-            return $this->handleException($e);
-        }
-    }
+                $listDomain = array_merge($result, $listDomain ?? []);
+            }
 
-    public function updateNameservers($domain)
-    {
-        $body = [
-            "nameServers" => [
-                'ben.ns.cloudflare.com',
-                'jean.ns.cloudflare.com',
-            ]
-        ];
+            $data = [
+                'success' => true,
+                'message' => 'Lấy danh sách domain thành công',
+                'data' => $listDomain,
+            ];
 
-        $getCustomerID = $this->getCustomerID();
-        $customerID = $getCustomerID['customerId'];
-
-        try {
-            $response = $this->client->put("/v2/customers/{$customerID}/domains/{$domain}/nameServers", [
-                'json' => $body
-            ]);
-            
-            return json_decode($response->getBody(), true);
-        } catch (RequestException $e) {
-            return $this->handleException($e);
-        }
-    }
-
-    public function getNameservers($domain)
-    {
-        try {
-            $response = $this->client->get("/v1/domains/{$domain}/records/NS");
-
-            return json_decode($response->getBody(), true);
-        } catch (RequestException $e) {
-            return $this->handleException($e);
-        }
-    }
-
-    public function getCustomerID()
-    {
-        try {
-            $response = $this->client->get("/v1/shoppers/{$this->shopperID}?includes=customerId");
-
-            return json_decode($response->getBody(), true);
+            return $data;
         } catch (RequestException $e) {
             return $this->handleException($e);
         }
@@ -114,6 +79,6 @@ class GoDaddyService
             return json_decode($e->getResponse()->getBody()->getContents(), true);
         }
 
-        return ['error' => 'Something went wrong'];
+        return ['error' => 'Lỗi call api Godaddy rồi bro : ' . $e->getMessage()];
     }
 }

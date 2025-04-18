@@ -10,4 +10,5 @@ class ActivityAction
     const UPDATE_RECORD = 'update_record';
     const DELETE_RECORD = 'delete_record';
     const GET_PERMISSiON_BY_TEAM = 'get_permission_by_team';
+    const REFRESH_LIST_DOMAIN = 'refresh_list_domain';
 }

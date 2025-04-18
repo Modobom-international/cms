@@ -34,4 +34,9 @@ class DomainRepository extends BaseRepository
 
         return $this->model->where('is_locked', false)->where('domain', 'LIKE', '%' . $search . '%')->get();
     }
+
+    public function getDomainByList($listDomain)
+    {
+        return $this->model->whereIn('domain', $listDomain)->pluck('domain')->toArray();
+    }
 }

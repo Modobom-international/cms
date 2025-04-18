@@ -8,6 +8,7 @@ use App\Repositories\DomainRepository;
 use App\Traits\LogsActivity;
 use App\Enums\Utility;
 use App\Enums\ActivityAction;
+use App\Jobs\RefreshDomainInPlatform;
 
 class DomainController extends Controller
 {
@@ -45,6 +46,27 @@ class DomainController extends Controller
                 'success' => false,
                 'message' => 'Lấy danh sách domain không thành công',
                 'type' => 'list_domain_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function refreshDomain()
+    {
+        try {
+            RefreshDomainInPlatform::dispatch()->onQueue('refresh_domain');
+            $this->logActivity(ActivityAction::REFRESH_LIST_DOMAIN, [], 'Làm mới danh sách domain');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Làm mới danh sách domain thành công',
+                'type' => 'refresh_domain_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Làm mới danh sách domain không thành công',
+                'type' => 'refresh_domain_fail',
                 'error' => $e->getMessage()
             ], 500);
         }

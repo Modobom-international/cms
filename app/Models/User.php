@@ -85,9 +85,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(DeviceFingerprint::class);
     }
-    
+
     public function cards()
     {
-        return $this->belongsToMany(Card::class, 'card_users', 'user_id', 'card_id') ->withTimestamps();
+        return $this->belongsToMany(Card::class, 'card_users', 'user_id', 'card_id')->withTimestamps();
+    }
+
+    public function teams()
+    {
+        return $this->belongsToMany(Team::class, 'team_id', 'id');
     }
 }

@@ -5,7 +5,6 @@ namespace App\Services;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
 
 class CloudFlareService
@@ -35,7 +34,7 @@ class CloudFlareService
 
         $this->clientDNS = new Client([
             'headers' => [
-                'Authorization' => 'Bearer ' . $this->apiToken,
+                'Authorization' => 'Bearer ' . $this->apiTokenDNS,
                 'Content-Type' => 'application/json',
             ],
         ]);

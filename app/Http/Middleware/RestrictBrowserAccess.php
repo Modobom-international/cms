@@ -21,7 +21,7 @@ class RestrictBrowserAccess
         'api/push-system/save-config-links',
         'api/me',
         'api/refresh-token',
-        'horizon'
+        'horizon/*'
     ];
 
     /**
@@ -31,11 +31,24 @@ class RestrictBrowserAccess
      */
     public function handle(Request $request, Closure $next): Response
     {
+        $path = $request->path();
 
-        if (!in_array($request->path(), $this->except)) {
-            if ($request->header('Accept') === 'text/html' || !$request->expectsJson()) {
-                return response()->view('welcome');
+        foreach ($this->except as $except) {
+            if (str_ends_with($except, '/*')) {
+                $prefix = rtrim($except, '/*');
+                if (str_starts_with($path, $prefix)) {
+                    return $next($request);
+                }
+            } elseif ($path === $except) {
+                return $next($request);
             }
+        }
+
+        if ($request->header('Accept') === 'text/html' || !$request->expectsJson()) {
+            return response()->json([
+                'message' => 'This endpoint requires a JSON request. Please set the Accept header to application/json.',
+                'status' => false,
+            ], Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
         }
 
         return $next($request);
