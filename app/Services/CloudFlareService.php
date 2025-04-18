@@ -274,6 +274,62 @@ class CloudFlareService
     }
 
     /**
+     * Set cache rules for a domain
+     * 
+     * @param string $domain
+     * @return array
+     */
+    public function setupCacheRules($domain)
+    {
+        $rootDomain = $this->getRootDomain($domain);
+        $zoneId = $this->getZoneId($rootDomain);
+        
+        if (!$zoneId) {
+            return [
+                'success' => false,
+                'error' => 'Zone ID not found for domain: ' . $rootDomain
+            ];
+        }
+        
+        try {
+            // Create cache rule with 1 month TTL
+            $response = $this->client->post($this->apiUrl . "/zones/{$zoneId}/rulesets", [
+                'json' => [
+                    'name' => 'Cache Rules for ' . $domain,
+                    'description' => 'Cache settings for ' . $domain,
+                    'kind' => 'zone',
+                    'phase' => 'http_request_cache_settings',
+                    'rules' => [
+                        [
+                            'action' => 'set_cache_settings',
+                            'action_parameters' => [
+                                'cache' => true,
+                                'edge_ttl' => [
+                                    'mode' => 'override_origin',
+                                    'default' => 2592000 // 1 month in seconds
+                                ],
+                                'browser_ttl' => [
+                                    'mode' => 'override_origin',
+                                    'default' => 2592000 // 1 month in seconds
+                                ]
+                            ],
+                            'expression' => 'true', // Apply to all requests
+                            'description' => 'Cache all content for ' . $domain
+                        ]
+                    ]
+                ]
+            ]);
+            
+            return [
+                'success' => true,
+                'data' => json_decode($response->getBody(), true)
+            ];
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
      * Extract the root domain from a domain/subdomain
      * 
      * @param string $domain
