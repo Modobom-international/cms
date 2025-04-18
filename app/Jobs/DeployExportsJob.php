@@ -17,6 +17,8 @@ class DeployExportsJob implements ShouldQueue
     protected $projectName;
     protected $directory;
     protected $options;
+    protected $domain;
+    protected $pageSlug;
     public $timeout = 600; // 10 minutes timeout
     public $tries = 1; // Only try once as retrying might cause duplicate deployments
 
@@ -25,12 +27,16 @@ class DeployExportsJob implements ShouldQueue
      *
      * @param string $projectName
      * @param string $directory
+     * @param string $domain
+     * @param string $pageSlug
      * @param array $options
      */
-    public function __construct(string $projectName, string $directory, array $options = [])
+    public function __construct(string $projectName, string $directory, string $domain, string $pageSlug, array $options = [])
     {
         $this->projectName = $projectName;
         $this->directory = $directory;
+        $this->domain = $domain;
+        $this->pageSlug = $pageSlug;
         $this->options = $options;
         $this->queue = 'deployments'; // Use a dedicated queue for deployments
     }
@@ -52,11 +58,23 @@ class DeployExportsJob implements ShouldQueue
 
             // Log the deployment result
             if ($result['success']) {
-                Log::info('Deployment completed successfully', [
-                    'project' => $this->projectName,
-                    'directory' => $result['directory'],
-                    'deployment_url' => $result['deployment_url'] ?? 'N/A'
-                ]);
+                // Log::info('Deployment completed successfully', [
+                //     'project' => $this->projectName,
+                //     'directory' => $result['directory'],
+                //     'deployment_url' => $result['deployment_url'] ?? 'N/A'
+                // ]);
+                // Purge cache after successful deployment
+                if (!empty($this->domain)) {
+                    $purgeResult = $cloudflareService->purgeCache($this->domain, $this->pageSlug);
+                    if ($purgeResult['success']) {
+                        // Log::info('Cache purged successfully for domain: ' . $this->domain);
+                    } else {
+                        Log::warning('Failed to purge cache for domain: ' . $this->domain, [
+                            'message' => $purgeResult['message'] ?? 'Unknown error',
+                            'error' => $purgeResult['error'] ?? null
+                        ]);
+                    }
+                }
             } else {
                 Log::error('Deployment completed with issues', [
                     'project' => $this->projectName,
