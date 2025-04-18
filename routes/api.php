@@ -108,6 +108,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/card/update/{card}', [CardController::class, 'update']); // Cập nhật card
     Route::delete('/card/delete/{card}', [CardController::class, 'destroy']); // Xóa card
     Route::post('/card/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
+    
+    //list log activity
+    Route::get('/cards/{cardId}/logs', [CardController::class, 'getLogsByCard']);
+    
     //label
     Route::prefix('/label')->group(function () {
         Route::post('/create', [LabelController::class, 'store']); // Tạo label
@@ -124,8 +128,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/cards/{card}/members/{user}', [CardController::class, 'removeMember']);
 
     //assign-label-to-card
-    Route::post('/cards/{cardId}/labels', [CardController::class, 'addLabel']);
-    Route::delete('/cards/{cardId}/labels/{labelId}', [CardController::class, 'removeLabel']);
+    Route::post('/card/{cardId}/assign-label', [CardController::class, 'assignLabel']);
+    Route::delete('/card/{cardId}/label/{labelId}', [CardController::class, 'removeLabel']);
 
     // checkList
     Route::get('/cards/{card}/checklists', [CheckListController::class, 'index']);
