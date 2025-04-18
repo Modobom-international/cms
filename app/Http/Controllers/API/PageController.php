@@ -387,7 +387,8 @@ EOT;
                     // Dispatch the deployment job
                     dispatch(new \App\Jobs\DeployExportsJob(
                         $site->cloudflare_project_name,
-                        $site->cloudflare_project_name
+                        $site->cloudflare_project_name,
+                        $site->domain
                     ));
 
                     DB::commit();

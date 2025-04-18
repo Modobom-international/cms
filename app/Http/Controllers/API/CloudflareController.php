@@ -116,6 +116,7 @@ class CloudflareController extends Controller
         // Validate required input parameters
         $validator = Validator::make($request->all(), [
             'site_id' => 'required|exists:sites,id',
+            'page_slug' => 'nullable|string|max:50',
             'branch' => 'nullable|string|max:50',
             'commit_message' => 'nullable|string|max:200',
         ]);
@@ -147,6 +148,8 @@ class CloudflareController extends Controller
             $job = new \App\Jobs\DeployExportsJob(
                 $projectName,
                 $directory,
+                $site->domain,
+                $request->page_slug,
                 $deploymentOptions
             );
 
