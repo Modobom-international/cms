@@ -5,6 +5,9 @@ use App\Http\Requests\AssignMultipleMembersRequest;
 use App\Http\Requests\CartRequest;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CartUpdateRequest;
+use App\Models\Card;
+use App\Models\LogActivityUser;
+use App\Models\User;
 use App\Repositories\CardRepository;
 use App\Repositories\LabelRepository;
 use App\Repositories\ListBoardRepository;
@@ -37,6 +40,7 @@ class CardController extends Controller
     public function index($listId)
     {
         $listBoard = $this->listBoardRepository->show($listId);
+    
         if(!$listBoard) {
             return response()->json([
                 'success' => false,
@@ -54,7 +58,7 @@ class CardController extends Controller
             ], 403);
         }
         
-        $cards = $listBoard->cards();
+        $cards = $listBoard->cards;
     
         return response()->json([
             'success' => true,
@@ -65,11 +69,11 @@ class CardController extends Controller
     }
     
     // 📌 2️⃣ Tạo Card mới
-    public function store(CartRequest $request)
+    public function store(CartRequest $request, $listId)
     {
         try{
             $input = $request->except('token');
-            $listBoard = $this->listBoardRepository->show($input['list_id']);
+            $listBoard = $this->listBoardRepository->show($listId);
             if(!$listBoard) {
                 return response()->json([
                     'success' => false,
@@ -87,20 +91,30 @@ class CardController extends Controller
                 ], 403);
             }
             
-            $maxPosition = $this->cardRepository->maxPosition($input['list_id']);
+            $maxPosition = $this->cardRepository->maxPosition($listBoard->id);
             $position = is_null($maxPosition) ? 0 : $maxPosition + 1;
             $card = [
-                'list_id' => $input['list_id'],
+                'list_id' => $listBoard->id,
                 'title' => $input['title'],
                 'position' => $position,
                 'description' => $input['description'] ?? "",
-                'due_date' => $input['due_date'] ?? "",
            ];
-        
+            
             $dataCard = $this->cardRepository->createCard($card);
+            // Ghi log hoạt động
+            $log = LogActivityUser::create([
+                'user_id' => Auth::user()->id,
+                'card_id' => $dataCard->id,
+                'action_type' => 'create',
+                'target_type' => 'Tạo card',
+                'target_id' => $dataCard->id,
+                'content' => Auth::user()->name . ' added this card to ' .$listBoard->title   ?? '',
+            ]);
+            
             return response()->json([
                 'success' => true,
                 'data' => $dataCard,
+                'log' => $log,
                 'message' => 'Tạo card thành công',
                 'type' => 'success_create_card',
             ], 201);
@@ -150,23 +164,31 @@ class CardController extends Controller
                 'title' => $input['title'],
                 'position' => $position,
                 'description' => $input['description'] ?? "",
-                'due_date' => $input['due_date'] ?? "",
-                'list_id' => $card->id,
+                'list_id' => $listBoard->id,
             ];
-        
             $dataCard = $this->cardRepository->updateCard($card, $id);
-        
+    
+            // Ghi log hoạt động
+            $log = LogActivityUser::create([
+                'user_id' => Auth::user()->id,
+                'card_id' => $dataCard->id,
+                'action_type' => 'create',
+                'target_type' => 'Update card',
+                'target_id' => $dataCard->id,
+                'content' => Auth::user()->name . ' update this card to ' .$listBoard->title   ?? '',
+            ]);
             return response()->json([
                 'success' => true,
                 'data' => $dataCard,
-                'message' => 'Tạo card thành công',
+                'log' => $log,
+                'message' => 'update card thành công',
                 'type' => 'success_update_card',
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Lỗi khi tạo card',
-                'type' => 'error_create_card',
+                'message' => 'Lỗi khi update card',
+                'type' => 'error_update_card',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -254,7 +276,9 @@ class CardController extends Controller
                 'type' => 'card_not_found',
             ], 404);
         }
+        
         $user = Auth::user();
+        
         if ($card->members()->where('user_id', $user->id)->exists()) {
             return response()->json([
                 'success' => false,
@@ -262,14 +286,27 @@ class CardController extends Controller
                 'type' => 'user_exists',
             ], 400);
         }
+        
+        // Attach user to card
         $card->members()->attach($user->id);
-    
+        
+        // Ghi log hoạt động
+        LogActivityUser::create([
+            'user_id' => $user->id,
+            'card_id' => $card->id,
+            'action_type' => 'join',
+            'target_type' => 'Join card',
+            'target_id' => $card->id,
+            'content' => "{$user->name} join to  \"{$card->title}\"",
+        ]);
+        
         return response()->json([
             'success' => true,
             'message' => 'Bạn đã tham gia thành công',
             'type' => 'join_card_success',
         ], 200);
     }
+    
     
     public function leave($cardId)
     {
@@ -291,7 +328,16 @@ class CardController extends Controller
         }
         
         $card->members()->detach($user->id);
-    
+        
+        // Ghi log hoạt động
+        LogActivityUser::create([
+            'user_id' => $user->id,
+            'card_id' => $card->id,
+            'action_type' => 'join',
+            'target_type' => 'Leave card',
+            'target_id' => $card->id,
+            'content' => "{$user->name} left to  \"{$card->title}\"",
+        ]);
         return response()->json([
             'success' => true,
             'message' => 'Bạn đã rời thành công',
@@ -342,8 +388,21 @@ class CardController extends Controller
                     ];
                     continue;
                 }
-                
-                $card->members()->attach($userId);
+                $card->members()->attach($userId, [
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+    
+                //log activity
+                $userAssign = User::find($userId);
+                LogActivityUser::create([
+                    'user_id' => Auth::id(),
+                    'card_id' => $card->id,
+                    'action_type' => 'assign',
+                    'target_type' => 'Assign user to card',
+                    'target_id' => $card->id,
+                    'content' => Auth::user()->name . ' đã thêm ' . $userAssign->name . ' vào thẻ "' . $card->title . '"'
+                ]);
                 $assigned[] = $userId;
             }
             
@@ -409,6 +468,16 @@ class CardController extends Controller
             
             // Xoá user khỏi card
             $card->members()->detach($user->id);
+    
+            // Ghi log
+            LogActivityUser::create([
+                'user_id' => Auth::id(), // người thực hiện
+                'card_id' => $card->id,
+                'action_type' => 'remove',
+                'target_type' => 'Remove user from card',
+                'target_id' => $card->id,
+                'content' => Auth::user()->name . ' remove ' . $user->name . ' from card"' . $card->title . '"',
+            ]);
             
             return response()->json([
                 'success' => true,
@@ -479,7 +548,15 @@ class CardController extends Controller
         
             // Gán label vào card
             $card->labels()->attach($label);
-        
+            // Ghi log
+            LogActivityUser::create([
+                'user_id' => Auth::id(), // người thực hiện
+                'card_id' => $card->id,
+                'action_type' => 'add label',
+                'target_type' => 'add label to card',
+                'target_id' => $label->id,
+                'content' => Auth::user()->name . ' add label "' . $label->name . '" to card "' . $card->title . '"',
+            ]);
             return response()->json([
                 'success' => true,
                 'message' => 'Tạo label thành công',
@@ -536,6 +613,16 @@ class CardController extends Controller
             
             // Xóa label khỏi card
             $card->labels()->detach($label);
+    
+            // Ghi log
+            LogActivityUser::create([
+                'user_id' => Auth::id(), // người thực hiện
+                'card_id' => $card->id,
+                'action_type' => 'remove label',
+                'target_type' => 'remove label from card',
+                'target_id' => $label->id,
+                'content' => Auth::user()->name . ' remove label "' . $label->name . '" from card "' . $card->title . '"',
+            ]);
             
             return response()->json([
                 'success' => true,

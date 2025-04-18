@@ -26,6 +26,7 @@ class ListBoardController extends Controller
     protected $workspaceUserRepository;
     protected $utility;
     protected $userRepository;
+    protected $listBoardRepository;
     
     public function __construct(
         Utility $utility,
@@ -47,7 +48,7 @@ class ListBoardController extends Controller
     public function index($boardId)
     {
         try {
-            $board = $this->listBoardRepository->show($boardId);
+            $board = $this->boardRepository->show($boardId);
             if(!$board) {
                 return response()->json([
                     'success' => false,
