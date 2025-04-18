@@ -11,12 +11,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use App\Enums\ActivityAction;
+use App\Traits\LogsActivity;
 
 class UserController extends Controller
 {
+    use LogsActivity;
+
     protected $userRepository;
     protected $utility;
-    
+
     public function __construct(
         UserRepository $userRepository,
         Utility $utility
@@ -61,9 +65,9 @@ class UserController extends Controller
                 'type' => 'user_not_found',
             ], 404);
         }
-        
+
         $dataUser = $this->userRepository->getUserByID($user->id); //can be remove, because we already get user from auth
-       
+
         return response()->json([
             'success' => true,
             'data' => $dataUser,
@@ -169,14 +173,15 @@ class UserController extends Controller
                 }
             }
             $this->userRepository->update($input, $user->id);
-       
+
+            $this->logActivity(ActivityAction::UPDATE_RECORD, ['filters' => $request->all(), 'user' => $user], 'Thay đổi thông tin user');
+
             return response()->json([
                 'success' => true,
                 'data' => $user,
                 'message' => 'Cập nhập thông tin thành công',
                 'type' => 'update_user_success',
             ], 200);
-    
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -186,7 +191,7 @@ class UserController extends Controller
             ], 500);
         }
     }
-    
+
     /**
      * @OA\Post(
      *     path="/api/change-password",
@@ -222,13 +227,13 @@ class UserController extends Controller
             'current_password' => 'required|string',
             'new_password' => 'required|string|min:8|confirmed',
         ]);
-        
+
         if ($validator->fails()) {
             return response()->json([
                 'errors' => $validator->errors()
             ], 422);
         }
-  
+
         // Check if the current password is correct
         $user = Auth::user();
         if (!Hash::check($request->current_password, $user->password)) {
@@ -241,11 +246,13 @@ class UserController extends Controller
                 400
             );
         }
-        
+
         // Update the password
         $user->password = bcrypt($request->new_password);
         $user->save();
-        
+
+        $this->logActivity(ActivityAction::UPDATE_RECORD, ['filters' => $request->all(), 'user' => $user], 'Thay đổi mật khẩu');
+
         return response()->json([
             'success' => true,
             'message' => 'Thay đổi mật khẩu thành công',
@@ -273,7 +280,7 @@ class UserController extends Controller
      *     )
      * )
      */
-    
+
     public function updatePassword($id, Request $request)
     {
         $user = User::findOrFail($id);
@@ -288,21 +295,154 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'password' => 'required|min:8|confirmed',
         ]);
-        
+
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
         }
-        
+
         // Cập nhật mật khẩu mới
         $user->password = Hash::make($request->password);
         $user->save();
+
+        $this->logActivity(ActivityAction::UPDATE_RECORD, ['filters' => $request->all(), 'user' => $user], 'Thay đổi mật khẩu');
+
         return response()->json([
             'success' => true,
             'message' => 'Thay đổi mật khẩu thành công cho user',
             'type' => 'change_password_for_user_success',
         ], 201);
-        
     }
 
-}
+    public function index(Request $request)
+    {
+        try {
+            $input = $request->all();
+            $pageSize = $request->get('pageSize') ?? 10;
+            $page = $request->get('page') ?? 1;
+            $team = $request->get('team');
+            $search = $request->get('search');
+            $filter = [];
 
+            if (isset($team)) {
+                $filter['team'] = $team;
+            }
+
+            if (isset($search)) {
+                $filter['search'] = $search;
+            }
+
+            $query = $this->userRepository->getUsersByFilter();
+            $data = $this->utility->paginate($query, $pageSize, $page);
+
+            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách users');
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lấy danh sách user thành công',
+                'type' => 'list_user_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy danh sách user không thành công',
+                'type' => 'list_user_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function show($id)
+    {
+        try {
+            $user = $this->userRepository->getUserByID($id);
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy user',
+                    'type' => 'user_not_found',
+                ], 404);
+            }
+
+            $this->logActivity(ActivityAction::SHOW_RECORD, ['filters' => $request->all(), 'user' => $user], 'Xem thông tin user');
+
+            return response()->json([
+                'success' => true,
+                'data' => $user,
+                'message' => 'Thông tin user thành công',
+                'type' => 'get_user_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy thông tin tài khoản không thành công',
+                'type' => 'get_user_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function update($id)
+    {
+        try {
+            $user = $this->userRepository->getUserByID($id);
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy user',
+                    'type' => 'user_not_found',
+                ], 404);
+            }
+
+            $input = request()->all();
+            $this->userRepository->update($input, $user->id);
+
+            $this->logActivity(ActivityAction::SHOW_RECORD, ['filters' => $request->all(), 'user' => $user], 'Thay đổi thông tin user');
+
+            return response()->json([
+                'success' => true,
+                'data' => $user,
+                'message' => 'Cập nhập thông tin thành công',
+                'type' => 'update_user_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cập nhập thông tin không thành công',
+                'type' => 'update_user_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $user = $this->userRepository->getUserByID($id);
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy user',
+                    'type' => 'user_not_found',
+                ], 404);
+            }
+
+            $this->userRepository->deleteById($id);
+
+            $this->logActivity(ActivityAction::DELETE_RECORD, ['filters' => $request->all(), 'user' => $user], 'Xóa user');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Xóa user thành công',
+                'type' => 'delete_user_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Xóa user không thành công',
+                'type' => 'delete_user_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+}

@@ -151,14 +151,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/comment/{comment}/reply', [CommentController::class, 'reply']); // Tạo comment hoặc reply
     Route::post('/comment/update/{comment}', [CommentController::class, 'update']); // Cập nhật comment
     Route::delete('/comment/delete/{comment}', [CommentController::class, 'destroy']); // Xóa comment
-    
+
     Route::prefix('cards/{card}/due-date')->group(function () {
         Route::post('/create', [DueDateController::class, 'store']);     // Tạo hoặc cập nhật due date
     });
     Route::put('/due-date/update/{id}', [DueDateController::class, 'update']);     // Sửa due date
     Route::delete('/due-date/delete/{id}', [DueDateController::class, 'destroy']); // Xoá due date
     Route::patch('/due-date/toggle-complete/{id}', [DueDateController::class, 'toggleComplete']);
-    
+
     Route::prefix('domain')->group(function () {
         Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
     });
@@ -176,12 +176,17 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('team')->group(function () {
         Route::get('/', [TeamController::class, 'index'])->name('team.list');
-        Route::get('/create', [TeamController::class, 'create'])->name('team.create');
         Route::post('/store', [TeamController::class, 'store'])->name('team.store');
         Route::post('/update/{id}', [TeamController::class, 'update'])->name('team.update');
-        Route::get('/edit/{id}', [TeamController::class, 'edit'])->name('team.edit');
         Route::get('/delete/{id}', [TeamController::class, 'destroy'])->name('team.destroy');
         Route::get('/get-permission-by-team', [TeamController::class, 'getPermissionByTeam'])->name('team.get.permission');
+    });
+
+    Route::prefix('user')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('user.list');
+        Route::get('/{id}', [UserController::class, 'show'])->name('user.show');
+        Route::post('/update/{id}', [UserController::class, 'update'])->name('user.update');
+        Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('user.destroy');
     });
 
     // Site routes

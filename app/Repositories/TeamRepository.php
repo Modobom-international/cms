@@ -11,9 +11,15 @@ class TeamRepository extends BaseRepository
         return Team::class;
     }
 
-    public function getTeams()
+    public function getTeamByFilter($filter = [])
     {
-        return $this->model->with('permissions')->get();
+        $query = $this->model->with('permissions');
+
+        if (isset($filter['search'])) {
+            $query->where('name', 'LIKE', '%' . $filter['search'] . '%');
+        }
+
+        return $query->get();
     }
 
     public function findTeam($id)

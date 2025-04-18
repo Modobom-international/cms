@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Permission;
+use App\Repositories\PermissionRepository;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +21,15 @@ class SyncRouteForPermission extends Command
      * @var string
      */
     protected $description = 'Sync route for permission';
+
+    protected $permissionRepository;
+
+    public function __construct(PermissionRepository $permissionRepository)
+    {
+        $this->permissionRepository = $permissionRepository;
+
+        parent::__construct();
+    }
 
     /**
      * Execute the console command.
@@ -45,13 +54,16 @@ class SyncRouteForPermission extends Command
             }
 
             $explode = explode('/', $getPrefix);
+            $name = $route->getName() ?? 'N/A';
             $prefix = $explode[1];
+            $description = $route->getActionName() ?? 'N/A';
+            $data = [
+                'name' => $name,
+                'prefix' => $prefix,
+                'description' => $description,
+            ];
 
-            Permission::updateOrCreate(
-                ['name' => $route->getName()],
-                ['prefix' => $prefix],
-                ['description' => $route->getActionName()],
-            );
+            $this->permissionRepository->updateOrCreate($data);
         }
 
         dump('Sync thành công..........');

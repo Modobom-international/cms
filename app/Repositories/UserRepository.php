@@ -16,9 +16,9 @@ class UserRepository extends BaseRepository
         return $this->model->create($dataUser);
     }
     
-    public function getUserByID($dataUser)
+    public function getUserByID($id)
     {
-        return $this->model->where('id', $dataUser)->first();
+        return $this->model->where('id', $id)->first();
     }
 
     public function update($dataUser, $id)

@@ -4,9 +4,10 @@ namespace App\Http\Controllers\API;
 
 use App\Enums\ActivityAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\TeamRequest;
 use App\Traits\LogsActivity;
-use App\Repositories\Permission\PermissionRepository;
-use App\Repositories\Team\TeamRepository;
+use App\Repositories\PermissionRepository;
+use App\Repositories\TeamRepository;
 use Exception;
 use Illuminate\Http\Request;
 
@@ -28,9 +29,19 @@ class TeamController extends Controller
     public function index()
     {
         try {
-            $teams = $this->teamRepository->getTeams();
+            $input = $request->all();
+            $pageSize = $request->get('pageSize') ?? 10;
+            $page = $request->get('page') ?? 1;
+            $search = $request->get('search');
+            $filter = [];
 
-            foreach ($teams as $team) {
+            if (isset($search)) {
+                $filter['search'] = $search;
+            }
+
+            $query = $this->teamRepository->getTeamByFilter($filter);
+
+            foreach ($query as $team) {
                 $permissions  = array();
                 if (isset($team->permissions)) {
                     $getPermission = $team->permissions;
@@ -46,7 +57,7 @@ class TeamController extends Controller
                 }
             }
 
-            $teams = $this->utility->paginate($teams);
+            $data = $this->utility->paginate($query, $pageSize, $page);
 
             $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách team');
 
@@ -66,43 +77,9 @@ class TeamController extends Controller
         }
     }
 
-    public function create()
+    public function store(TeamRequest $request)
     {
         try {
-            $getPermission = $this->permissionRepository->getPermissions();
-            $permissions = [];
-            foreach ($getPermission as $permission) {
-                $prefix = $permission->prefix;
-
-                $permissions[$prefix][] = $permission;
-            }
-
-            $this->logActivity(ActivityAction::CREATE_RECORD, ['filters' => $input], 'Thêm bản ghi mới của team');
-
-            return response()->json([
-                'success' => true,
-                'data' => $permissions,
-                'message' => 'Lấy thông tin team thành công',
-                'type' => 'create_view_team_success',
-            ], 200);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Lấy thông tin team không thành công',
-                'type' => 'create_view_team_fail',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function store(Request $request)
-    {
-        try {
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'permissions' => 'array',
-            ]);
-
             $getPermission = $request->get('permissions');
             $permissions = array();
 
@@ -134,55 +111,9 @@ class TeamController extends Controller
         }
     }
 
-    public function edit($id)
+    public function update(TeamRequest $request, $id)
     {
         try {
-            $team = $this->teamRepository->findTeam($id);
-            $getPermission = $this->permissionRepository->getPermissions();
-            $permissions = [];
-            $team_permissions = [];
-            foreach ($getPermission as $permission) {
-                $prefix = $permission->prefix;
-
-                $permissions[$prefix][] = $permission;
-            }
-
-            foreach ($team->permissions as $permission) {
-                $prefix = $permission->prefix;
-
-                $team_permissions[$prefix][] = $permission->name;
-            }
-
-            $response = [
-                'team' => $team,
-                'permissions' => $permissions,
-                'team_permissions' => $team_permissions
-            ];
-
-            return response()->json([
-                'success' => true,
-                'data' => $response,
-                'message' => 'Lấy thông tin team thành công',
-                'type' => 'edit_team_success',
-            ], 200);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Lấy thông tin team không thành công',
-                'type' => 'edit_team_fail',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function update(Request $request, $id)
-    {
-        try {
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'permissions' => 'array',
-            ]);
-
             $getPermission = $request->get('permissions');
             $permissions = array();
 
@@ -219,7 +150,7 @@ class TeamController extends Controller
     public function destroy($id)
     {
         try {
-            $this->teamRepository->destroy($id);
+            $this->teamRepository->deleteById($id);
 
             return response()->json([
                 'success' => true,

@@ -269,6 +269,8 @@
                 return 'Bing Search';
             } else if (hostname.includes('yahoo.com')) {
                 return 'Yahoo Search';
+            } else if (hostname.includes('tiktok.com')) {
+                return 'TikTok';
             } else {
                 return 'Other';
             }
