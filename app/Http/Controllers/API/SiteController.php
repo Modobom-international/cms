@@ -8,6 +8,7 @@ use App\Services\CloudFlareService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class SiteController extends Controller
 {
@@ -92,6 +93,12 @@ class SiteController extends Controller
                         );
                         if ($dnsResult['success'] === false) {
                             $site['cloudflare_domain_status'] = 'dns_failed';
+                        }
+
+                        // Set cache rules for the domain
+                        $cacheResult = $this->cloudflareService->setupCacheRules($request->domain);
+                        if ($cacheResult['success'] === false) {
+                            Log::warning('Failed to set cache rules for domain: ' . $request->domain, $cacheResult);
                         }
                     }
                 }
@@ -188,6 +195,12 @@ class SiteController extends Controller
                     $request->domain
                 );
                 $site->cloudflare_domain_status = isset($domainResult['error']) ? 'failed' : 'active';
+                
+                // Update cache rules for new domain
+                $cacheResult = $this->cloudflareService->setupCacheRules($request->domain);
+                if ($cacheResult['success'] === false) {
+                    Log::warning('Failed to set cache rules for domain: ' . $request->domain, $cacheResult);
+                }
             }
 
             $site->update([

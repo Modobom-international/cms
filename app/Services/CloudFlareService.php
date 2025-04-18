@@ -273,6 +273,62 @@ class CloudFlareService
     }
 
     /**
+     * Set cache rules for a domain
+     * 
+     * @param string $domain
+     * @return array
+     */
+    public function setupCacheRules($domain)
+    {
+        $rootDomain = $this->getRootDomain($domain);
+        $zoneId = $this->getZoneId($rootDomain);
+        
+        if (!$zoneId) {
+            return [
+                'success' => false,
+                'error' => 'Zone ID not found for domain: ' . $rootDomain
+            ];
+        }
+        
+        try {
+            // Create cache rule with 1 month TTL
+            $response = $this->client->post($this->apiUrl . "/zones/{$zoneId}/rulesets", [
+                'json' => [
+                    'name' => 'Cache Rules for ' . $domain,
+                    'description' => 'Cache settings for ' . $domain,
+                    'kind' => 'zone',
+                    'phase' => 'http_request_cache_settings',
+                    'rules' => [
+                        [
+                            'action' => 'set_cache_settings',
+                            'action_parameters' => [
+                                'cache' => true,
+                                'edge_ttl' => [
+                                    'mode' => 'override_origin',
+                                    'default' => 2592000 // 1 month in seconds
+                                ],
+                                'browser_ttl' => [
+                                    'mode' => 'override_origin',
+                                    'default' => 2592000 // 1 month in seconds
+                                ]
+                            ],
+                            'expression' => 'true', // Apply to all requests
+                            'description' => 'Cache all content for ' . $domain
+                        ]
+                    ]
+                ]
+            ]);
+            
+            return [
+                'success' => true,
+                'data' => json_decode($response->getBody(), true)
+            ];
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
      * Extract the root domain from a domain/subdomain
      * 
      * @param string $domain
@@ -342,7 +398,7 @@ class CloudFlareService
         }
     }
 
-    public function deployExportDirectory($projectName, $directory = null, $options = [])
+    public function deployExportDirectory($projectName, $directory = null, $domain = null, $options = [])
     {
         $startTime = microtime(true);
         $result = ['success' => false];
@@ -362,6 +418,7 @@ class CloudFlareService
             $output = $this->executeWranglerCommand($deploymentCommand);
 
             $result = $this->processDeploymentResult($output, $deployDir, $startTime);
+            $result['domain'] = $domain; // Add domain to result for cache purging
         } catch (\Exception $e) {
             Log::error('Deployment failed: ' . $e->getMessage());
             $result = [
@@ -468,6 +525,61 @@ class CloudFlareService
         } catch (\Exception $e) {
             \Log::error('Failed to delete page files: ' . $e->getMessage());
             throw $e;
+        }
+    }
+
+    /**
+     * Purge all cache for a specific domain
+     *
+     * @param string $domain
+     * @param string $pageSlug
+     * @return array
+     */
+    public function purgeCache($domain, $pageSlug)
+    {
+        try {
+            $rootDomain = $this->getRootDomain($domain);
+            $zoneId = $this->getZoneId($rootDomain);
+            
+            if (!$zoneId) {
+                return [
+                    'success' => false,
+                    'message' => 'Zone ID not found for domain: ' . $rootDomain
+                ];
+            }
+            
+            // Construct the URL pattern to purge
+            $urls = [];
+            if (!empty($pageSlug)) {
+                // Add URL with the pattern "{domain}/{pageSlug}"
+                $urls[] = "https://{$domain}/{$pageSlug}";
+                // Also add URL with trailing slash
+                $urls[] = "https://{$domain}/{$pageSlug}/";
+            } else {
+                // If no pageSlug is provided, purge the domain root
+                $urls[] = "https://{$domain}/";
+            }
+            
+            $response = $this->client->post($this->apiUrl . "/zones/{$zoneId}/purge_cache", [
+                'json' => [
+                    'files' => $urls
+                ]
+            ]);
+            
+            $result = json_decode($response->getBody(), true);
+            
+            return [
+                'success' => $result['success'] ?? false,
+                'message' => $result['success'] ? 'Cache purged successfully for URL: ' . implode(', ', $urls) : 'Failed to purge cache',
+                'data' => $result
+            ];
+        } catch (RequestException $e) {
+            Log::error('Cache purge failed: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Cache purge failed: ' . $e->getMessage(),
+                'error' => $this->handleException($e)
+            ];
         }
     }
 }
