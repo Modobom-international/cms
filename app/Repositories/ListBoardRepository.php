@@ -37,7 +37,7 @@ class ListBoardRepository extends BaseRepository
     
     public function show($id)
     {
-        return $this->model->where('id', $id)->first();
+        return $this->model->with('cards')->where('id', $id)->first();
     }
 
     public function updateListBoard($data, $id)

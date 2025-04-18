@@ -101,14 +101,13 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     //card
-    Route::get('/list/{list}/cards', [CardController::class, 'index']); // Lấy danh sách card theo list
-    Route::prefix('card')->group(function () {
-        Route::post('/create', [CardController::class, 'store']); // Tạo card mới
-        Route::post('/update/{card}', [CardController::class, 'update']); // Cập nhật card
-        Route::delete('/delete/{card}', [CardController::class, 'destroy']); // Xóa card
-        Route::post('/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
+    Route::prefix('/list/{list}')->group(function () {
+        Route::get('/cards', [CardController::class, 'index']); // Lấy danh sách card theo list
+        Route::post('/card/create', [CardController::class, 'store']); // Tạo card mới
     });
-
+    Route::post('/card/update/{card}', [CardController::class, 'update']); // Cập nhật card
+    Route::delete('/card/delete/{card}', [CardController::class, 'destroy']); // Xóa card
+    Route::post('/card/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
     //label
     Route::prefix('/label')->group(function () {
         Route::post('/create', [LabelController::class, 'store']); // Tạo label
