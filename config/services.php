@@ -66,4 +66,16 @@ return [
         'shopper_id'    => env('GODADDY_LINH_SHOPPER_ID'),
     ],
 
+    'godaddy_vylinh3' => [
+        'api_key'    => env('GODADDY_VYLINH3_API_KEY'),
+        'api_secret' => env('GODADDY_VYLINH3_API_SECRET'),
+        'shopper_id'    => env('GODADDY_VYLINH3_SHOPPER_ID'),
+    ],
+
+    'godaddy_vylinh4' => [
+        'api_key'    => env('GODADDY_VYLINH4_API_KEY'),
+        'api_secret' => env('GODADDY_VYLINH4_API_SECRET'),
+        'shopper_id'    => env('GODADDY_VYLINH4_SHOPPER_ID'),
+    ],
+
 ];

@@ -31,6 +31,18 @@ class GoDaddyService
                 'api_url' => config('services.godaddy_linh.api_url'),
                 'shopper_id' => config('services.godaddy_linh.shopper_id'),
             ],
+            'vylinh3' => [
+                'api_key' => config('services.godaddy_vylinh3.api_key'),
+                'api_secret' => config('services.godaddy_vylinh3.api_secret'),
+                'api_url' => config('services.godaddy_vylinh3.api_url'),
+                'shopper_id' => config('services.godaddy_vylinh3.shopper_id'),
+            ],
+            'vylinh4' => [
+                'api_key' => config('services.godaddy_vylinh4.api_key'),
+                'api_secret' => config('services.godaddy_vylinh4.api_secret'),
+                'api_url' => config('services.godaddy_vylinh4.api_url'),
+                'shopper_id' => config('services.godaddy_vylinh4.shopper_id'),
+            ],
         ];
     }
 
