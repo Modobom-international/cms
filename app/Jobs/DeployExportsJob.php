@@ -67,11 +67,11 @@ class DeployExportsJob implements ShouldQueue
                 if (!empty($this->domain)) {
                     $purgeResult = $cloudflareService->purgeCache($this->domain, $this->pageSlug);
                     if ($purgeResult['success']) {
-                        Log::info('Cache purged successfully for domain: ' . $this->domain);
-                        
+                        Log::info('Cache purged successfully for domain: ' . $this->domain . ' and page slug: ' . $this->pageSlug);
+
                         // Warm Cloudflare cache for key pages
                         $pathsToWarm = [
-                            // '/',                         // homepage
+                            '/',                         // homepage
                             $this->pageSlug,             // main page
                             // 'about',
                             // 'contact'
