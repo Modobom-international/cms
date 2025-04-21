@@ -20,23 +20,21 @@ class Cors
     {
         if ($request->getMethod() === 'OPTIONS') {
             $response = response('');
-            $origin = $request->headers->get('Origin');
-            $corsDomain = $this->domainRepository->all()->toArray();
-
-            if (in_array($origin, $corsDomain)) {
-                $response->headers->set('Access-Control-Allow-Origin', $origin);
-                $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-                $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-XSRF-TOKEN');
-                $response->headers->set('Access-Control-Allow-Credentials', 'true');
-                return $response;
-            }
+        } else {
+            $response = $next($request);
         }
 
-        $response = $next($request);
         $origin = $request->headers->get('Origin');
         $corsDomain = $this->domainRepository->all()->toArray();
 
-        if (in_array($origin, $corsDomain)) {
+        // if (in_array($origin, $corsDomain)) {
+        //     $response->headers->set('Access-Control-Allow-Origin', $origin);
+        //     $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        //     $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-XSRF-TOKEN');
+        //     $response->headers->set('Access-Control-Allow-Credentials', 'true');
+        // }
+
+        if ($request) {
             $response->headers->set('Access-Control-Allow-Origin', $origin);
             $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
             $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-XSRF-TOKEN');
