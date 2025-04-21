@@ -4,8 +4,10 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ChecklistRequest;
+use App\Models\Card;
 use App\Repositories\CardRepository;
 use App\Repositories\CheckListRepository;
+use App\Repositories\LogActivityUserRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -13,14 +15,30 @@ class CheckListController extends Controller
 {
     protected $cardRepository;
     protected $checkListRepository;
+    protected $logActivityUserRepository;
     
     public function __construct(
         CardRepository $cardRepository,
+        LogActivityUserRepository $logActivityUserRepository,
         CheckListRepository $checkListRepository
     )
     {
         $this->cardRepository = $cardRepository;
         $this->checkListRepository = $checkListRepository;
+        $this->logActivityUserRepository = $logActivityUserRepository;
+    
+    }
+    
+    protected function userHasAccessToCard(Card $card): bool
+    {
+        $user = auth()->user();
+        if (!$user) return false;
+        
+        $boardId = optional($card->listBoard)->board_id;
+        
+        if (!$boardId) return false;
+        
+        return $user->boards()->where('board_id', $boardId)->exists();
     }
     
     // Lấy danh sách checklist theo card
@@ -58,18 +76,27 @@ class CheckListController extends Controller
                     'type' => 'card_not_found',
                 ], 404);
             }
-            // Lấy board_id thông qua quan hệ: card → list → board
-            $boardId = optional($card->listBoard)->board_id;
-        
-            if (!$boardId || !Auth::user()->boards()->where('board_id', $boardId)->exists()) {
+            // Kiểm tra user có thuộc board chứa card này không
+            if (!$this->userHasAccessToCard($card)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bạn không có quyền tạo checklist trong card này.',
+                    'message' => 'Bạn không có quyền tạo ',
                     'type' => 'unauthorized',
                 ], 403);
             }
             
             $checkList = $this->checkListRepository->storeCheckList($input);
+            $log = [
+                'user_id' => Auth::user()->id,
+                'card_id' => $card->id,
+                'action_type' => 'create',
+                'target_type' => 'Create checklist',
+                'target_id' => $checkList->id,
+                'content' => Auth::user()->name . ' tạo checklist vào card ' .$card->title   ?? '',
+            ];
+    
+            $this->logActivityUserRepository->create($log);
+            
             return response()->json([
                 'success' => true,
                 'message' => 'Checklist được tạo thành công.',
@@ -99,17 +126,27 @@ class CheckListController extends Controller
                     'type' => 'checkList_not_found',
                 ], 404);
             }
-            // Kiểm tra quyền truy cập vào board
-            $user = Auth::user();
-            $boardId = optional(optional($checkList->card)->listBoard)->board_id;
-        
-            if (!$boardId || !$user->boards()->where('board_id', $boardId)->exists()) {
+            // Kiểm tra user có thuộc board chứa card này không
+            if (!$this->userHasAccessToCard($checkList->card)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bạn không có quyền chỉnh sửa checklist này.',
+                    'message' => 'Bạn không có quyền tạo ',
                     'type' => 'unauthorized',
                 ], 403);
             }
+    
+            $checkList = $this->checkListRepository->storeCheckList($input);
+            $log = [
+                'user_id' => Auth::user()->id,
+                'card_id' => $checkList->card,
+                'action_type' => 'update',
+                'target_type' => 'Update checklist',
+                'target_id' => $checkList->id,
+                'content' => Auth::user()->name . ' cập nhập checklist vào card ' .$checkList->card->title   ?? '',
+            ];
+    
+            $this->logActivityUserRepository->create($log);
+            
             $updateCheckList = $this->checkListRepository->updateCheckList($input, $id);
             
             return response()->json([
@@ -139,19 +176,26 @@ class CheckListController extends Controller
                 'type' => 'checkList_not_found',
             ], 404);
         }
-        $card = $checkList->card;
-        // Lấy board_id thông qua quan hệ: checklist → card → list → board
-        $boardId = optional($card->listBoard)->board_id;
-    
-        if (!$boardId || !Auth::user()->boards()->where('board_id', $boardId)->exists()) {
+        // Kiểm tra user có thuộc board chứa card này không
+        if (!$this->userHasAccessToCard($checkList->card)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền xóa checklist này.',
+                'message' => 'Bạn không có quyền tạo ',
                 'type' => 'unauthorized',
             ], 403);
         }
         $checkList = $this->checkListRepository->destroy($id);
         
+        $log = [
+            'user_id' => Auth::user()->id,
+            'card_id' => $checkList->card,
+            'action_type' => 'Delete',
+            'target_type' => 'Delete checklist',
+            'target_id' => $checkList->id,
+            'content' => Auth::user()->name . ' xóa checklist từ card ' .$checkList->card->title   ?? '',
+        ];
+    
+        $this->logActivityUserRepository->create($log);
         return response()->json([
             'success' => true,
             'message' => 'Checklist đã được xoá.',

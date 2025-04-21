@@ -8,7 +8,7 @@ use App\Traits\LogsModelActivity;
 class CheckList extends Model
 {
     use LogsModelActivity;
-
+    protected $table = 'checklists';
     protected $fillable = ['card_id', 'title'];
     
     public function card()
@@ -18,6 +18,6 @@ class CheckList extends Model
     
     public function items()
     {
-        return $this->hasMany(CheckListItem::class);
+        return $this->hasMany(CheckListItem::class,'checklist_id');
     }
 }
