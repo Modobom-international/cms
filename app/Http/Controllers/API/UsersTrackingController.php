@@ -58,6 +58,10 @@ class UsersTrackingController extends Controller
                 $date = $this->utility->getCurrentVNTime('Y-m-d');
             }
 
+            if (!isset($path)) {
+                $path = 'all';
+            }
+
             $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách users tracking');
 
             $query = $this->trackingEventRepository->getTrackingEventByDomain($domain, $date, $path);

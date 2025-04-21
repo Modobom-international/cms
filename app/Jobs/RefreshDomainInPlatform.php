@@ -71,29 +71,29 @@ class RefreshDomainInPlatform implements ShouldQueue
 
                     $this->messageEventHandler('Thêm domain ' . $domain . ' vào hệ thống thành công ...');
 
-                    // $resultWithoutData = $cloudFlareService->addDomain(
-                    //     $domain
-                    // );
+                    $resultWithoutData = $cloudFlareService->addDomain(
+                        $domain
+                    );
 
-                    // if (array_key_exists('error', $resultWithoutData)) {
-                    //     $this->messageEventHandler('Thêm domain ' . $domain . ' vào Cloudflare không thành công  ...');
+                    if (array_key_exists('error', $resultWithoutData)) {
+                        $this->messageEventHandler('Thêm domain ' . $domain . ' vào Cloudflare không thành công  ...');
 
-                    //     return;
-                    // } else {
-                    //     $this->messageEventHandler('Thêm domain ' . $domain . ' vào Cloudflare thành công ...');
-                    // }
+                        return;
+                    } else {
+                        $this->messageEventHandler('Thêm domain ' . $domain . ' vào Cloudflare thành công ...');
+                    }
 
-                    // $resultWithoutData = $goDaddyService->updateNameservers(
-                    //     $domain
-                    // );
+                    $resultWithoutData = $goDaddyService->updateNameservers(
+                        $domain
+                    );
 
-                    // if (is_array($resultWithoutData) and array_key_exists('error', $resultWithoutData)) {
-                    //     $this->messageEventHandler('Sửa DNS ' . $domain . ' trên Godaddy không thành công  ...');
+                    if (is_array($resultWithoutData) and array_key_exists('error', $resultWithoutData)) {
+                        $this->messageEventHandler('Sửa DNS ' . $domain . ' trên Godaddy không thành công  ...');
 
-                    //     return;
-                    // } else {
-                    //     $this->messageEventHandler('Sửa DNS ' . $domain . ' trên Godaddy thành công  ...');
-                    // }
+                        return;
+                    } else {
+                        $this->messageEventHandler('Sửa DNS ' . $domain . ' trên Godaddy thành công  ...');
+                    }
                 }
             } else {
                 $this->messageEventHandler('Không có domain mới.');
