@@ -63,4 +63,9 @@ class SiteRepository extends BaseRepository
         }
         return $site->update($data);
     }
+
+    public function getSlugByDomain($domain)
+    {
+        return $this->model->with('pages')->where('domain', $domain)->first();
+    }
 }

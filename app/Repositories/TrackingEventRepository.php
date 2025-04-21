@@ -20,12 +20,19 @@ class TrackingEventRepository extends BaseRepository
         return TrackingEvent::class;
     }
 
-    public function getTrackingEventByDomain($domain, $date)
+    public function getTrackingEventByDomain($domain, $date, $path)
     {
-        return $this->model->where('domain', $domain)
+        $query = $this->model->where('domain', $domain)
             ->where('timestamp', '>=', $this->utility->covertDateTimeToMongoBSONDateGMT7($date . ' 00:00:00'))
-            ->where('timestamp', '<=', $this->utility->covertDateTimeToMongoBSONDateGMT7($date . ' 23:59:59'))
-            ->orderBy('timestamp', 'desc')
+            ->where('timestamp', '<=', $this->utility->covertDateTimeToMongoBSONDateGMT7($date . ' 23:59:59'));
+
+        if ($path != 'all') {
+            $query = $query->where('path', $path);
+        }
+
+        $query = $query->orderBy('timestamp', 'desc')
             ->get();
+
+        return $query;
     }
 }

@@ -2,22 +2,23 @@
 
 namespace App\Http\Controllers\API;
 
+use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Cache;
 use App\Enums\Utility;
 use App\Enums\ActivityAction;
 use App\Jobs\StoreAiTrainingData;
 use App\Jobs\StoreHeartBeat;
 use App\Jobs\StoreTrackingEvent;
 use App\Jobs\StoreVideoTimeline;
-use Illuminate\Http\Request;
 use App\Repositories\DeviceFingerprintRepository;
 use App\Repositories\TrackingEventRepository;
 use App\Repositories\DomainRepository;
 use App\Repositories\HeartBeatRepository;
 use UAParser\Parser;
 use App\Traits\LogsActivity;
-use DB;
 use Exception;
+use Carbon\Carbon;
 
 class UsersTrackingController extends Controller
 {
@@ -50,6 +51,7 @@ class UsersTrackingController extends Controller
             $pageSize = $request->get('pageSize') ?? 10;
             $page = $request->get('page') ?? 1;
             $domain = $request->get('domain');
+            $path = $request->get('path');
             $date = $request->get('date');
 
             if (!isset($date)) {
@@ -58,7 +60,7 @@ class UsersTrackingController extends Controller
 
             $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách users tracking');
 
-            $query = $this->trackingEventRepository->getTrackingEventByDomain($domain, $date);
+            $query = $this->trackingEventRepository->getTrackingEventByDomain($domain, $date, $path);
             $data = $this->utility->paginate($query->groupBy('uuid'), $pageSize, $page);
 
             return response()->json([
@@ -81,11 +83,7 @@ class UsersTrackingController extends Controller
     {
         try {
             $uuid = $request->get('uuid');
-            $getTracking = DB::connection('mongodb')
-                ->table('users_tracking')
-                ->where('uuid', $uuid)
-                ->orderBy('timestamp', 'asc')
-                ->get();
+            $getTracking = $this->trackingEventRepository->getTrackingEventByUuid($uuid);
 
             $userAgent = $getTracking[0]->user_agent;
             $parser = Parser::create();
@@ -258,21 +256,48 @@ class UsersTrackingController extends Controller
         }
     }
 
-    public function getCurrentUsersActive()
+    public function getCurrentUsersActive(Request $request)
     {
         try {
-            $domain = request()->input('domain');
-            $activeUsers = $this->heartBeatRepository->getCurrentUsersActive($domain);
+            $domain = $request->query('domain');
+            $path = $request->query('path', 'all');
+
+            if (!$domain) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Domain không được trống',
+                    'type' => 'get_current_user_active_fail',
+                ], 400);
+            }
+
+            $timeBreak = 1;
+            $diffTime = Carbon::now()->subMinutes($timeBreak);
+            $cacheKey = "active_users_{$domain}_{$path}";
+
+            $count = Cache::remember($cacheKey, 10, function () use ($domain, $path, $diffTime) {
+                $activeUsers = $this->heartBeatRepository->getCurrentUsersActive($domain, $path, $diffTime);
+                return $activeUsers->count() ? $activeUsers->first()->online_count : 0;
+            });
 
             return response()->json([
                 'success' => true,
-                'data' => $activeUsers,
+                'data' => $count,
                 'message' => 'Lấy số lượng current users active thành công',
+                'type' => 'get_current_user_active_success',
             ], 200);
         } catch (Exception $e) {
+            Log::error('Error in getCurrentUsersActive', [
+                'domain' => $domain,
+                'path' => $path,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Lấy số lượng current users active không thành công',
+                'type' => 'get_current_user_active_fail',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

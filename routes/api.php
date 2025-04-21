@@ -108,10 +108,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/card/update/{card}', [CardController::class, 'update']); // Cập nhật card
     Route::delete('/card/delete/{card}', [CardController::class, 'destroy']); // Xóa card
     Route::post('/card/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
-    
+
     //list log activity
     Route::get('/cards/{cardId}/logs', [CardController::class, 'getLogsByCard']);
-    
+
     //label
     Route::prefix('/label')->group(function () {
         Route::post('/create', [LabelController::class, 'store']); // Tạo label
@@ -165,6 +165,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('domains')->group(function () {
         Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
         Route::get('/refresh', [DomainController::class, 'refreshDomain'])->name('domain.refresh');
+        Route::get('/list-url-path', [DomainController::class, 'listUrlPath'])->name('domain.list.url.path');
     });
 
     Route::prefix('html-source')->group(function () {
@@ -188,7 +189,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('users')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('user.list');
-        Route::get('/{id}', [UserController::class, 'show'])->name('user.show');
+        Route::get('/edit/{id}', [UserController::class, 'edit'])->name('user.edit');
         Route::post('/update/{id}', [UserController::class, 'update'])->name('user.update');
         Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('user.destroy');
     });
