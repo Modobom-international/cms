@@ -18,10 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->append(RestrictBrowserAccess::class);
-        // $middleware->append(Cors::class);
-        // $middleware->group('api', [
-        //     Cors::class,
-        // ]);
+        $middleware->append(Cors::class);
+        $middleware->group('api', [
+            Cors::class,
+        ]);
 
         $middleware->alias([
             'exclude.domain.tracking' => ExcludeDomainTracking::class,
