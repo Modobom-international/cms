@@ -284,14 +284,14 @@ class CloudFlareService
     {
         $rootDomain = $this->getRootDomain($domain);
         $zoneId = $this->getZoneId($rootDomain);
-        
+
         if (!$zoneId) {
             return [
                 'success' => false,
                 'error' => 'Zone ID not found for domain: ' . $rootDomain
             ];
         }
-        
+
         try {
             // Create cache rule with 1 month TTL
             $response = $this->client->post($this->apiUrl . "/zones/{$zoneId}/rulesets", [
@@ -320,7 +320,7 @@ class CloudFlareService
                     ]
                 ]
             ]);
-            
+
             return [
                 'success' => true,
                 'data' => json_decode($response->getBody(), true)
@@ -531,7 +531,7 @@ class CloudFlareService
     }
 
     /**
-     * Purge all cache for a specific domain
+     * Purge cache for a specific path
      *
      * @param string $domain
      * @param string $pageSlug
@@ -542,34 +542,37 @@ class CloudFlareService
         try {
             $rootDomain = $this->getRootDomain($domain);
             $zoneId = $this->getZoneId($rootDomain);
-            
+
             if (!$zoneId) {
                 return [
                     'success' => false,
                     'message' => 'Zone ID not found for domain: ' . $rootDomain
                 ];
             }
-            
+            // purge the domain root
             // Construct the URL pattern to purge
-            $urls = [];
+            $urls[] = "https://{$domain}";
+
             if (!empty($pageSlug)) {
                 // Add URL with the pattern "{domain}/{pageSlug}"
                 $urls[] = "https://{$domain}/{$pageSlug}";
                 // Also add URL with trailing slash
                 $urls[] = "https://{$domain}/{$pageSlug}/";
+
+
             } else {
                 // If no pageSlug is provided, purge the domain root
                 $urls[] = "https://{$domain}/";
             }
-            
+
             $response = $this->client->post($this->apiUrl . "/zones/{$zoneId}/purge_cache", [
                 'json' => [
                     'files' => $urls
                 ]
             ]);
-            
+
             $result = json_decode($response->getBody(), true);
-            
+
             return [
                 'success' => $result['success'] ?? false,
                 'message' => $result['success'] ? 'Cache purged successfully for URL: ' . implode(', ', $urls) : 'Failed to purge cache',
@@ -595,7 +598,7 @@ class CloudFlareService
     public function warmCache(string $domain, array $paths = [])
     {
         $results = [];
-        
+
         // Ensure domain has https:// prefix
         $domain = !str_starts_with($domain, 'http') ? "https://{$domain}" : $domain;
 
@@ -603,7 +606,7 @@ class CloudFlareService
             if (empty($path)) {
                 continue;
             }
-            
+
             $normalizedPath = rtrim($path, '/') . '/';
             $url = rtrim($domain, '/') . '/' . ltrim($normalizedPath, '/');
             Log::info('Warming cache for URL: ' . $url);
@@ -611,16 +614,16 @@ class CloudFlareService
                 $response = Http::withHeaders([
                     'User-Agent' => 'CacheWarmerBot/1.0'
                 ])
-                ->withOptions([
-                    'allow_redirects' => [
-                        'max' => 10,     // Increase max redirects
-                        'strict' => true,
-                        'referer' => true,
-                        'protocols' => ['http', 'https']
-                    ],
-                    'timeout' => 30,    // Increase timeout to 30 seconds
-                ])
-                ->get($url);
+                    ->withOptions([
+                        'allow_redirects' => [
+                            'max' => 10,     // Increase max redirects
+                            'strict' => true,
+                            'referer' => true,
+                            'protocols' => ['http', 'https']
+                        ],
+                        'timeout' => 30,    // Increase timeout to 30 seconds
+                    ])
+                    ->get($url);
 
                 $results[] = [
                     'url' => $url,
