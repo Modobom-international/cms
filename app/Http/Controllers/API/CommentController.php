@@ -167,7 +167,7 @@ class CommentController extends Controller
                 'type' => 'card_not_found',
             ], 404);
         }
-        if (!$this->userHasAccessToCard($comment->card)) {
+        if (!$this->userHasAccessToCard($comment->card_id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Bạn không có quyền ',

@@ -39,8 +39,8 @@ class UpdateCardReminderColor implements ShouldQueue
             $this->dueDate->status_color = 'orange';
             $this->dueDate->status_text = 'Sắp đến hạn';
         } else {
-            $this->dueDate->status_color = 'gray';
-            $this->dueDate->status_text = 'Chưa đến hạn';
+            $this->dueDate->status_color = '';
+            $this->dueDate->status_text = '';
         }
         
         $this->dueDate->save();
