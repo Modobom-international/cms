@@ -4,7 +4,6 @@ namespace App\Jobs;
 
 use App\Models\DueDate;
 use Illuminate\Bus\Queueable;
-use Illuminate\Support\Carbon;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
