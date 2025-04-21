@@ -155,6 +155,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/comment/update/{comment}', [CommentController::class, 'update']); // Cập nhật comment
     Route::delete('/comment/delete/{comment}', [CommentController::class, 'destroy']); // Xóa comment
 
+    //due date
     Route::prefix('cards/{card}/due-date')->group(function () {
         Route::post('/create', [DueDateController::class, 'store']);     // Tạo hoặc cập nhật due date
     });

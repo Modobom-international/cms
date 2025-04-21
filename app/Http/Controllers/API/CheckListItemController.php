@@ -9,20 +9,24 @@ use App\Models\Checklist;
 use App\Repositories\CheckListItemRepository;
 use App\Repositories\CheckListRepository;
 use App\Http\Requests\CheckListItemRequest;
+use App\Repositories\LogActivityUserRepository;
+use Illuminate\Support\Facades\Auth;
 
 class CheckListItemController extends Controller
 {
-    
+    protected $logActivityUserRepository;
     protected $checkListItemRepository;
     protected $checkListRepository;
     
     public function __construct(
         CheckListItemRepository $checkListItemRepository,
+        LogActivityUserRepository $logActivityUserRepository,
         CheckListRepository $checkListRepository
     )
     {
         $this->checkListItemRepository = $checkListItemRepository;
         $this->checkListRepository = $checkListRepository;
+        $this->logActivityUserRepository = $logActivityUserRepository;
     }
     
     protected function userHasAccessToChecklist(Checklist $checklist): bool
@@ -78,7 +82,6 @@ class CheckListItemController extends Controller
                     'type' => 'checkList_not_found',
                 ], 404);
             }
-            
             if (!$this->userHasAccessToChecklist($checkList)) {
                 return response()->json([
                     'success' => false,
@@ -86,7 +89,7 @@ class CheckListItemController extends Controller
                     'type' => 'unauthorized',
                 ], 403);
             }
-            
+    
             $item = [
                 'content' => $input['content'],
                 'is_completed' => CheckListItem::NOT_COMPETE,
@@ -95,6 +98,23 @@ class CheckListItemController extends Controller
             
             $checkListItem = $this->checkListItemRepository->storeItem($item);
             
+            $user = Auth::user();
+            $cardId = $checkList->card_id;
+            // Kiểm tra log trong 2 phút gần nhất
+            $alreadyLogged = $this->logActivityUserRepository->checkExistLog($user->id, $cardId);
+            if (!$alreadyLogged) {
+                $log = [
+                    'user_id' => $user->id,
+                    'card_id' => $cardId,
+                    'action_type' => 'Create',
+                    'target_type' => 'Create check item',
+                    'target_id' => $checkListItem->id,
+                    'content' => $user->name . ' đã thêm checklist item vào card "' . $checkList->card->title . '"',
+                ];
+                
+                $this->logActivityUserRepository->create($log);
+            }
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Tạo item thành công',
@@ -114,7 +134,6 @@ class CheckListItemController extends Controller
     public function update(CheckListItemRequest $request, $checklistId, $itemId)
     {
         try {
-        
         $input = $request->except('token');
         $checkList = $this->checkListRepository->show($checklistId);
         if (!$checkList) {
@@ -133,6 +152,7 @@ class CheckListItemController extends Controller
                 'type' => 'item_not_found',
             ], 404);
         }
+        
         if (!$this->userHasAccessToChecklist($checkList)) {
             return response()->json([
                 'success' => false,
@@ -140,13 +160,31 @@ class CheckListItemController extends Controller
                 'type' => 'unauthorized',
             ], 403);
         }
+    
+        $oldContent = $item->content;
+        $item->content = $input['content'] ?? $oldContent;
         $this->checkListItemRepository->updateItem($input, $itemId);
+
+// Ghi log nếu nội dung thay đổi
+        if ($oldContent !== $item->content) {
+            $log = [
+                'user_id' => Auth::id(),
+                'card_id' => $checkList->card_id,
+                'action_type' => 'Update',
+                'target_type' => 'Update checklist item',
+                'target_id' => $item->id,
+                'content' => Auth::user()->name . ' đã cập nhật checklist item từ "' . $oldContent . '" thành "' . $item->content . '"'
+            ];
+    
+            $this->logActivityUserRepository->create($log);
+        }
         
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật thành công',
             'type' => 'success_update_item'
         ]);
+        
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -225,6 +263,17 @@ class CheckListItemController extends Controller
                 'type' => 'unauthorized',
             ], 403);
         }
+        // Ghi log trước khi xóa
+        $log = [
+            'user_id' => Auth::id(),
+            'card_id' => $checkList->card_id,
+            'action_type' => 'Delete',
+            'target_type' => 'Delete checklist item',
+            'target_id' => $item->id,
+            'content' => Auth::user()->name . ' đã xóa checklist item "' . $item->content . '" khỏi checklist "' . $checkList->title . '"',
+        ];
+    
+        $this->logActivityUserRepository->create($log);
         
         $item = $this->checkListItemRepository->destroy($itemId);
         

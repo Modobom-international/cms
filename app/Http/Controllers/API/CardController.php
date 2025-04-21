@@ -6,7 +6,6 @@ use App\Http\Requests\CartRequest;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CartUpdateRequest;
 use App\Models\Card;
-use App\Models\LogActivityUser;
 use App\Models\User;
 use App\Repositories\CardRepository;
 use App\Repositories\LabelRepository;
@@ -110,9 +109,9 @@ class CardController extends Controller
                 'user_id' => Auth::user()->id,
                 'card_id' => $dataCard->id,
                 'action_type' => 'create',
-                'target_type' => 'Tạo card',
+                'target_type' => 'create card',
                 'target_id' => $dataCard->id,
-                'content' => Auth::user()->name . ' added this card to ' .$listBoard->title   ?? '',
+                'content' => Auth::user()->name . ' đã tạo card từ ' .$listBoard->title   ?? '',
             ];
             
             $this->logActivityUserRepository->create($log);
@@ -178,10 +177,10 @@ class CardController extends Controller
             $log = [
                 'user_id' => Auth::user()->id,
                 'card_id' => $dataCard->id,
-                'action_type' => 'create',
+                'action_type' => 'update',
                 'target_type' => 'Update card',
                 'target_id' => $dataCard->id,
-                'content' => Auth::user()->name . ' update this card to ' .$listBoard->title   ?? '',
+                'content' => Auth::user()->name . ' đã cập nhập card từ ' .$listBoard->title   ?? '',
             ];
     
             $this->logActivityUserRepository->create($log);
@@ -339,10 +338,10 @@ class CardController extends Controller
         $log = [
             'user_id' => $user->id,
             'card_id' => $card->id,
-            'action_type' => 'join',
-            'target_type' => 'Join card',
+            'action_type' => 'join card',
+            'target_type' => 'user Join card',
             'target_id' => $card->id,
-            'content' => "{$user->name} join to  \"{$card->title}\"",
+            'content' => "{$user->name} tham gia  \"{$card->title}\"",
         ];
         
         $this->logActivityUserRepository->create($log);
@@ -379,10 +378,10 @@ class CardController extends Controller
         $log = [
             'user_id' => $user->id,
             'card_id' => $card->id,
-            'action_type' => 'join',
-            'target_type' => 'Leave card',
+            'action_type' => 'leave card',
+            'target_type' => 'User leave card',
             'target_id' => $card->id,
-            'content' => "{$user->name} left to  \"{$card->title}\"",
+            'content' => "{$user->name} rời khỏi  \"{$card->title}\"",
         ];
         $this->logActivityUserRepository->create($log);
         return response()->json([
@@ -445,10 +444,10 @@ class CardController extends Controller
                 $log = [
                     'user_id' => Auth::id(),
                     'card_id' => $card->id,
-                    'action_type' => 'assign',
+                    'action_type' => 'assign card',
                     'target_type' => 'Assign user to card',
                     'target_id' => $card->id,
-                    'content' => Auth::user()->name . ' đã thêm ' . $userAssign->name . ' vào thẻ "' . $card->title . '"'
+                    'content' => Auth::user()->name . ' đã thêm ' . $userAssign->name . ' vào card "' . $card->title . '"'
                 ];
                 $this->logActivityUserRepository->create($log);
                 $assigned[] = $userId;
@@ -521,10 +520,10 @@ class CardController extends Controller
             $log = [
                 'user_id' => Auth::id(), // người thực hiện
                 'card_id' => $card->id,
-                'action_type' => 'remove',
+                'action_type' => 'remove user',
                 'target_type' => 'Remove user from card',
                 'target_id' => $card->id,
-                'content' => Auth::user()->name . ' remove ' . $user->name . ' from card"' . $card->title . '"',
+                'content' => Auth::user()->name . ' đã xóa ' . $user->name . ' khỏi card"' . $card->title . '"',
             ];
             $this->logActivityUserRepository->create($log);
             
@@ -616,7 +615,7 @@ class CardController extends Controller
                 'action_type' => 'assign label',
                 'target_type' => 'assign label to card',
                 'target_id' => $label->id,
-                'content' => Auth::user()->name . ' assign label "' . $label->name . '" to card "' . $card->title . '"',
+                'content' => Auth::user()->name . ' gán nhãn "' . $label->name . '" vào card"' . $card->title . '"',
             ];
     
             $this->logActivityUserRepository->create($log);
@@ -684,7 +683,7 @@ class CardController extends Controller
                 'action_type' => 'remove label',
                 'target_type' => 'remove label from card',
                 'target_id' => $label->id,
-                'content' => Auth::user()->name . ' remove label "' . $label->name . '" from card "' . $card->title . '"',
+                'content' => Auth::user()->name . ' xóa gán nhãn "' . $label->name . '" từ card"' . $card->title . '"',
             ];
             $this->logActivityUserRepository->create($log);
             
