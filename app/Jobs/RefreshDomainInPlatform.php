@@ -55,8 +55,6 @@ class RefreshDomainInPlatform implements ShouldQueue
                         $renewDeadline = null;
                     }
 
-                    $arrayIndex[] = $index;
-
                     $data = [
                         'domain' => $domain,
                         'time_expired' => Carbon::parse($infoDomain['expires'])->format('Y-m-d H:i:s'),
