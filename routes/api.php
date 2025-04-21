@@ -156,13 +156,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/comment/delete/{comment}', [CommentController::class, 'destroy']); // Xóa comment
 
     //due date
-    Route::prefix('cards/{card}/due-date')->group(function () {
+    Route::prefix('card/{card}/due-date')->group(function () {
         Route::post('/create', [DueDateController::class, 'store']);     // Tạo hoặc cập nhật due date
     });
     Route::put('/due-date/update/{id}', [DueDateController::class, 'update']);     // Sửa due date
     Route::delete('/due-date/delete/{id}', [DueDateController::class, 'destroy']); // Xoá due date
     Route::patch('/due-date/toggle-complete/{id}', [DueDateController::class, 'toggleComplete']);
-
+    
     Route::prefix('domains')->group(function () {
         Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
         Route::get('/refresh', [DomainController::class, 'refreshDomain'])->name('domain.refresh');

@@ -4,24 +4,27 @@ namespace App\Http\Controllers\API;
 
 use App\Enums\DueDate;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CommentRequest;
 use App\Http\Requests\DueDateRequest;
-use App\Jobs\UpdateCardReminderColor;
 use App\Jobs\UpdateDueDateStatus;
 use App\Models\Card;
 use App\Repositories\CardRepository;
 use App\Repositories\DueDateRepository;
+use App\Repositories\LogActivityUserRepository;
+use Illuminate\Support\Facades\Auth;
 
 class DueDateController extends Controller
 {
     protected $cardRepository;
     protected $dueDateRepository;
+    protected $logActivityUserRepository;
     
     public function __construct(
+        LogActivityUserRepository $logActivityUserRepository,
         CardRepository $cardRepository,
         DueDateRepository $dueDateRepository
     )
     {
+        $this->logActivityUserRepository = $logActivityUserRepository;
         $this->cardRepository = $cardRepository;
         $this->dueDateRepository = $dueDateRepository;
     }
@@ -67,7 +70,8 @@ class DueDateController extends Controller
             'is_completed' => DueDate::NOT_COMPETE
         ];
     
-        $this->dueDateRepository->store($data);
+        $dueDate = $this->dueDateRepository->store($data);
+        $this->logActivity($cardId, 'create', $dueDate->id);
         
         return response()->json([
             'success' => true,
@@ -78,7 +82,7 @@ class DueDateController extends Controller
     }
     
     // 3. Cập nhật
-    public function update(CommentRequest $request, $id)
+    public function update(DueDateRequest $request, $id)
     {
         $input = $request->except('token');
         $dueDate = $this->dueDateRepository->show($id);
@@ -108,6 +112,7 @@ class DueDateController extends Controller
         }
         
         $this->dueDateRepository->update($input, $id);
+        $this->logActivity($card->id, 'update', $dueDate->id);
         
         return response()->json([
             'success' => true,
@@ -145,7 +150,7 @@ class DueDateController extends Controller
         }
         
         $this->dueDateRepository->destroy($id);
-        
+        $this->logActivity($card->id, 'delete', $dueDate->id);
         return response()->json([
             'success' => true,
             'message' => 'dueDate đã được xoá.',
@@ -163,7 +168,7 @@ class DueDateController extends Controller
                 'type' => 'dueDate_not_found',
             ], 404);
         }
-        $card = $this->cardRepository->show($dueDate->card);
+        $card = $this->cardRepository->show($dueDate->card->id);
         if (!$card) {
             return response()->json([
                 'success' => false,
@@ -181,12 +186,35 @@ class DueDateController extends Controller
         
         $dueDate->is_completed = !$dueDate->is_completed;
         $dueDate->save();
-        
+        $this->logActivity($card->id, $dueDate->is_completed ? '1' : '0', $dueDate->id);
         UpdateDueDateStatus::dispatch($dueDate);
         return response()->json([
             'success' => true,
             'message' => 'dueDate status đã được update.',
             'type' => 'success_update_status_dueDate',
         ],201);
+    }
+    
+    private function logActivity($cardId, $type, $dueDateId)
+    {
+        $messages = [
+            'create' => 'đã thêm due date vào thẻ',
+            'update' => 'đã thay đổi due date của thẻ',
+            'complete' => 'đã đánh dấu hoàn thành của thẻ',
+            'uncomplete' => 'đã bỏ đánh dấu hoàn thành của thẻ',
+            'delete' => 'đã xoá due date của thẻ',
+        ];
+        
+        $log = [
+            'user_id' => auth()->id(),
+            'card_id' => $cardId,
+            'target_id' => $dueDateId,
+            'target_type' => 'due_date',
+            'action' => $type,
+            'content' => Auth::user()->name . $messages[$type] ?? '',
+        ];
+        
+        $this->logActivityUserRepository->create($log);
+        
     }
 }
