@@ -255,7 +255,7 @@ class PageController extends Controller
                 'status' => 'completed',
                 'site_id' => $site->id
             ]);
-            
+
             // Create _headers file in the root directory of the site exports
             $rootExportPath = 'exports/' . $site->cloudflare_project_name;
             $headersContent = <<<EOT
@@ -276,7 +276,7 @@ EOT;
             if (file_exists($headersFilePath)) {
                 // Read existing content
                 $existingContent = file_get_contents($headersFilePath);
-                
+
                 // Only add new rules if they don't already exist
                 if (strpos($existingContent, "/{$page->slug}/index.html") === false) {
                     $headersContent = $existingContent . "\n" . $headersContent;
@@ -284,9 +284,15 @@ EOT;
                     $headersContent = $existingContent;
                 }
             }
-            
+
             // Store the _headers file
             Storage::disk('public')->put($rootExportPath . '/_headers', $headersContent);
+
+            // Always update the _redirects file to point root "/" to the current page's slug
+            $redirectsContent = "/ /{$page->slug}/ 302\n";
+            Storage::disk('public')->put($rootExportPath . '/_redirects', $redirectsContent);
+
+
 
             return response()->json([
                 'success' => true,
