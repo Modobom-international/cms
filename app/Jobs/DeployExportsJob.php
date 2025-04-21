@@ -58,16 +58,36 @@ class DeployExportsJob implements ShouldQueue
 
             // Log the deployment result
             if ($result['success']) {
-                // Log::info('Deployment completed successfully', [
-                //     'project' => $this->projectName,
-                //     'directory' => $result['directory'],
-                //     'deployment_url' => $result['deployment_url'] ?? 'N/A'
-                // ]);
+                Log::info('Deployment completed successfully', [
+                    'project' => $this->projectName,
+                    'directory' => $result['directory'],
+                    'deployment_url' => $result['deployment_url'] ?? 'N/A'
+                ]);
                 // Purge cache after successful deployment
                 if (!empty($this->domain)) {
                     $purgeResult = $cloudflareService->purgeCache($this->domain, $this->pageSlug);
                     if ($purgeResult['success']) {
-                        // Log::info('Cache purged successfully for domain: ' . $this->domain);
+                        Log::info('Cache purged successfully for domain: ' . $this->domain);
+                        
+                        // Warm Cloudflare cache for key pages
+                        $pathsToWarm = [
+                            // '/',                         // homepage
+                            $this->pageSlug,             // main page
+                            // 'about',
+                            // 'contact'
+                        ];
+
+                        $warmResults = $cloudflareService->warmCache($this->domain, $pathsToWarm);
+
+                        foreach ($warmResults as $result) {
+                            if ($result['success']) {
+                                Log::info("Cache warmed: {$result['url']} (Status: {$result['status']})");
+                            } else {
+                                Log::warning("Cache warm failed: {$result['url']}", [
+                                    'error' => $result['error'] ?? 'Unknown error'
+                                ]);
+                            }
+                        }
                     } else {
                         Log::warning('Failed to purge cache for domain: ' . $this->domain, [
                             'message' => $purgeResult['message'] ?? 'Unknown error',
