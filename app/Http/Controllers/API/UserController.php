@@ -352,7 +352,7 @@ class UserController extends Controller
         }
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
         try {
             $user = $this->userRepository->getUserByID($id);
@@ -415,7 +415,7 @@ class UserController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         try {
             $user = $this->userRepository->getUserByID($id);

@@ -23,8 +23,8 @@ class TrackingEventRepository extends BaseRepository
     public function getTrackingEventByDomain($domain, $date, $path)
     {
         $query = $this->model->where('domain', $domain)
-            ->where('created_at', '>=', $this->utility->covertDateTimeToMongoBSONDateUTC($date . ' 00:00:00'))
-            ->where('created_at', '<=', $this->utility->covertDateTimeToMongoBSONDateUTC($date . ' 23:59:59'));
+            ->where('created_at', '>=', $this->utility->covertDateTimeToMongoBSONDateGMT7($date . ' 00:00:00'))
+            ->where('created_at', '<=', $this->utility->covertDateTimeToMongoBSONDateGMT7($date . ' 23:59:59'));
 
         if ($path != 'all') {
             $query = $query->where('path', $path);

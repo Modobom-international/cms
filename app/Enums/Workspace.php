@@ -9,5 +9,4 @@ final class Workspace
     const ROLE_MEMBER = 'member';
     const WORKSPACE_PUBLIC = 'public';
     const WORKSPACE_PRIVATE = 'private';
-
 }
