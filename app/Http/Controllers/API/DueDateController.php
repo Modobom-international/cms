@@ -133,7 +133,7 @@ class DueDateController extends Controller
             ], 404);
         }
         
-        $card = $this->cardRepository->show($dueDate->card);
+        $card = $this->cardRepository->show($dueDate->card_id);
         if (!$card) {
             return response()->json([
                 'success' => false,
@@ -141,7 +141,7 @@ class DueDateController extends Controller
                 'type' => 'card_not_found',
             ], 404);
         }
-        if (!$this->userHasAccessToCard($dueDate->card)) {
+        if (!$this->userHasAccessToCard($card->id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Bạn không có quyền ',

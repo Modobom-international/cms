@@ -16,6 +16,14 @@ final class Utility
             return $status;
         }
     }
+    
+    public function saveFileAttachment($input)
+    {
+        if ($input) {
+            $status = Storage::disk('public-file-attachment')->put($input['file_path']->getClientOriginalName(), $input['file_path']->get());
+            return $status;
+        }
+    }
 
     public function paginate($items, $perPage = 15, $path = null, $page = null, $pageName = 'page', $options = [])
     {
