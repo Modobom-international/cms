@@ -67,6 +67,14 @@ return [
             'visibility' => 'public',
             'throw' => false,
         ],
+    
+        'public-file-attachment' => [
+            'driver' => 'local',
+            'root' => public_path() . '/file/attachment/',
+            'url' => env('APP_URL') . '/file/attachment/',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
 
     ],
 

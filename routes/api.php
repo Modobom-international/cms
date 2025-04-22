@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\AttachmentController;
 use App\Http\Controllers\API\CommentController;
 use App\Http\Controllers\API\DueDateController;
 use App\Http\Controllers\API\HtmlSourceController;
@@ -162,6 +163,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/due-date/update/{id}', [DueDateController::class, 'update']);     // Sửa due date
     Route::delete('/due-date/delete/{id}', [DueDateController::class, 'destroy']); // Xoá due date
     Route::patch('/due-date/toggle-complete/{id}', [DueDateController::class, 'toggleComplete']);
+    
+    //attachment
+    Route::get('/card/{cardId}/attachments', [AttachmentController::class, 'index']);
+    Route::post('/card/{cardId}/attachment/store', [AttachmentController::class, 'store']);
+    Route::put('/attachment/{id}', [AttachmentController::class, 'update']);
+    Route::delete('/attachment/{id}', [AttachmentController::class, 'destroy']);
     
     Route::prefix('domains')->group(function () {
         Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
