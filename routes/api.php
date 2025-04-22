@@ -174,6 +174,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
         Route::get('/refresh', [DomainController::class, 'refreshDomain'])->name('domain.refresh');
         Route::get('/list-url-path', [DomainController::class, 'listUrlPath'])->name('domain.list.url.path');
+        Route::post('/store', [DomainController::class, 'store'])->name('domain.store');
     });
 
     Route::prefix('html-source')->group(function () {

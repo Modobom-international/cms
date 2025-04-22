@@ -8,6 +8,7 @@ use App\Repositories\DomainRepository;
 use App\Traits\LogsActivity;
 use App\Enums\Utility;
 use App\Enums\ActivityAction;
+use App\Http\Requests\DomainRequest;
 use App\Jobs\RefreshDomainInPlatform;
 use App\Repositories\SiteRepository;
 
@@ -98,6 +99,31 @@ class DomainController extends Controller
                 'success' => false,
                 'message' => 'Lấy danh sách url path không thành công',
                 'type' => 'list_url_path_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function store(DomainRequest $request)
+    {
+        try {
+            $input = $request->get('domain');
+
+            $this->domainRepository->create($input);
+
+            $this->logActivity(ActivityAction::SHOW_RECORD, ['data' => $input], 'Thêm record vào bảng domains');
+
+            return response()->json([
+                'success' => true,
+                'data' => $input,
+                'message' => 'Lưu tên miền thành công',
+                'type' => 'store_domain_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lưu tên miền không thành công',
+                'type' => 'store_domain_fail',
                 'error' => $e->getMessage()
             ], 500);
         }
