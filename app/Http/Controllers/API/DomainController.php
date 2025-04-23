@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use Exception;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Repositories\DomainRepository;
@@ -54,6 +55,45 @@ class DomainController extends Controller
                 'success' => false,
                 'message' => 'Lấy danh sách domain không thành công',
                 'type' => 'list_domain_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getListAvailableDomain(Request $request)
+    {
+        try {
+            $input = $request->all();
+            $search = $request->get('search');
+            $pageSize = $request->get('pageSize') ?? 10;
+            $page = $request->get('page') ?? 1;
+
+            // Get all domains
+            $allDomains = $this->domainRepository->getDomainBySearch($search);
+
+            // Get all domains used in sites
+            $usedDomains = $this->siteRepository->getAllSiteDomains();
+
+            // Filter out domains that are already used in sites
+            $availableDomains = $allDomains->filter(function ($domain) use ($usedDomains) {
+                return !in_array($domain->domain, $usedDomains);
+            });
+
+            $data = $this->utility->paginate($availableDomains, $pageSize, $page);
+
+            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách domain khả dụng');
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lấy danh sách domain khả dụng thành công',
+                'type' => 'list_available_domain_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy danh sách domain khả dụng không thành công',
+                'type' => 'list_available_domain_fail',
                 'error' => $e->getMessage()
             ], 500);
         }
