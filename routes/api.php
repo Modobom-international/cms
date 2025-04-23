@@ -163,15 +163,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/due-date/update/{id}', [DueDateController::class, 'update']);     // Sửa due date
     Route::delete('/due-date/delete/{id}', [DueDateController::class, 'destroy']); // Xoá due date
     Route::patch('/due-date/toggle-complete/{id}', [DueDateController::class, 'toggleComplete']);
-    
+
     //attachment
     Route::get('/card/{cardId}/attachments', [AttachmentController::class, 'index']);
     Route::post('/card/{cardId}/attachment/store', [AttachmentController::class, 'store']);
     Route::put('/attachment/{id}', [AttachmentController::class, 'update']);
     Route::delete('/attachment/{id}', [AttachmentController::class, 'destroy']);
-    
+
     Route::prefix('domains')->group(function () {
         Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
+        Route::get('/available', [DomainController::class, 'getListAvailableDomain'])->name('domain.list.available');
         Route::get('/refresh', [DomainController::class, 'refreshDomain'])->name('domain.refresh');
         Route::get('/list-url-path', [DomainController::class, 'listUrlPath'])->name('domain.list.url.path');
         Route::post('/store', [DomainController::class, 'store'])->name('domain.store');

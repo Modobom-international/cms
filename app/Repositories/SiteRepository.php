@@ -68,4 +68,19 @@ class SiteRepository extends BaseRepository
     {
         return $this->model->with('pages')->where('domain', $domain)->first();
     }
+
+    public function getDomainExists($domain)
+    {
+        return $this->model->where('domain', $domain)->exists();
+    }
+
+    /**
+     * Get all domains that are currently used in sites
+     *
+     * @return array
+     */
+    public function getAllSiteDomains()
+    {
+        return $this->model->pluck('domain')->toArray();
+    }
 }
