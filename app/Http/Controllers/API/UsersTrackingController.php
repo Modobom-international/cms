@@ -83,38 +83,6 @@ class UsersTrackingController extends Controller
         }
     }
 
-    public function getDetailTracking(Request $request)
-    {
-        try {
-            $uuid = $request->get('uuid');
-            $getTracking = $this->trackingEventRepository->getTrackingEventByUuid($uuid);
-
-            $userAgent = $getTracking[0]->user_agent;
-            $parser = Parser::create();
-            $result = $parser->parse($userAgent);
-
-            $data = [
-                'browser' => $result->ua->family,
-                'os' => $result->os->family,
-                'device' => $result->device->family
-            ];
-
-            return response()->json([
-                'success' => true,
-                'data' => $data,
-                'message' => 'Lấy danh sách html source thành công',
-                'type' => 'list_html_source_success',
-            ], 200);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Lấy danh sách html source không thành công',
-                'type' => 'list_html_source_fail',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
     public function checkDevice(Request $request)
     {
         try {

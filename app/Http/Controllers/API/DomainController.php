@@ -35,7 +35,11 @@ class DomainController extends Controller
             $pageSize = $request->get('pageSize') ?? 10;
             $page = $request->get('page') ?? 1;
             $domains = $this->domainRepository->getDomainBySearch($search);
-            $data = $this->utility->paginate($domains, $pageSize, $page);
+            if (isset($page)) {
+                $data = $this->utility->paginate($domains, $pageSize, $page);
+            } else {
+                $data = $domains;
+            }
 
             $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách domain');
 

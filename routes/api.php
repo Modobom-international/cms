@@ -184,7 +184,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('users-tracking')->group(function () {
         Route::get('/', [UsersTrackingController::class, 'listTrackingEvent'])->name('users.tracking.list');
-        Route::get('/get-detail-tracking', [UsersTrackingController::class, 'getDetailTracking'])->name('users.tracking.detail');
         Route::get('/get-current-users-active', [UsersTrackingController::class, 'getCurrentUsersActive'])->name('users.tracking.get.current.users.active');
     });
 
