@@ -83,4 +83,15 @@ class SiteRepository extends BaseRepository
     {
         return $this->model->pluck('domain')->toArray();
     }
+
+    public function getDomainBySearchAndUserID($search, $user_id)
+    {
+        $query = $this->model->where('user_id', $user_id);
+
+        if($search != '') {
+            $query = $query->where('domain', $domain);
+        }
+
+        return $query->get();
+    }
 }

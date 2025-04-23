@@ -17,4 +17,9 @@ class Domain extends Model
         'renew_deadline',
         'registrar_created_at'
     ];
+
+    public function sites()
+    {
+        return $this->hasOne(Site::class, 'domain', 'domain');
+    }
 }

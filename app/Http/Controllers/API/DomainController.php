@@ -36,11 +36,7 @@ class DomainController extends Controller
             $pageSize = $request->get('pageSize') ?? 10;
             $page = $request->get('page') ?? 1;
             $domains = $this->domainRepository->getDomainBySearch($search);
-            if (isset($page)) {
-                $data = $this->utility->paginate($domains, $pageSize, $page);
-            } else {
-                $data = $domains;
-            }
+            $data = $this->utility->paginate($domains, $pageSize, $page);
 
             $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách domain');
 
@@ -68,13 +64,8 @@ class DomainController extends Controller
             $pageSize = $request->get('pageSize') ?? 10;
             $page = $request->get('page') ?? 1;
 
-            // Get all domains
             $allDomains = $this->domainRepository->getDomainBySearch($search);
-
-            // Get all domains used in sites
             $usedDomains = $this->siteRepository->getAllSiteDomains();
-
-            // Filter out domains that are already used in sites
             $availableDomains = $allDomains->filter(function ($domain) use ($usedDomains) {
                 return !in_array($domain->domain, $usedDomains);
             });
@@ -124,12 +115,15 @@ class DomainController extends Controller
     {
         try {
             $domain = $request->get('domain');
-            $urlPaths = $this->siteRepository->getSlugByDomain($domain);
+            $getSlug = $this->siteRepository->getSlugByDomain($domain);
+
             $listPath = [];
             $this->logActivity(ActivityAction::GET_LIST_PATH_BY_DOMAIN, [], 'Lấy danh sách url path theo domain');
 
-            foreach ($urlPaths->pages as $record) {
-                $listPath[] = $record;
+            if (isset($getSlug['pages'])) {
+                foreach ($getSlug['pages'] as $record) {
+                    $listPath[] = $record;
+                }
             }
 
             return response()->json([
@@ -168,6 +162,32 @@ class DomainController extends Controller
                 'success' => false,
                 'message' => 'Lưu tên miền không thành công',
                 'type' => 'store_domain_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getListDomainForTracking(Request $request)
+    {
+        try {
+            $input = $request->all();
+            $search = $request->get('search');
+            $user_id = $request->get('user_id');
+            $domains = $this->siteRepository->getDomainBySearchAndUserID($search, $user_id);
+
+            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách domain');
+
+            return response()->json([
+                'success' => true,
+                'data' => $domains,
+                'message' => 'Lấy danh sách domain thành công',
+                'type' => 'list_domain_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy danh sách domain không thành công',
+                'type' => 'list_domain_fail',
                 'error' => $e->getMessage()
             ], 500);
         }

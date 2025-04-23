@@ -26,7 +26,7 @@ class TrackingEventRepository extends BaseRepository
             ->whereDate('created_at',  $date);
 
         if ($path != 'all') {
-            $query = $query->where('path', $path);
+            $query = $query->where('path', 'LIKE', '%' .  $path . '%');
         }
 
         $query = $query->orderBy('created_at', 'desc')->get();
