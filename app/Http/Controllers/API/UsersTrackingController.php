@@ -15,7 +15,6 @@ use App\Repositories\DeviceFingerprintRepository;
 use App\Repositories\TrackingEventRepository;
 use App\Repositories\DomainRepository;
 use App\Repositories\HeartBeatRepository;
-use UAParser\Parser;
 use App\Traits\LogsActivity;
 use Exception;
 use Carbon\Carbon;
@@ -248,7 +247,8 @@ class UsersTrackingController extends Controller
 
             $count = Cache::remember($cacheKey, 10, function () use ($domain, $path, $diffTime) {
                 $activeUsers = $this->heartBeatRepository->getCurrentUsersActive($domain, $path, $diffTime);
-                return $activeUsers->count() ? $activeUsers->first()->online_count : 0;
+
+                return $activeUsers;
             });
 
             return response()->json([
@@ -258,7 +258,7 @@ class UsersTrackingController extends Controller
                 'type' => 'get_current_user_active_success',
             ], 200);
         } catch (Exception $e) {
-            Log::error('Error in getCurrentUsersActive', [
+            \Log::error('Error in getCurrentUsersActive', [
                 'domain' => $domain,
                 'path' => $path,
                 'error' => $e->getMessage(),
