@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Repositories\SiteRepository;
 use App\Services\CloudFlareService;
+use App\Services\SiteManagementLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Traits\LogsActivity;
@@ -12,14 +13,19 @@ use App\Traits\LogsActivity;
 class CloudflareController extends Controller
 {
     use LogsActivity;
-    
+
     protected $cloudflareService;
     protected $siteRepository;
+    protected $logger;
 
-    public function __construct(CloudFlareService $cloudflareService, SiteRepository $siteRepository)
-    {
+    public function __construct(
+        CloudFlareService $cloudflareService,
+        SiteRepository $siteRepository,
+        SiteManagementLogger $logger
+    ) {
         $this->cloudflareService = $cloudflareService;
         $this->siteRepository = $siteRepository;
+        $this->logger = $logger;
     }
 
     /**
@@ -113,15 +119,32 @@ class CloudflareController extends Controller
      */
     public function deployExports(Request $request)
     {
-        // Validate required input parameters
         $validator = Validator::make($request->all(), [
             'site_id' => 'required|exists:sites,id',
             'page_slug' => 'nullable|string|max:50',
             'branch' => 'nullable|string|max:50',
             'commit_message' => 'nullable|string|max:200',
         ]);
+
+        if ($validator->fails()) {
+            $this->logger->logDeploy('validation_failed', [
+                'site_id' => $request->site_id,
+                'errors' => $validator->errors()->toArray()
+            ], 'error');
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
         $site = $this->siteRepository->findWithRelations($request->site_id);
         if (!$site) {
+            $this->logger->logDeploy('site_not_found', [
+                'site_id' => $request->site_id
+            ], 'error');
+
             return response()->json([
                 'success' => false,
                 'message' => 'Site not found'
@@ -130,21 +153,9 @@ class CloudflareController extends Controller
 
         $projectName = $site->cloudflare_project_name;
         $directory = $site->cloudflare_project_name;
-
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        // Collect deployment options
         $deploymentOptions = $this->collectDeploymentOptions($request);
 
         try {
-            // Dispatch the deployment job
             $job = new \App\Jobs\DeployExportsJob(
                 $projectName,
                 $directory,
@@ -154,6 +165,14 @@ class CloudflareController extends Controller
             );
 
             dispatch($job);
+
+            $this->logger->logDeploy('queued', [
+                'site_id' => $site->id,
+                'project_name' => $projectName,
+                'directory' => $directory,
+                'page_slug' => $request->page_slug,
+                'options' => $deploymentOptions
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -165,6 +184,13 @@ class CloudflareController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
+            $this->logger->logDeploy('queue_failed', [
+                'site_id' => $site->id,
+                'project_name' => $projectName,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 'error');
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to queue deployment job',
@@ -196,13 +222,13 @@ class CloudflareController extends Controller
     private function formatDeploymentResponse($result)
     {
         $statusCode = $result['success'] ? 200 : 400;
+        $level = $result['success'] ? 'info' : 'error';
 
         $response = [
             'success' => $result['success'],
             'message' => $result['message'],
         ];
 
-        // Add optional fields if they exist
         if (isset($result['deployment_url'])) {
             $response['deployment_url'] = $result['deployment_url'];
         }
@@ -215,10 +241,13 @@ class CloudflareController extends Controller
             $response['elapsed_time'] = round($result['elapsed_time'], 2) . ' seconds';
         }
 
-        // Add full output only for debugging or if deployment failed
-        if (!$result['success'] && isset($result['output'])) {
-            $response['output'] = $result['output'];
-        }
+        $this->logger->logDeploy(
+            $result['success'] ? 'completed' : 'failed',
+            array_merge($response, [
+                'output' => $result['output'] ?? null
+            ]),
+            $level
+        );
 
         return response()->json($response, $statusCode);
     }
