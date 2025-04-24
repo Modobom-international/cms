@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PageRequest;
 use App\Services\CloudFlareService;
+use App\Services\SiteManagementLogger;
 use Auth;
 use Illuminate\Http\Request;
 use App\Traits\LogsActivity;
@@ -23,17 +24,20 @@ class PageController extends Controller
     protected $pageExportRepository;
     protected $siteRepository;
     protected $cloudflareService;
+    protected $logger;
 
     public function __construct(
         PageRepository $pageRepository,
         PageExportRepository $pageExportRepository,
         SiteRepository $siteRepository,
-        CloudFlareService $cloudflareService
+        CloudFlareService $cloudflareService,
+        SiteManagementLogger $logger
     ) {
         $this->pageRepository = $pageRepository;
         $this->pageExportRepository = $pageExportRepository;
         $this->siteRepository = $siteRepository;
         $this->cloudflareService = $cloudflareService;
+        $this->logger = $logger;
     }
 
     /**
@@ -44,13 +48,17 @@ class PageController extends Controller
         try {
             $site = $this->siteRepository->findWithRelations($request->site_id);
             if (!$site) {
+                $this->logger->logPage('create_failed', [
+                    'site_id' => $request->site_id,
+                    'error' => 'Site not found'
+                ], 'error');
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Site not found'
                 ], 404);
             }
 
-            // Create the page through repository
             $page = $this->pageRepository->create([
                 'provider' => Auth::id(),
                 'content' => $request->content,
@@ -59,12 +67,24 @@ class PageController extends Controller
                 'slug' => $request->slug,
             ]);
 
+            $this->logger->logPage('created', [
+                'page_id' => $page->id,
+                'name' => $page->name,
+                'slug' => $page->slug,
+                'site_id' => $site->id
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Page created successfully',
                 'data' => $page
             ]);
         } catch (\Exception $e) {
+            $this->logger->logPage('create_failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 'error');
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create page: ' . $e->getMessage()
@@ -208,6 +228,11 @@ class PageController extends Controller
         ]);
 
         if ($validator->fails()) {
+            $this->logger->logExport('validation_failed', [
+                'page_id' => $pageId,
+                'errors' => $validator->errors()->toArray()
+            ], 'error');
+
             return response()->json([
                 'success' => false,
                 'message' => $validator->errors()->first(),
@@ -216,9 +241,13 @@ class PageController extends Controller
         }
 
         try {
-            // Get the site and page through repositories
             $site = $this->siteRepository->findWithRelations($request->site_id);
             if (!$site) {
+                $this->logger->logExport('site_not_found', [
+                    'site_id' => $request->site_id,
+                    'page_id' => $pageId
+                ], 'error');
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Site not found'
@@ -227,6 +256,10 @@ class PageController extends Controller
 
             $page = $this->pageRepository->find($pageId);
             if (!$page) {
+                $this->logger->logExport('page_not_found', [
+                    'page_id' => $pageId
+                ], 'error');
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Page not found'
@@ -234,21 +267,23 @@ class PageController extends Controller
             }
 
             if ($page->site_id !== $site->id) {
+                $this->logger->logExport('page_site_mismatch', [
+                    'page_id' => $pageId,
+                    'page_site_id' => $page->site_id,
+                    'requested_site_id' => $site->id
+                ], 'error');
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Page does not belong to this site'
                 ], 403);
             }
 
-            // Create site-specific export directory structure
             $exportPath = 'exports/' . $site->cloudflare_project_name . '/' . $page->slug;
-
-            // Store the HTML file
             $htmlFile = $request->file('html_file');
             $filename = 'index.' . $htmlFile->getClientOriginalExtension();
             $filePath = $htmlFile->storeAs($exportPath, $filename, 'public');
 
-            // Create the export request through repository
             $exportRequest = $this->pageExportRepository->create([
                 'slugs' => $page->slug,
                 'result_path' => $filePath,
@@ -256,28 +291,20 @@ class PageController extends Controller
                 'site_id' => $site->id
             ]);
 
-            // Create _headers file in the root directory of the site exports
+            $this->logger->logExport('completed', [
+                'export_id' => $exportRequest->id,
+                'page_id' => $pageId,
+                'site_id' => $site->id,
+                'file_path' => $filePath
+            ]);
+
+            // Create _headers file
             $rootExportPath = 'exports/' . $site->cloudflare_project_name;
-            $headersContent = <<<EOT
-/{$page->slug}/index.html
-  Cache-Control: public, max-age=31536000, immutable
+            $headersContent = $this->generateHeadersContent($page->slug);
 
-/{$page->slug}/*.js
-  Cache-Control: public, max-age=31536000, immutable
-
-/{$page->slug}/*.css
-  Cache-Control: public, max-age=31536000, immutable
-
-
-EOT;
-
-            // Check if _headers file exists
             $headersFilePath = storage_path('app/public/' . $rootExportPath . '/_headers');
             if (file_exists($headersFilePath)) {
-                // Read existing content
                 $existingContent = file_get_contents($headersFilePath);
-
-                // Only add new rules if they don't already exist
                 if (strpos($existingContent, "/{$page->slug}/index.html") === false) {
                     $headersContent = $existingContent . "\n" . $headersContent;
                 } else {
@@ -285,14 +312,11 @@ EOT;
                 }
             }
 
-            // Store the _headers file
             Storage::disk('public')->put($rootExportPath . '/_headers', $headersContent);
 
-            // Always update the _redirects file to point root "/" to the current page's slug
+            // Update _redirects file
             $redirectsContent = "/ /{$page->slug}/ 302\n";
             Storage::disk('public')->put($rootExportPath . '/_redirects', $redirectsContent);
-
-
 
             return response()->json([
                 'success' => true,
@@ -309,11 +333,32 @@ EOT;
             ]);
 
         } catch (\Exception $e) {
+            $this->logger->logExport('failed', [
+                'page_id' => $pageId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 'error');
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to export page: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    protected function generateHeadersContent($slug)
+    {
+        return <<<EOT
+/{$slug}/index.html
+  Cache-Control: public, max-age=31536000, immutable
+
+/{$slug}/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/{$slug}/*.css
+  Cache-Control: public, max-age=31536000, immutable
+
+EOT;
     }
 
     /**
@@ -359,9 +404,13 @@ EOT;
         try {
             DB::beginTransaction();
 
-            // Find the page and its associated site
             $page = $this->pageRepository->find($pageId);
             if (!$page) {
+                $this->logger->logPage('delete_failed', [
+                    'page_id' => $pageId,
+                    'error' => 'Page not found'
+                ], 'error');
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Page not found'
@@ -370,33 +419,48 @@ EOT;
 
             $site = $this->siteRepository->findWithRelations($page->site_id);
             if (!$site) {
+                $this->logger->logPage('delete_failed', [
+                    'page_id' => $pageId,
+                    'site_id' => $page->site_id,
+                    'error' => 'Associated site not found'
+                ], 'error');
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Associated site not found'
                 ], 404);
             }
-            // Delete the exported files if project exists
+
             if ($site->cloudflare_project_name) {
-                $this->cloudflareService->deletePageFiles(
+                $deleteResult = $this->cloudflareService->deletePageFiles(
                     $site->cloudflare_project_name,
                     $page->slug
                 );
+
+                if (!$deleteResult['success']) {
+                    $this->logger->logPage('cloudflare_delete_failed', [
+                        'page_id' => $pageId,
+                        'project_name' => $site->cloudflare_project_name,
+                        'error' => $deleteResult['error'] ?? 'Unknown error'
+                    ], 'warning');
+                }
             }
 
-
-            // Delete the page from database
             $this->pageRepository->deleteById($pageId);
 
-            // Trigger site redeployment if project exists
             if ($site->cloudflare_project_name) {
                 try {
-                    // Dispatch the deployment job
                     dispatch(new \App\Jobs\DeployExportsJob(
                         $site->cloudflare_project_name,
                         $site->cloudflare_project_name,
-                        $site->domain,
-                        $page->slug
+                        $site->domain
                     ));
+
+                    $this->logger->logPage('deleted', [
+                        'page_id' => $pageId,
+                        'site_id' => $site->id,
+                        'deployment_queued' => true
+                    ]);
 
                     DB::commit();
                     return response()->json([
@@ -410,6 +474,12 @@ EOT;
                     ]);
                 } catch (\Exception $e) {
                     DB::rollBack();
+                    $this->logger->logPage('deployment_queue_failed', [
+                        'page_id' => $pageId,
+                        'site_id' => $site->id,
+                        'error' => $e->getMessage()
+                    ], 'error');
+
                     return response()->json([
                         'success' => false,
                         'message' => 'Failed to queue deployment job',
@@ -419,6 +489,12 @@ EOT;
             }
 
             DB::commit();
+            $this->logger->logPage('deleted', [
+                'page_id' => $pageId,
+                'site_id' => $site->id,
+                'deployment_queued' => false
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Page deleted successfully'
@@ -426,7 +502,12 @@ EOT;
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Failed to delete page: ' . $e->getMessage());
+            $this->logger->logPage('delete_failed', [
+                'page_id' => $pageId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 'error');
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete page',
