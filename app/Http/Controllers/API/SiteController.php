@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Site;
 use App\Services\CloudFlareService;
+use App\Services\SiteManagementLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -13,10 +14,12 @@ use Illuminate\Support\Facades\Log;
 class SiteController extends Controller
 {
     protected $cloudflareService;
+    protected $logger;
 
-    public function __construct(CloudFlareService $cloudflareService)
+    public function __construct(CloudFlareService $cloudflareService, SiteManagementLogger $logger)
     {
         $this->cloudflareService = $cloudflareService;
+        $this->logger = $logger;
     }
 
     /**
@@ -49,6 +52,10 @@ class SiteController extends Controller
         ]);
 
         if ($validator->fails()) {
+            $this->logger->logSite('create_failed', [
+                'errors' => $validator->errors()->toArray()
+            ], 'error');
+
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors()
@@ -56,18 +63,23 @@ class SiteController extends Controller
         }
 
         try {
-            // Create Cloudflare Pages project
             $projectName = Str::slug($request->name);
             $branch = $request->branch ?? 'main';
 
             $cloudflareResult = $this->cloudflareService->createPagesProject($projectName, $branch);
             if ($cloudflareResult['success'] === false) {
+                $this->logger->logSite('cloudflare_project_creation_failed', [
+                    'project_name' => $projectName,
+                    'errors' => $cloudflareResult['errors']
+                ], 'error');
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Failed to create Cloudflare project',
                     'error' => $cloudflareResult['errors']
                 ], 500);
             }
+
             $site = [
                 'name' => $request->name,
                 'domain' => $request->domain,
@@ -77,43 +89,59 @@ class SiteController extends Controller
                 'user_id' => auth()->id(),
                 'status' => 'active'
             ];
-            // Apply custom domain if provided
+
             if ($request->domain) {
-                // Apply domain to Pages project
                 $domainResult = $this->cloudflareService->applyPagesDomain($projectName, $request->domain);
                 $site['cloudflare_domain_status'] = isset($domainResult['error']) ? 'failed' : 'active';
+
                 if ($domainResult['success']) {
-                    // Get project details to get the Pages subdomain
                     $projectDetails = $this->cloudflareService->getPagesProject($projectName);
                     if ($projectDetails['success'] && isset($projectDetails['result']['subdomain'])) {
-                        // Set up DNS CNAME record
                         $dnsResult = $this->cloudflareService->setupDomainDNS(
                             $request->domain,
                             $projectDetails['result']['subdomain']
                         );
+
                         if ($dnsResult['success'] === false) {
                             $site['cloudflare_domain_status'] = 'dns_failed';
+                            $this->logger->logSite('dns_setup_failed', [
+                                'domain' => $request->domain,
+                                'project_name' => $projectName
+                            ], 'warning');
                         }
 
-                        // Set cache rules for the domain
                         $cacheResult = $this->cloudflareService->setupCacheRules($request->domain);
                         if ($cacheResult['success'] === false) {
-                            Log::warning('Failed to set cache rules for domain: ' . $request->domain, $cacheResult);
+                            $this->logger->logSite('cache_rules_setup_failed', [
+                                'domain' => $request->domain,
+                                'error' => $cacheResult['error'] ?? 'Unknown error'
+                            ], 'warning');
                         }
                     }
                 }
-                Site::create($site);
             }
 
-            // Create site record in database
+            $createdSite = Site::create($site);
+
+            $this->logger->logSite('created', [
+                'site_id' => $createdSite->id,
+                'name' => $createdSite->name,
+                'domain' => $createdSite->domain,
+                'project_name' => $createdSite->cloudflare_project_name
+            ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Site created successfully',
-                'data' => $site
+                'data' => $createdSite
             ], 201);
 
         } catch (\Exception $e) {
+            $this->logger->logSite('create_failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 'error');
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create site',
@@ -195,7 +223,7 @@ class SiteController extends Controller
                     $request->domain
                 );
                 $site->cloudflare_domain_status = isset($domainResult['error']) ? 'failed' : 'active';
-                
+
                 // Update cache rules for new domain
                 $cacheResult = $this->cloudflareService->setupCacheRules($request->domain);
                 if ($cacheResult['success'] === false) {
@@ -243,12 +271,25 @@ class SiteController extends Controller
 
             $site->delete();
 
+            $this->logger->logSite('deleted', [
+                'site_id' => $id,
+                'name' => $site->name,
+                'domain' => $site->domain,
+                'project_name' => $site->cloudflare_project_name
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Site deleted successfully'
             ]);
 
         } catch (\Exception $e) {
+            $this->logger->logSite('delete_failed', [
+                'site_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 'error');
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete site',

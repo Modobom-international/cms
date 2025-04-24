@@ -8,7 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Services\CloudFlareService;
-use Illuminate\Support\Facades\Log;
+use App\Services\SiteManagementLogger;
 
 class DeployExportsJob implements ShouldQueue
 {
@@ -45,9 +45,10 @@ class DeployExportsJob implements ShouldQueue
      * Execute the job.
      *
      * @param CloudFlareService $cloudflareService
+     * @param SiteManagementLogger $logger
      * @return void
      */
-    public function handle(CloudFlareService $cloudflareService)
+    public function handle(CloudFlareService $cloudflareService, SiteManagementLogger $logger)
     {
         try {
             $result = $cloudflareService->deployExportDirectory(
@@ -56,61 +57,62 @@ class DeployExportsJob implements ShouldQueue
                 $this->options
             );
 
-            // Log the deployment result
             if ($result['success']) {
-                Log::info('Deployment completed successfully', [
+                $logger->logDeploy('completed', [
                     'project' => $this->projectName,
                     'directory' => $result['directory'],
                     'deployment_url' => $result['deployment_url'] ?? 'N/A'
                 ]);
-                // Purge cache after successful deployment
+
                 if (!empty($this->domain)) {
                     $purgeResult = $cloudflareService->purgeCache($this->domain, $this->pageSlug);
                     if ($purgeResult['success']) {
-                        Log::info('Cache purged successfully for domain: ' . $this->domain . ' and page slug: ' . $this->pageSlug);
+                        $logger->logDeploy('cache_purged', [
+                            'domain' => $this->domain,
+                            'page_slug' => $this->pageSlug
+                        ]);
 
-                        // Warm Cloudflare cache for key pages
                         $pathsToWarm = [
-                            '/',                         // homepage
-                            $this->pageSlug,             // main page
-                            // 'about',
-                            // 'contact'
+                            '/',
+                            $this->pageSlug,
                         ];
 
                         $warmResults = $cloudflareService->warmCache($this->domain, $pathsToWarm);
 
                         foreach ($warmResults as $result) {
                             if ($result['success']) {
-                                Log::info("Cache warmed: {$result['url']} (Status: {$result['status']})");
-                            } else {
-                                Log::warning("Cache warm failed: {$result['url']}", [
-                                    'error' => $result['error'] ?? 'Unknown error'
+                                $logger->logDeploy('cache_warmed', [
+                                    'url' => $result['url'],
+                                    'status' => $result['status']
                                 ]);
+                            } else {
+                                $logger->logDeploy('cache_warm_failed', [
+                                    'url' => $result['url'],
+                                    'error' => $result['error'] ?? 'Unknown error'
+                                ], 'warning');
                             }
                         }
                     } else {
-                        Log::warning('Failed to purge cache for domain: ' . $this->domain, [
+                        $logger->logDeploy('cache_purge_failed', [
+                            'domain' => $this->domain,
                             'message' => $purgeResult['message'] ?? 'Unknown error',
                             'error' => $purgeResult['error'] ?? null
-                        ]);
+                        ], 'warning');
                     }
                 }
             } else {
-                Log::error('Deployment completed with issues', [
+                $logger->logDeploy('failed', [
                     'project' => $this->projectName,
                     'directory' => $result['directory'],
                     'output' => $result['output'] ?? 'No output available'
-                ]);
+                ], 'error');
             }
-
-            // You could also trigger events, notifications, or webhooks here
-            // event(new DeploymentCompleted($result));
         } catch (\Exception $e) {
-            Log::error('Deployment job failed', [
+            $logger->logDeploy('error', [
                 'project' => $this->projectName,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
-            ]);
+            ], 'error');
 
             throw $e; // Re-throw to mark job as failed
         }
