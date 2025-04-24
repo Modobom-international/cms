@@ -436,12 +436,11 @@ EOT;
                     $site->cloudflare_project_name,
                     $page->slug
                 );
-
-                if (!$deleteResult['success']) {
+                if (!$deleteResult) {
                     $this->logger->logPage('cloudflare_delete_failed', [
                         'page_id' => $pageId,
                         'project_name' => $site->cloudflare_project_name,
-                        'error' => $deleteResult['error'] ?? 'Unknown error'
+                        'error' => 'Cloudflare deletion failed'
                     ], 'warning');
                 }
             }
@@ -453,7 +452,8 @@ EOT;
                     dispatch(new \App\Jobs\DeployExportsJob(
                         $site->cloudflare_project_name,
                         $site->cloudflare_project_name,
-                        $site->domain
+                        $site->domain,
+                        $page->slug
                     ));
 
                     $this->logger->logPage('deleted', [
