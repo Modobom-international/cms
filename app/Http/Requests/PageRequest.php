@@ -33,6 +33,7 @@ class PageRequest extends FormRequest
                 })
             ],
             'content' => 'required|string',
+            'tracking_script' => 'nullable|string',
         ];
     }
 
@@ -44,6 +45,7 @@ class PageRequest extends FormRequest
             'slug.required' => __('validation.required'),
             'slug.unique' => 'This slug is already in use within this site',
             'content.required' => __('validation.required'),
+            'tracking_script.string' => 'Tracking script must be a string',
         ];
     }
 }
