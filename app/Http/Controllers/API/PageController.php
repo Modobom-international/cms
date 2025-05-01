@@ -15,6 +15,7 @@ use App\Repositories\SiteRepository;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\TrackingScriptRequest;
 
 class PageController extends Controller
 {
@@ -282,7 +283,18 @@ class PageController extends Controller
             $exportPath = 'exports/' . $site->cloudflare_project_name . '/' . $page->slug;
             $htmlFile = $request->file('html_file');
             $filename = 'index.' . $htmlFile->getClientOriginalExtension();
-            $filePath = $htmlFile->storeAs($exportPath, $filename, 'public');
+
+            // Read the HTML content
+            $htmlContent = file_get_contents($htmlFile->getRealPath());
+
+            // If page has tracking script, inject it into the head tag
+            if ($page->tracking_script) {
+                $htmlContent = $this->injectTrackingScript($htmlContent, $page->tracking_script);
+            }
+
+            // Store the modified HTML content
+            $filePath = $exportPath . '/' . $filename;
+            Storage::disk('public')->put($filePath, $htmlContent);
 
             $exportRequest = $this->pageExportRepository->create([
                 'slugs' => $page->slug,
@@ -344,6 +356,47 @@ class PageController extends Controller
                 'message' => 'Failed to export page: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Inject or replace tracking script in HTML content
+     * 
+     * @param string $htmlContent
+     * @param string|null $trackingScript
+     * @return string
+     */
+    protected function injectTrackingScript($htmlContent, $trackingScript = null)
+    {
+        // First, try to remove any existing tracking script
+        $pattern = '/<!--\s*TRACKING_SCRIPT_START\s*-->.*?<!--\s*TRACKING_SCRIPT_END\s*-->/s';
+        $htmlContent = preg_replace($pattern, '', $htmlContent);
+
+        // If no new script provided, return the cleaned content
+        if (empty($trackingScript)) {
+            return $htmlContent;
+        }
+
+        // Wrap the new script in comments for future identification
+        $wrappedScript = "<!-- TRACKING_SCRIPT_START -->\n{$trackingScript}\n<!-- TRACKING_SCRIPT_END -->";
+
+        // Find the closing head tag
+        $headEndPos = stripos($htmlContent, '</head>');
+
+        if ($headEndPos !== false) {
+            // Insert tracking script before the closing head tag
+            return substr_replace($htmlContent, $wrappedScript . "\n", $headEndPos, 0);
+        }
+
+        // If no head tag found, try to find the opening body tag
+        $bodyStartPos = stripos($htmlContent, '<body');
+
+        if ($bodyStartPos !== false) {
+            // Insert tracking script before the body tag
+            return substr_replace($htmlContent, $wrappedScript . "\n", $bodyStartPos, 0);
+        }
+
+        // If no suitable position found, append to the end
+        return $htmlContent . "\n" . $wrappedScript;
     }
 
     protected function generateHeadersContent($slug)
@@ -512,6 +565,357 @@ EOT;
                 'success' => false,
                 'message' => 'Failed to delete page',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Export page using server-side HTML content
+     * 
+     * @param int $pageId
+     */
+    protected function exportPageFromServer($pageId)
+    {
+        try {
+            $page = $this->pageRepository->find($pageId);
+            if (!$page) {
+                return [
+                    'success' => false,
+                    'message' => 'Page not found'
+                ];
+            }
+
+            $site = $this->siteRepository->findWithRelations($page->site_id);
+            if (!$site) {
+                return [
+                    'success' => false,
+                    'message' => 'Associated site not found'
+                ];
+            }
+
+            $exportPath = 'exports/' . $site->cloudflare_project_name . '/' . $page->slug;
+            $filename = 'index.html';
+
+            // Get the existing HTML content from storage
+            $existingFilePath = $exportPath . '/' . $filename;
+            if (!Storage::disk('public')->exists($existingFilePath)) {
+                return [
+                    'success' => false,
+                    'message' => 'No existing HTML file found for this page'
+                ];
+            }
+
+            // Read the existing HTML content
+            $htmlContent = Storage::disk('public')->get($existingFilePath);
+
+            // If page has tracking script, inject it into the head tag
+            $htmlContent = $this->injectTrackingScript($htmlContent, $page->tracking_script);
+
+            // Store the modified HTML content
+            $filePath = $exportPath . '/' . $filename;
+            Storage::disk('public')->put($filePath, $htmlContent);
+
+            $exportRequest = $this->pageExportRepository->create([
+                'slugs' => $page->slug,
+                'result_path' => $filePath,
+                'status' => 'completed',
+                'site_id' => $site->id
+            ]);
+
+            $this->logger->logExport('completed', [
+                'export_id' => $exportRequest->id,
+                'page_id' => $pageId,
+                'site_id' => $site->id,
+                'file_path' => $filePath
+            ]);
+
+            // Create _headers file
+            $rootExportPath = 'exports/' . $site->cloudflare_project_name;
+            $headersContent = $this->generateHeadersContent($page->slug);
+
+            $headersFilePath = storage_path('app/public/' . $rootExportPath . '/_headers');
+            if (file_exists($headersFilePath)) {
+                $existingContent = file_get_contents($headersFilePath);
+                if (strpos($existingContent, "/{$page->slug}/index.html") === false) {
+                    $headersContent = $existingContent . "\n" . $headersContent;
+                } else {
+                    $headersContent = $existingContent;
+                }
+            }
+
+            Storage::disk('public')->put($rootExportPath . '/_headers', $headersContent);
+
+            // Update _redirects file
+            $redirectsContent = "/ /{$page->slug}/ 302\n";
+            Storage::disk('public')->put($rootExportPath . '/_redirects', $redirectsContent);
+
+            return [
+                'success' => true,
+                'export_id' => $exportRequest->id,
+                'html_path' => $filePath
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->logExport('failed', [
+                'page_id' => $pageId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 'error');
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Add or update tracking script for a page
+     * 
+     * @param TrackingScriptRequest $request
+     * @param int $pageId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateTrackingScript(TrackingScriptRequest $request, $pageId)
+    {
+        try {
+            DB::beginTransaction();
+
+            $page = $this->pageRepository->find($pageId);
+            if (!$page) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Page not found'
+                ], 404);
+            }
+
+            $site = $this->siteRepository->findWithRelations($page->site_id);
+            if (!$site) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Associated site not found'
+                ], 404);
+            }
+
+            $this->pageRepository->update([
+                'tracking_script' => $request->tracking_script
+            ], $page->id);
+
+            $updatedPage = $this->pageRepository->find($page->id);
+
+            $this->logger->logPage('tracking_script_updated', [
+                'page_id' => $pageId,
+                'site_id' => $page->site_id
+            ]);
+
+            // Trigger export and deploy
+            if ($site->cloudflare_project_name) {
+                try {
+                    // Export the page first
+                    $exportResult = $this->exportPageFromServer($pageId);
+
+                    if (!$exportResult['success']) {
+                        throw new \Exception('Failed to export page: ' . ($exportResult['error'] ?? 'Unknown error'));
+                    }
+
+                    dispatch(new \App\Jobs\DeployExportsJob(
+                        $site->cloudflare_project_name,
+                        $site->cloudflare_project_name,
+                        $site->domain,
+                        $page->slug
+                    ));
+
+                    $this->logger->logPage('deployment_queued', [
+                        'page_id' => $pageId,
+                        'site_id' => $site->id,
+                        'reason' => 'tracking_script_update',
+                        'export_id' => $exportResult['export_id']
+                    ]);
+
+                    DB::commit();
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Tracking script updated successfully and deployment job has been queued',
+                        'data' => $updatedPage,
+                        'job_details' => [
+                            'project' => $site->cloudflare_project_name,
+                            'directory' => $site->cloudflare_project_name,
+                            'queue' => 'deployments',
+                            'export_id' => $exportResult['export_id']
+                        ]
+                    ]);
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    $this->logger->logPage('deployment_queue_failed', [
+                        'page_id' => $pageId,
+                        'site_id' => $site->id,
+                        'error' => $e->getMessage()
+                    ], 'error');
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to queue deployment job',
+                        'error' => $e->getMessage()
+                    ], 500);
+                }
+            }
+
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'message' => 'Tracking script updated successfully',
+                'data' => $updatedPage
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->logger->logPage('tracking_script_update_failed', [
+                'page_id' => $pageId,
+                'error' => $e->getMessage()
+            ], 'error');
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update tracking script: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get tracking script for a page
+     * 
+     * @param int $pageId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getTrackingScript($pageId)
+    {
+        try {
+            $page = $this->pageRepository->find($pageId);
+            if (!$page) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Page not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tracking script retrieved successfully',
+                'data' => [
+                    'tracking_script' => $page->tracking_script
+                ]
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->logPage('tracking_script_retrieve_failed', [
+                'page_id' => $pageId,
+                'error' => $e->getMessage()
+            ], 'error');
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve tracking script: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove tracking script from a page
+     * 
+     * @param int $pageId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function removeTrackingScript($pageId)
+    {
+        try {
+            DB::beginTransaction();
+
+            $page = $this->pageRepository->find($pageId);
+            if (!$page) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Page not found'
+                ], 404);
+            }
+
+            $site = $this->siteRepository->findWithRelations($page->site_id);
+            if (!$site) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Associated site not found'
+                ], 404);
+            }
+
+            $this->pageRepository->update([
+                'tracking_script' => null
+            ], $page->id);
+
+            $this->logger->logPage('tracking_script_removed', [
+                'page_id' => $pageId,
+                'site_id' => $page->site_id
+            ]);
+
+            // Trigger export and deploy
+            if ($site->cloudflare_project_name) {
+                try {
+                    // Export the page first
+                    $exportResult = $this->exportPageFromServer($pageId);
+
+                    if (!$exportResult['success']) {
+                        throw new \Exception('Failed to export page: ' . ($exportResult['error'] ?? 'Unknown error'));
+                    }
+
+                    dispatch(new \App\Jobs\DeployExportsJob(
+                        $site->cloudflare_project_name,
+                        $site->cloudflare_project_name,
+                        $site->domain,
+                        $page->slug
+                    ));
+
+                    $this->logger->logPage('deployment_queued', [
+                        'page_id' => $pageId,
+                        'site_id' => $site->id,
+                        'reason' => 'tracking_script_removal',
+                        'export_id' => $exportResult['export_id']
+                    ]);
+
+                    DB::commit();
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Tracking script removed successfully and deployment job has been queued',
+                        'job_details' => [
+                            'project' => $site->cloudflare_project_name,
+                            'directory' => $site->cloudflare_project_name,
+                            'queue' => 'deployments',
+                            'export_id' => $exportResult['export_id']
+                        ]
+                    ]);
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    $this->logger->logPage('deployment_queue_failed', [
+                        'page_id' => $pageId,
+                        'site_id' => $site->id,
+                        'error' => $e->getMessage()
+                    ], 'error');
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to queue deployment job',
+                        'error' => $e->getMessage()
+                    ], 500);
+                }
+            }
+
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'message' => 'Tracking script removed successfully'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->logger->logPage('tracking_script_remove_failed', [
+                'page_id' => $pageId,
+                'error' => $e->getMessage()
+            ], 'error');
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to remove tracking script: ' . $e->getMessage()
             ], 500);
         }
     }

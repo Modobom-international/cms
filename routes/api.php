@@ -63,6 +63,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/export-pages/{pageId}', [PageController::class, 'exportPage']);
     Route::delete('/pages/{pageId}', [PageController::class, 'destroy']);
 
+    // Tracking script routes
+    Route::prefix('pages')->group(function () {
+        Route::get('/{pageId}/tracking-script', [PageController::class, 'getTrackingScript']);
+        Route::post('/{pageId}/tracking-script', [PageController::class, 'updateTrackingScript']);
+        Route::delete('/{pageId}/tracking-script', [PageController::class, 'removeTrackingScript']);
+    });
+
     //workspace
     Route::prefix('/workspace')->group(function () {
         Route::get('/list', [WorkspaceController::class, 'index']);
