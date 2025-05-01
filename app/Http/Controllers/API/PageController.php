@@ -609,9 +609,7 @@ EOT;
             $htmlContent = Storage::disk('public')->get($existingFilePath);
 
             // If page has tracking script, inject it into the head tag
-            if ($page->tracking_script) {
-                $htmlContent = $this->injectTrackingScript($htmlContent, $page->tracking_script);
-            }
+            $htmlContent = $this->injectTrackingScript($htmlContent, $page->tracking_script);
 
             // Store the modified HTML content
             $filePath = $exportPath . '/' . $filename;
