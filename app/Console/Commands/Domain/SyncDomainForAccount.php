@@ -68,7 +68,7 @@ class SyncDomainForAccount extends Command
                 'domain' => $domain['domain'],
                 'time_expired' => Carbon::parse($domain['expires'])->format('Y-m-d H:i:s'),
                 'registrar' => 'Godaddy',
-                'is_locked' => $domain['locked'] ?? false,
+                'is_locked' => false,
                 'renewable' => $domain['renewable'] ?? false,
                 'status' => $domain['status'] ?? 'ACTIVE',
                 'name_servers' => json_encode($domain['nameServers']) ?? null,
