@@ -4,72 +4,112 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Log;
 
 class MonitorServer extends Command
 {
     protected $signature = 'monitor:server';
-    protected $description = 'Monitor server stats and send via Redis';
+    protected $description = 'Monitor stats of server';
 
     public function handle()
     {
-        $stats = [
-            'cpu' => $this->getCpuUsage(),
-            'memory' => $this->getMemoryUsage(),
-            'disk' => $this->getDiskUsage(),
-            'temperature' => $this->getTemperature(),
-            'services' => $this->getServiceStatus(),
-            'logs' => $this->getLatestLogs(),
-            'timestamp' => now()->toDateTimeString(),
-        ];
+        try {
+            $stats = [
+                'server_id' => config('app.server_id', 'server-1'),
+                'cpu' => $this->getCpuUsage(),
+                'memory' => $this->getMemoryUsage(),
+                'disk' => $this->getDiskUsage(),
+                'temperature' => $this->getTemperature(),
+                'services' => $this->getServiceStatus(),
+                'logs' => $this->getLatestLogs(),
+                'timestamp' => now()->toDateTimeString(),
+            ];
 
-        Redis::publish('monitor-channel', json_encode($stats));
+            Redis::publish('monitor-channel', json_encode($stats));
+
+            dump(json_encode($stats, JSON_PRETTY_PRINT));
+        } catch (\Exception $e) {
+            Log::error('Error collecting server metrics', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            $this->error('Error: ' . $e->getMessage());
+        }
     }
 
     private function getCpuUsage()
     {
-        $load = sys_getloadavg();
-
-        return $load[0];
+        try {
+            $load = sys_getloadavg();
+            return round($load[0], 2);
+        } catch (\Exception $e) {
+            Log::warning('Failed to get CPU usage', ['error' => $e->getMessage()]);
+            return null;
+        }
     }
 
     private function getMemoryUsage()
     {
-        $free = shell_exec('free');
-        $lines = explode("\n", $free);
-        $data = preg_split('/\s+/', $lines[1]);
-        $used = $data[2];
-        $total = $data[1];
-
-        return round(($used / $total) * 100, 2);
+        try {
+            $free = shell_exec('free -m');
+            if (!$free) {
+                throw new \Exception('Failed to execute free command');
+            }
+            $lines = explode("\n", $free);
+            $data = preg_split('/\s+/', trim($lines[1]));
+            $total = (int) $data[1];
+            $used = (int) $data[2];
+            return $total ? round(($used / $total) * 100, 2) : null;
+        } catch (\Exception $e) {
+            Log::warning('Failed to get memory usage', ['error' => $e->getMessage()]);
+            return null;
+        }
     }
 
     private function getDiskUsage()
     {
-        $total = disk_total_space(base_path());
-        $free = disk_free_space(base_path());
-        $used = $total - $free;
-
-        return round(($used / $total) * 100, 2);
+        try {
+            $total = disk_total_space(base_path());
+            $free = disk_free_space(base_path());
+            if ($total === false || $free === false) {
+                throw new \Exception('Failed to get disk space');
+            }
+            $used = $total - $free;
+            return $total ? round(($used / $total) * 100, 2) : null;
+        } catch (\Exception $e) {
+            Log::warning('Failed to get disk usage', ['error' => $e->getMessage()]);
+            return null;
+        }
     }
 
     private function getTemperature()
     {
-        if (file_exists('/sys/class/thermal/thermal_zone0/temp')) {
-            $temp = (int) file_get_contents('/sys/class/thermal/thermal_zone0/temp');
-            return $temp / 1000;
+        try {
+            $tempFile = '/sys/class/thermal/thermal_zone0/temp';
+            if (file_exists($tempFile)) {
+                $temp = (int) file_get_contents($tempFile);
+                return round($temp / 1000, 1);
+            }
+            return null;
+        } catch (\Exception $e) {
+            Log::warning('Failed to get temperature', ['error' => $e->getMessage()]);
+            return null;
         }
-
-        return null;
     }
 
     private function getServiceStatus()
     {
-        $services = ['nginx', 'redis-server', 'php-fpm', 'mysql', 'mongodb'];
+        $services = ['nginx', 'redis-server', 'php8.4-fpm', 'mysql', 'mongodb'];
         $status = [];
 
         foreach ($services as $service) {
-            $output = shell_exec("systemctl is-active $service 2>/dev/null");
-            $status[$service] = trim($output) === 'active';
+            try {
+                $output = shell_exec("systemctl is-active $service 2>/dev/null");
+                $status[$service] = trim($output) === 'active';
+            } catch (\Exception $e) {
+                Log::warning("Failed to get status for $service", ['error' => $e->getMessage()]);
+                $status[$service] = false;
+            }
         }
 
         return $status;
@@ -81,14 +121,22 @@ class MonitorServer extends Command
         $laravelLog = storage_path('logs/laravel.log');
         $systemLog = '/var/log/syslog';
 
-        if (file_exists($laravelLog)) {
-            $lines = array_slice(file($laravelLog), -5);
-            $logs['laravel'] = array_map('trim', $lines);
+        try {
+            if (file_exists($laravelLog)) {
+                $lines = array_slice(file($laravelLog), -5);
+                $logs['laravel'] = array_map('trim', $lines);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to get Laravel logs', ['error' => $e->getMessage()]);
         }
 
-        if (file_exists($systemLog)) {
-            $lines = array_slice(file($systemLog), -5);
-            $logs['system'] = array_map('trim', $lines);
+        try {
+            if (file_exists($systemLog)) {
+                $lines = array_slice(file($systemLog), -5);
+                $logs['system'] = array_map('trim', $lines);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to get system logs', ['error' => $e->getMessage()]);
         }
 
         return $logs;

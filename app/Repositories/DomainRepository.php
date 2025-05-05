@@ -39,4 +39,9 @@ class DomainRepository extends BaseRepository
     {
         return $this->model->whereIn('domain', $listDomain)->pluck('domain')->toArray();
     }
+
+    public function deleteByIsLocked($isLocked)
+    {
+        return $this->model->where('is_locked', $isLocked)->delete();
+    }
 }
