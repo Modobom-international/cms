@@ -23,7 +23,7 @@ class SyncDomainForAccount extends Command
      * @var string
      */
     protected $description = 'Sync domain for account';
-    
+
     /**
      * Execute the console command.
      */
@@ -61,11 +61,10 @@ class SyncDomainForAccount extends Command
         $domainRepository->deleteByIsLocked(0);
 
         $listDomain = $getListDomain['data'];
-        $domainsData = [];
         $count = 0;
 
         foreach ($listDomain as $domain) {
-            $domainsData[] = [
+            $domainsData = [
                 'domain' => $domain['domain'],
                 'time_expired' => Carbon::parse($domain['expires'])->format('Y-m-d H:i:s'),
                 'registrar' => 'Godaddy',
@@ -76,14 +75,12 @@ class SyncDomainForAccount extends Command
                 'renew_deadline' => isset($domain['renewDeadline']) ? Carbon::parse($domain['renewDeadline'])->format('Y-m-d H:i:s') : null,
                 'registrar_created_at' => isset($domain['registrarCreatedAt']) ? Carbon::parse($domain['registrarCreatedAt'])->format('Y-m-d H:i:s') : null,
                 'created_at' => Carbon::now()->format('Y-m-d H:i:s'),
-                'updated_at' => Carbon::now()->format('Y-m-d H:i:s'),
-                'status_use_by_cloudflare' => $statusUseByCloudflare
+                'updated_at' => Carbon::now()->format('Y-m-d H:i:s')
             ];
 
             $count++;
+            $domainRepository->create($domainsData);
         }
-
-        $domainRepository->insert($domainsData);
 
         $dataUpdate = [
             'data' => [
