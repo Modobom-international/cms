@@ -20,6 +20,6 @@ class Domain extends Model
 
     public function sites()
     {
-        return $this->hasOne(Site::class, 'domain', 'domain');
+        return $this->belongsTo(Site::class, 'domain', 'domain');
     }
 }
