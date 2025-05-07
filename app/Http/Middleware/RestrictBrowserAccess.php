@@ -44,13 +44,15 @@ class RestrictBrowserAccess
             }
         }
 
-        if ($request->header('Accept') === 'text/html' || !$request->expectsJson()) {
+        if ($request->header('Accept') === 'text/html') {
             return response()->json([
                 'message' => 'This endpoint requires a JSON request. Please set the Accept header to application/json.',
                 'status' => false,
             ], Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
+        } else if (!$request->expectsJson()) {
+            return redirect()->route('home');
+        } else {
+            return $next($request);
         }
-
-        return $next($request);
     }
 }
