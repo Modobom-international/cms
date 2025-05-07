@@ -28,11 +28,13 @@ class DomainRepository extends BaseRepository
 
     public function getDomainBySearch($search)
     {
-        if ($search == null) {
-            return $this->model->where('is_locked', false)->get();
+        $query = $this->model->where('is_locked', false);
+
+        if ($search != null) {
+            $query = $query->where('domain', 'LIKE', '%' . $search . '%');
         }
 
-        return $this->model->where('is_locked', false)->where('domain', 'LIKE', '%' . $search . '%')->get();
+        return $query->get();
     }
 
     public function getDomainByList($listDomain)
