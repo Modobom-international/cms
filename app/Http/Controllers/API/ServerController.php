@@ -139,35 +139,4 @@ class ServerController extends Controller
             ], 500);
         }
     }
-
-    public function getPermissionByTeam(Request $request)
-    {
-        try {
-            $id = $request->get('id');
-            $team = $this->teamRepository->findTeam($id);
-
-            if (isset($team->permissions)) {
-                foreach ($team->permissions as $permission) {
-                    $prefix = $permission->prefix;
-                    $permissions[$prefix][] = $permission->name;
-                }
-            }
-
-            $this->logActivity(ActivityAction::GET_PERMISSiON_BY_TEAM, ['filters' => $input], 'Lấy danh sách quyền của team');
-
-            return response()->json([
-                'success' => true,
-                'data' => $permission,
-                'message' => 'Lấy thông tin permission của team thành công',
-                'type' => 'get_permission_team_success',
-            ], 200);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Lấy thông tin permission của team không thành công',
-                'type' => 'get_permission_team_fail',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
 }
