@@ -24,6 +24,7 @@ class LogUserActivity
         $this->activityLogRepository->create([
             'action' => $event->action,
             'details' => $event->details,
+            'description' => $event->description,
             'user_id' => $event->userId,
         ]);
     }

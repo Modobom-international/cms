@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Repositories\MonitorServerRepository;
+use App\Repositories\ServerRepository;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Log;
@@ -11,21 +13,37 @@ class MonitorServer extends Command
     protected $signature = 'monitor:server';
     protected $description = 'Monitor stats of server';
 
+    public function __construct(MonitorServerRepository $monitorServerRepository, ServerRepository $serverRepository)
+    {
+        parent::__construct();
+        $this->serverRepository = $serverRepository;
+        $this->monitorServerRepository = $monitorServerRepository;
+    }
+
     public function handle()
     {
         try {
+
+            $ip = getHostByName(getHostName());
+            $server = $this->serverRepository->getByIp($ip);
+
+            if (!$server) {
+                $this->error('Server not found');
+                return;
+            }
+
             $stats = [
-                'server_id' => config('app.server_id', 'server-1'),
+                'server_id' => $server->id,
                 'cpu' => $this->getCpuUsage(),
                 'memory' => $this->getMemoryUsage(),
                 'disk' => $this->getDiskUsage(),
-                'temperature' => $this->getTemperature(),
                 'services' => $this->getServiceStatus(),
                 'logs' => $this->getLatestLogs(),
                 'timestamp' => now()->toDateTimeString(),
             ];
 
             Redis::publish('monitor-channel', json_encode($stats));
+            $this->monitorServerRepository->create($stats);
 
             dump(json_encode($stats, JSON_PRETTY_PRINT));
         } catch (\Exception $e) {
@@ -78,21 +96,6 @@ class MonitorServer extends Command
             return $total ? round(($used / $total) * 100, 2) : null;
         } catch (\Exception $e) {
             Log::warning('Failed to get disk usage', ['error' => $e->getMessage()]);
-            return null;
-        }
-    }
-
-    private function getTemperature()
-    {
-        try {
-            $tempFile = '/sys/class/thermal/thermal_zone0/temp';
-            if (file_exists($tempFile)) {
-                $temp = (int) file_get_contents($tempFile);
-                return round($temp / 1000, 1);
-            }
-            return null;
-        } catch (\Exception $e) {
-            Log::warning('Failed to get temperature', ['error' => $e->getMessage()]);
             return null;
         }
     }

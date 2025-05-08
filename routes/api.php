@@ -23,6 +23,7 @@ use App\Http\Controllers\API\PushSystemController;
 use App\Http\Controllers\API\DomainController;
 use App\Http\Controllers\API\ActivityLogController;
 use App\Http\Controllers\API\NotificationController;
+use App\Http\Controllers\API\ServerController;
 use App\Http\Middleware\ExcludeDomainTracking;
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
@@ -239,6 +240,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('html-source')->group(function () {
         Route::get('/', [HtmlSourceController::class, 'listHtmlSource'])->name('html.source.list');
         Route::get('/{id}', [HtmlSourceController::class, 'showHtmlSource'])->name('html.source.show');
+    });
+
+    Route::prefix('server')->group(function () {
+        Route::get('/', [ServerController::class, 'index'])->name('server.list');
+        Route::post('/store', [ServerController::class, 'store'])->name('server.store');
+        Route::post('/update/{id}', [ServerController::class, 'update'])->name('server.update');
+        Route::delete('/delete/{id}', [ServerController::class, 'show'])->name('server.destroy');
     });
 
     Route::prefix('activity-log')->group(function () {
