@@ -13,6 +13,9 @@ class MonitorServer extends Command
     protected $signature = 'monitor:server';
     protected $description = 'Monitor stats of server';
 
+    protected $serverRepository;
+    protected $monitorServerRepository;
+
     public function __construct(MonitorServerRepository $monitorServerRepository, ServerRepository $serverRepository)
     {
         parent::__construct();

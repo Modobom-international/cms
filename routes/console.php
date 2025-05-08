@@ -6,3 +6,4 @@ use App\Console\Commands\Domain\SyncDomainForAccount;
 
 Schedule::job(new StoreServerStat)->everyFiveSeconds();
 Schedule::command(SyncDomainForAccount::class)->everyFiveMinutes()->withoutOverlapping();
+Schedule::command(MonitorServer::class)->everyFiveMinutes()->withoutOverlapping();
