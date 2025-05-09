@@ -17,6 +17,7 @@ class GoDaddyService
 
     public function __construct(SiteManagementLogger $logger)
     {
+        $this->logger = $logger;
         $this->apiUrl = config('services.godaddy.api_url');
         $this->apiConfigs = [
             'tuan' => [
@@ -99,11 +100,11 @@ class GoDaddyService
                 'message' => 'Lấy danh sách domain thành công',
                 'data' => $listDomain,
             ];
-            $this->logger->log('info', 'Lấy danh sách domain thành công: ' . json_encode($data));
+            $this->logger->logSite('info', $data);
 
             return $data;
         } catch (RequestException $e) {
-            $this->logger->log('error', 'Lỗi lấy danh sách domain: ' . $e->getMessage());
+            $this->logger->logSite('error', ['message' => $e->getMessage()]);
             return $this->handleException($e);
         }
     }
