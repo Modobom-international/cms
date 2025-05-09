@@ -87,12 +87,13 @@ class GoDaddyService
     public function getListDomain()
     {
         try {
+            $listDomain = [];
             foreach ($this->apiConfigs as $configKey => $config) {
                 $this->setClient($configKey);
                 $response = $this->client->get('/v1/domains');
                 $result = json_decode($response->getBody(), true);
 
-                $listDomain = array_merge($result, $listDomain ?? []);
+                $listDomain = array_merge($listDomain, $result);
             }
 
             $data = [
