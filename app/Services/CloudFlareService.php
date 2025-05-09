@@ -461,7 +461,6 @@ class CloudFlareService
 
     private function executeWranglerCommand($command)
     {
-        Log::info("Executing Wrangler command: $command");
 
         $output = shell_exec($command . " 2>&1");
 
@@ -608,7 +607,6 @@ class CloudFlareService
 
             $normalizedPath = rtrim($path, '/') . '/';
             $url = rtrim($domain, '/') . '/' . ltrim($normalizedPath, '/');
-            Log::info('Warming cache for URL: ' . $url);
             try {
                 $response = Http::withHeaders([
                     'User-Agent' => 'CacheWarmerBot/1.0'

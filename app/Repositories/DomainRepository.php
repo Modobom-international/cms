@@ -43,7 +43,7 @@ class DomainRepository extends BaseRepository
 
     public function getDomainBySearch($search, $filters = [])
     {
-        $query = $this->model->with('sites.user')->where('is_locked', false);
+        $query = $this->model->with('sites.user');
 
         if ($search != null) {
             $query = $query->where('domain', 'LIKE', '%' . $search . '%');
