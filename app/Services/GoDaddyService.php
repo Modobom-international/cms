@@ -92,8 +92,14 @@ class GoDaddyService
                 $this->setClient($configKey);
                 $response = $this->client->get('/v1/domains');
                 $result = json_decode($response->getBody(), true);
-                $this->logger->logSite('info', $result);
-                $listDomain = array_merge($listDomain, $result ?? null);
+
+                $this->logger->logSite('info', [
+                    'config' => $configKey,
+                    'domains_count' => count($result),
+                    'domains' => $result
+                ]);
+
+                $listDomain = array_merge($listDomain, $result ?? []);
             }
 
             $data = [
@@ -101,7 +107,11 @@ class GoDaddyService
                 'message' => 'Lấy danh sách domain thành công',
                 'data' => $listDomain,
             ];
-            $this->logger->logSite('info', $listDomain);
+
+            $this->logger->logSite('info', [
+                'total_domains' => count($listDomain),
+                'domains' => $listDomain
+            ]);
 
             return $data;
         } catch (RequestException $e) {
