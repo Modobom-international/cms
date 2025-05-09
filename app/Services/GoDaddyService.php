@@ -90,7 +90,7 @@ class GoDaddyService
             $listDomain = [];
             foreach ($this->apiConfigs as $configKey => $config) {
                 $this->setClient($configKey);
-                $response = $this->client->get('/v1/domains');
+                $response = $this->client->get('/v1/domains?limit=1000&includes=nameServers&statusGroups=VISIBLE');
                 $result = json_decode($response->getBody(), true);
                 $listDomain = array_merge($listDomain, $result ?? []);
             }
