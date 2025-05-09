@@ -17,8 +17,9 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->job(new UpdateDueDateReminderStatusBatch)->everyMinute();
+        $schedule->command('domain:sync-domain-for-account')->everyFiveMinutes();
     }
-    
+
     /**
      * Register the commands for the application.
      *
@@ -27,7 +28,7 @@ class Kernel extends ConsoleKernel
     protected function commands()
     {
         $this->load(__DIR__ . '/Commands');
-        
+
         require base_path('routes/console.php');
     }
 }
