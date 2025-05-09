@@ -58,7 +58,7 @@ class SyncDomainForAccount extends Command
             return;
         }
 
-        $domainRepository->deleteByIsLocked(0);
+        // $domainRepository->deleteByIsLocked(0);
 
         $listDomain = $getListDomain['data'];
         $count = 0;

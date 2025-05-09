@@ -57,6 +57,11 @@ class SiteManagementLogger
         $this->log('deploy', $action, $data, $level);
     }
 
+    public function logDomain(string $action, array $data, string $level = 'info'): void
+    {
+        $this->log('domain', $action, $data, $level);
+    }
+
     /**
      * Generic logging method
      */
