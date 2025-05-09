@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Domain;
 
 use App\Services\GoDaddyService;
+use App\Services\SiteManagementLogger;
 use Illuminate\Console\Command;
 use App\Repositories\DomainRepository;
 use App\Repositories\ConfigPoolRepository;
@@ -24,10 +25,11 @@ class SyncDomainForAccount extends Command
      */
     protected $description = 'Sync domain for account';
 
+
     /**
      * Execute the console command.
      */
-    public function handle(DomainRepository $domainRepository, ConfigPoolRepository $configPoolRepository, GoDaddyService $goDaddyService)
+    public function handle(DomainRepository $domainRepository, ConfigPoolRepository $configPoolRepository, GoDaddyService $goDaddyService, SiteManagementLogger $logger)
     {
         $key = 'status_sync_domains_cms';
         $getConfig = $configPoolRepository->getByKey($key);
@@ -67,7 +69,7 @@ class SyncDomainForAccount extends Command
                 'domain' => $domain['domain'],
                 'time_expired' => Carbon::parse($domain['expires'])->format('Y-m-d H:i:s'),
                 'registrar' => 'Godaddy',
-                'is_locked' => $domain['isLocked'] ?? false,
+                'is_locked' => $domain['locked'] ?? false,
                 'renewable' => $domain['renewable'] ?? false,
                 'status' => $domain['status'] ?? 'ACTIVE',
                 'name_servers' => json_encode($domain['nameServers']) ?? null,
@@ -96,7 +98,11 @@ class SyncDomainForAccount extends Command
         ];
 
         $configPoolRepository->updateByKey($key, $dataUpdate);
-
+        $logger->logDomain('info', [
+            'message' => "Thêm mới {$count} domain và cập nhật {$updateCount} domain thành công!",
+            'count' => $count,
+            'update_count' => $updateCount
+        ]);
         dump("Thêm mới {$count} domain và cập nhật {$updateCount} domain thành công!");
     }
 }
