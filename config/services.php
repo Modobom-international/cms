@@ -48,34 +48,64 @@ return [
     ],
 
     'godaddy' => [
-        'api_key'    => env('GODADDY_API_KEY'),
+        'api_key' => env('GODADDY_API_KEY'),
         'api_secret' => env('GODADDY_API_SECRET'),
-        'api_url'    => env('GODADDY_API_URL'),
-        'shopper_id'    => env('GODADDY_SHOPPER_ID'),
+        'api_url' => env('GODADDY_API_URL'),
+        'shopper_id' => env('GODADDY_SHOPPER_ID'),
     ],
 
     'godaddy_tuan' => [
-        'api_key'    => env('GODADDY_TUAN_API_KEY'),
+        'api_key' => env('GODADDY_TUAN_API_KEY'),
         'api_secret' => env('GODADDY_TUAN_API_SECRET'),
-        'shopper_id'    => env('GODADDY_TUAN_SHOPPER_ID'),
+        'shopper_id' => env('GODADDY_TUAN_SHOPPER_ID'),
     ],
 
     'godaddy_linh' => [
-        'api_key'    => env('GODADDY_LINH_API_KEY'),
+        'api_key' => env('GODADDY_LINH_API_KEY'),
         'api_secret' => env('GODADDY_LINH_API_SECRET'),
-        'shopper_id'    => env('GODADDY_LINH_SHOPPER_ID'),
+        'shopper_id' => env('GODADDY_LINH_SHOPPER_ID'),
     ],
 
     'godaddy_vylinh3' => [
-        'api_key'    => env('GODADDY_VYLINH3_API_KEY'),
+        'api_key' => env('GODADDY_VYLINH3_API_KEY'),
         'api_secret' => env('GODADDY_VYLINH3_API_SECRET'),
-        'shopper_id'    => env('GODADDY_VYLINH3_SHOPPER_ID'),
+        'shopper_id' => env('GODADDY_VYLINH3_SHOPPER_ID'),
     ],
 
     'godaddy_vylinh4' => [
-        'api_key'    => env('GODADDY_VYLINH4_API_KEY'),
+        'api_key' => env('GODADDY_VYLINH4_API_KEY'),
         'api_secret' => env('GODADDY_VYLINH4_API_SECRET'),
-        'shopper_id'    => env('GODADDY_VYLINH4_SHOPPER_ID'),
+        'shopper_id' => env('GODADDY_VYLINH4_SHOPPER_ID'),
+    ],
+
+    'godaddy_vylinh1' => [
+        'api_key' => env('GODADDY_VYLINH1_API_KEY'),
+        'api_secret' => env('GODADDY_VYLINH1_API_SECRET'),
+        'shopper_id' => env('GODADDY_VYLINH1_SHOPPER_ID'),
+    ],
+
+    'godaddy_vylinh2' => [
+        'api_key' => env('GODADDY_VYLINH2_API_KEY'),
+        'api_secret' => env('GODADDY_VYLINH2_API_SECRET'),
+        'shopper_id' => env('GODADDY_VYLINH2_SHOPPER_ID'),
+    ],
+
+    'godaddy_vylinh89' => [
+        'api_key' => env('GODADDY_VYLINH89_API_KEY'),
+        'api_secret' => env('GODADDY_VYLINH89_API_SECRET'),
+        'shopper_id' => env('GODADDY_VYLINH89_SHOPPER_ID'),
+    ],
+
+    'godaddy_209944368' => [
+        'api_key' => env('GODADDY_209944368_API_KEY'),
+        'api_secret' => env('GODADDY_209944368_API_SECRET'),
+        'shopper_id' => env('GODADDY_209944368_SHOPPER_ID'),
+    ],
+
+    'godaddy_181812460' => [
+        'api_key' => env('GODADDY_181812460_API_KEY'),
+        'api_secret' => env('GODADDY_181812460_API_SECRET'),
+        'shopper_id' => env('GODADDY_181812460_SHOPPER_ID'),
     ],
 
 ];

@@ -35,7 +35,20 @@ class DomainController extends Controller
             $search = $request->get('search');
             $pageSize = $request->get('pageSize') ?? 10;
             $page = $request->get('page') ?? 1;
-            $domains = $this->domainRepository->getDomainBySearch($search);
+
+            // Get filter parameters
+            $filters = [
+                'status' => $request->get('status'),
+                'is_locked' => $request->get('is_locked'),
+                'renewable' => $request->get('renewable'),
+                'registrar' => $request->get('registrar'),
+                'has_sites' => $request->get('has_sites'),
+                'time_expired' => $request->get('time_expired'),
+                'renew_deadline' => $request->get('renew_deadline'),
+                'registrar_created_at' => $request->get('registrar_created_at')
+            ];
+
+            $domains = $this->domainRepository->getDomainBySearch($search, $filters);
             $data = $this->utility->paginate($domains, $pageSize, $page);
 
             $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách domain');

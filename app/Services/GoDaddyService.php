@@ -39,6 +39,31 @@ class GoDaddyService
                 'api_secret' => config('services.godaddy_vylinh4.api_secret'),
                 'shopper_id' => config('services.godaddy_vylinh4.shopper_id'),
             ],
+            'vylinh1' => [
+                'api_key' => config('services.godaddy_vylinh1.api_key'),
+                'api_secret' => config('services.godaddy_vylinh1.api_secret'),
+                'shopper_id' => config('services.godaddy_vylinh1.shopper_id'),
+            ],
+            'vylinh2' => [
+                'api_key' => config('services.godaddy_vylinh2.api_key'),
+                'api_secret' => config('services.godaddy_vylinh2.api_secret'),
+                'shopper_id' => config('services.godaddy_vylinh2.shopper_id'),
+            ],
+            'vylinh89' => [
+                'api_key' => config('services.godaddy_vylinh89.api_key'),
+                'api_secret' => config('services.godaddy_vylinh89.api_secret'),
+                'shopper_id' => config('services.godaddy_vylinh89.shopper_id'),
+            ],
+            '209944368' => [
+                'api_key' => config('services.godaddy_209944368.api_key'),
+                'api_secret' => config('services.godaddy_209944368.api_secret'),
+                'shopper_id' => config('services.godaddy_209944368.shopper_id'),
+            ],
+            '181812460' => [
+                'api_key' => config('services.godaddy_181812460.api_key'),
+                'api_secret' => config('services.godaddy_181812460.api_secret'),
+                'shopper_id' => config('services.godaddy_181812460.shopper_id'),
+            ],
         ];
     }
 
@@ -112,7 +137,10 @@ class GoDaddyService
 
                 return json_decode($response->getBody(), true);
             } else {
-                return $this->handleException($e);
+                return [
+                    'success' => false,
+                    'message' => 'Không tìm thấy domain trong hệ thống',
+                ];
             }
         } catch (RequestException $e) {
             return $this->handleException($e);
