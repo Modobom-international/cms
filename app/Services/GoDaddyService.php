@@ -99,6 +99,7 @@ class GoDaddyService
                 'message' => 'Lấy danh sách domain thành công',
                 'data' => $listDomain,
             ];
+            $this->logger->log('info', 'Lấy danh sách domain thành công: ' . json_encode($data));
 
             return $data;
         } catch (RequestException $e) {
