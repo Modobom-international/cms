@@ -12,10 +12,10 @@ class GoDaddyService
     protected $apiSecret;
     protected $apiUrl;
     protected $shopperID;
-
+    protected $logger;
     protected $apiConfigs = [];
 
-    public function __construct()
+    public function __construct(SiteManagementLogger $logger)
     {
         $this->apiUrl = config('services.godaddy.api_url');
         $this->apiConfigs = [
@@ -102,6 +102,7 @@ class GoDaddyService
 
             return $data;
         } catch (RequestException $e) {
+            $this->logger->log('error', 'Lỗi lấy danh sách domain: ' . $e->getMessage());
             return $this->handleException($e);
         }
     }
