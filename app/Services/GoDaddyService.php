@@ -112,7 +112,10 @@ class GoDaddyService
 
                 return json_decode($response->getBody(), true);
             } else {
-                return $this->handleException($e);
+                return [
+                    'success' => false,
+                    'message' => 'Không tìm thấy domain trong hệ thống',
+                ];
             }
         } catch (RequestException $e) {
             return $this->handleException($e);
