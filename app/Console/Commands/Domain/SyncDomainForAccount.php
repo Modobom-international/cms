@@ -55,10 +55,7 @@ class SyncDomainForAccount extends Command
         }
 
         $getListDomain = $goDaddyService->getListDomain();
-        $logger->logDomain('info', [
-            'message' => 'Lấy danh sách domain thành công!',
-            'data' => $getListDomain
-        ]);
+
         if (array_key_exists('error', $getListDomain)) {
             dump($getListDomain['error']);
             return;
@@ -67,7 +64,10 @@ class SyncDomainForAccount extends Command
         $listDomain = $getListDomain['data'];
         $count = 0;
         $updateCount = 0;
-
+        $logger->logDomain('info', [
+            'message' => 'Lấy danh sách domain thành công!',
+            'data' => $listDomain
+        ]);
         foreach ($listDomain as $domain) {
             $domainsData = [
                 'domain' => $domain['domain'],
