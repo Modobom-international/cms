@@ -21,9 +21,24 @@ class DomainRepository extends BaseRepository
         return $this->model->where('is_locked', false)->get();
     }
 
-    public function getByDomain($domain)
+    public function findByDomain($domain)
     {
         return $this->model->where('domain', $domain)->first();
+    }
+
+    public function update($id, array $data)
+    {
+        $domain = $this->model->find($id);
+        if ($domain) {
+            $domain->update($data);
+            return $domain;
+        }
+        return null;
+    }
+
+    public function updateOrCreate(array $attributes, array $values = [])
+    {
+        return $this->model->updateOrCreate($attributes, $values);
     }
 
     public function getDomainBySearch($search, $filters = [])

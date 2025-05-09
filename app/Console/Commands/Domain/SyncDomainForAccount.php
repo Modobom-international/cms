@@ -58,28 +58,34 @@ class SyncDomainForAccount extends Command
             return;
         }
 
-        // $domainRepository->deleteByIsLocked(0);
-
         $listDomain = $getListDomain['data'];
         $count = 0;
+        $updateCount = 0;
 
         foreach ($listDomain as $domain) {
             $domainsData = [
                 'domain' => $domain['domain'],
                 'time_expired' => Carbon::parse($domain['expires'])->format('Y-m-d H:i:s'),
                 'registrar' => 'Godaddy',
-                'is_locked' => false,
+                'is_locked' => $domain['isLocked'] ?? false,
                 'renewable' => $domain['renewable'] ?? false,
                 'status' => $domain['status'] ?? 'ACTIVE',
                 'name_servers' => json_encode($domain['nameServers']) ?? null,
                 'renew_deadline' => isset($domain['renewDeadline']) ? Carbon::parse($domain['renewDeadline'])->format('Y-m-d H:i:s') : null,
                 'registrar_created_at' => isset($domain['registrarCreatedAt']) ? Carbon::parse($domain['registrarCreatedAt'])->format('Y-m-d H:i:s') : null,
-                'created_at' => Carbon::now()->format('Y-m-d H:i:s'),
                 'updated_at' => Carbon::now()->format('Y-m-d H:i:s')
             ];
 
-            $count++;
-            $domainRepository->create($domainsData);
+            $existingDomain = $domainRepository->findByDomain($domain['domain']);
+
+            if ($existingDomain) {
+                $domainRepository->update($existingDomain->id, $domainsData);
+                $updateCount++;
+            } else {
+                $domainsData['created_at'] = Carbon::now()->format('Y-m-d H:i:s');
+                $domainRepository->create($domainsData);
+                $count++;
+            }
         }
 
         $dataUpdate = [
@@ -91,6 +97,6 @@ class SyncDomainForAccount extends Command
 
         $configPoolRepository->updateByKey($key, $dataUpdate);
 
-        dump('Thêm tổng cộng ' . $count . ' domain thành công!');
+        dump("Thêm mới {$count} domain và cập nhật {$updateCount} domain thành công!");
     }
 }
