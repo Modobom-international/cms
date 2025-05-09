@@ -93,7 +93,7 @@ class GoDaddyService
                 $response = $this->client->get('/v1/domains');
                 $result = json_decode($response->getBody(), true);
 
-                $listDomain = array_merge($listDomain, $result);
+                $listDomain = array_merge($listDomain, $result ?? null);
             }
 
             $data = [
