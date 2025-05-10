@@ -49,6 +49,7 @@ class SiteController extends Controller
             'domain' => 'required|string|unique:sites,domain',
             'description' => 'nullable|string',
             'branch' => 'nullable|string|max:50',
+            'language' => 'nullable|string|size:2',
         ]);
 
         if ($validator->fails()) {
@@ -87,7 +88,8 @@ class SiteController extends Controller
                 'cloudflare_project_name' => $projectName,
                 'branch' => $branch,
                 'user_id' => auth()->id(),
-                'status' => 'active'
+                'status' => 'active',
+                'language' => $request->language ?? 'en',
             ];
 
             if ($request->domain) {
@@ -186,6 +188,7 @@ class SiteController extends Controller
             'domain' => 'required|string|unique:sites,domain,' . $id,
             'description' => 'nullable|string',
             'status' => 'nullable|in:active,inactive',
+            'language' => 'nullable|string|size:2',
         ]);
 
         if ($validator->fails()) {
@@ -235,7 +238,8 @@ class SiteController extends Controller
                 'name' => $request->name,
                 'domain' => $request->domain,
                 'description' => $request->description,
-                'status' => $request->status ?? $site->status
+                'status' => $request->status ?? $site->status,
+                'language' => $request->language ?? $site->language
             ]);
 
             return response()->json([
@@ -293,6 +297,60 @@ class SiteController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete site',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update only the language of the specified site.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateLanguage(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'language' => 'required|string|size:2',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $site = Site::findOrFail($id);
+
+            $site->update([
+                'language' => $request->language
+            ]);
+
+            $this->logger->logSite('language_updated', [
+                'site_id' => $id,
+                'old_language' => $site->getOriginal('language'),
+                'new_language' => $request->language
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Site language updated successfully',
+                'data' => $site
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->logSite('language_update_failed', [
+                'site_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 'error');
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update site language',
                 'error' => $e->getMessage()
             ], 500);
         }

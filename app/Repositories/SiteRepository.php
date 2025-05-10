@@ -87,13 +87,13 @@ class SiteRepository extends BaseRepository
     public function getDomainBySearchAndUserID($search, $user_id)
     {
         $query = $this->model;
-        
+
         if ($user_id != 1) {
             $query = $query->where('user_id', $user_id);
         }
 
         if ($search != '') {
-            $query = $query->where('domain', $domain);
+            $query = $query->where('domain', 'like', '%' . $search . '%');
         }
 
         return $query->get();
