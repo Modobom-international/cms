@@ -154,11 +154,13 @@ class PageController extends Controller
     public function getPage($pageId)
     {
         $page = $this->pageRepository->find($pageId);
+        $site = $this->siteRepository->findWithRelations($page->site_id);
         if ($page) {
             return response()->json([
                 'success' => true,
                 'message' => 'Page found',
-                'data' => $page
+                'data' => $page,
+                'site' => $site
             ]);
         }
         return response()->json([
