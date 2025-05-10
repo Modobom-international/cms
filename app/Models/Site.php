@@ -22,7 +22,8 @@ class Site extends Model
         'cloudflare_domain_status',
         'branch',
         'user_id',
-        'status'
+        'status',
+        'language'
     ];
 
     /**
@@ -33,6 +34,15 @@ class Site extends Model
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+    ];
+
+    /**
+     * The default values for attributes.
+     *
+     * @var array
+     */
+    protected $attributes = [
+        'language' => 'en'
     ];
 
     /**

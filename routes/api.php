@@ -218,6 +218,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [SiteController::class, 'show'])->name('sites.show');
         Route::put('/{id}', [SiteController::class, 'update'])->name('sites.update');
         Route::delete('/{id}', [SiteController::class, 'destroy'])->name('sites.destroy');
+        Route::patch('/{id}/language', [SiteController::class, 'updateLanguage'])->name('sites.update.language');
     });
 
     Route::prefix('cloudflare')->group(function () {
