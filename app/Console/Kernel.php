@@ -17,7 +17,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->job(new UpdateDueDateReminderStatusBatch)->everyMinute();
-        $schedule->command('domain:sync-domain-for-account')->everyMinute();
+        $schedule->command('domain:sync-domain-for-account')->everyFiveMinutes();
     }
 
     /**
