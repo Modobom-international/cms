@@ -111,13 +111,14 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     //card
-    Route::prefix('/list/{list}')->group(function () {
+    Route::prefix('/list/{listId}')->group(function () {
         Route::get('/cards', [CardController::class, 'index']); // Lấy danh sách card theo list
         Route::post('/card/create', [CardController::class, 'store']); // Tạo card mới
     });
     Route::post('/card/update/{card}', [CardController::class, 'update']); // Cập nhật card
     Route::delete('/card/delete/{card}', [CardController::class, 'destroy']); // Xóa card
     Route::post('/card/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
+    Route::post('/card/update-positions', [CardController::class, 'updatePositions']); // Cập nhật nhiều vị trí card
 
     //list log activity
     Route::get('/cards/{cardId}/logs', [CardController::class, 'getLogsByCard']);

@@ -15,8 +15,13 @@ class ListBoardRepository extends BaseRepository
 
     public function getListsByBoard($boardId)
     {
-        // Lấy danh sách list thuộc board
+        // Lấy danh sách list thuộc board kèm theo cards đã sắp xếp
         return $this->model->where('board_id', $boardId)
+            ->with([
+                'cards' => function ($query) {
+                    $query->orderBy('position', 'asc');
+                }
+            ])
             ->orderBy('position', 'asc')
             ->get();
     }
@@ -38,7 +43,11 @@ class ListBoardRepository extends BaseRepository
 
     public function show($id)
     {
-        return $this->model->with('cards')->where('id', $id)->first();
+        return $this->model->with([
+            'cards' => function ($query) {
+                $query->orderBy('position', 'asc');
+            }
+        ])->where('id', $id)->first();
     }
 
     public function updateListBoard($data, $id)

@@ -44,7 +44,7 @@ class ListBoardController extends Controller
     }
 
     /**
-     * Lấy danh sách workspace của user.
+     * Lấy danh sách List của board.
      */
     public function index($boardId)
     {
