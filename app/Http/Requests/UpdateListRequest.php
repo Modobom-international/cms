@@ -14,7 +14,7 @@ class UpdateListRequest extends FormRequest
     {
         return true;
     }
-    
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -23,11 +23,11 @@ class UpdateListRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
             'position' => 'nullable|integer'
         ];
     }
-    
+
     public function messages()
     {
         return [

@@ -107,6 +107,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [ListBoardController::class, 'show']);
         Route::post('/update/{id}', [ListBoardController::class, 'update']); // Cập nhật list
         Route::get('/delete/{id}', [ListBoardController::class, 'destroy']); // Xóa list
+        Route::post('/update-positions', [ListBoardController::class, 'updatePositions']); // Cập nhật nhiều vị trí list
     });
 
     //card
