@@ -55,128 +55,200 @@ Route::middleware('auth:sanctum')->group(function () {
     //admin change password for user
     Route::post('/change-password-user/{id}/', [UserController::class, 'updatePassword']);
 
-    // Page routes
-    Route::post('/create-page', [PageController::class, 'create']);
-    Route::post('/update-page/{pageId}', [PageController::class, 'update']);
-    Route::get('/page/{pageId}', [PageController::class, 'getPage']);
-    Route::get('/pages', [PageController::class, 'getPages']);
-    Route::get('/sites/{siteId}/pages', [PageController::class, 'getPagesBySite']);
-    Route::post('/export-pages/{pageId}', [PageController::class, 'exportPage']);
-    Route::delete('/pages/{pageId}', [PageController::class, 'destroy']);
+    // Cloudflare Projects API
+    Route::prefix('cloudflare/projects')->group(function () {
+        Route::get('/', [CloudflareController::class, 'getProjects'])->name('cloudflare.projects.index');
+        Route::post('/', [CloudflareController::class, 'createProject'])->name('cloudflare.projects.create');
+        Route::put('/{id}', [CloudflareController::class, 'updateProject'])->name('cloudflare.projects.update');
+    });
 
-    // Tracking script routes
+    // Cloudflare Deployments API
+    Route::prefix('cloudflare/deployments')->group(function () {
+        Route::post('/', [CloudflareController::class, 'createDeployment'])->name('cloudflare.deployments.create');
+        Route::post('/exports', [CloudflareController::class, 'deployExports'])->name('cloudflare.deployments.exports');
+    });
+
+    // Cloudflare Domains API
+    Route::prefix('cloudflare/domains')->group(function () {
+        Route::post('/', [CloudflareController::class, 'applyDomain'])->name('cloudflare.domains.create');
+    });
+
+    // Sites API
+    Route::prefix('sites')->group(function () {
+        Route::get('/', [SiteController::class, 'index'])->name('sites.index');
+        Route::post('/', [SiteController::class, 'store'])->name('sites.create');
+        Route::get('/{id}', [SiteController::class, 'show'])->name('sites.show');
+        Route::put('/{id}', [SiteController::class, 'update'])->name('sites.update');
+        Route::delete('/{id}', [SiteController::class, 'destroy'])->name('sites.delete');
+        Route::patch('/{id}/language', [SiteController::class, 'updateLanguage'])->name('sites.language.update');
+
+        // Site Pages API
+        Route::get('/{id}/pages', [PageController::class, 'getPagesBySite'])->name('sites.pages.index');
+    });
+
+    // Pages API
     Route::prefix('pages')->group(function () {
-        Route::get('/{pageId}/tracking-script', [PageController::class, 'getTrackingScript']);
-        Route::post('/{pageId}/tracking-script', [PageController::class, 'updateTrackingScript']);
-        Route::delete('/{pageId}/tracking-script', [PageController::class, 'removeTrackingScript']);
+        Route::get('/', [PageController::class, 'getPages'])->name('pages.index');
+        Route::post('/', [PageController::class, 'create'])->name('pages.create');
+        Route::get('/{id}', [PageController::class, 'getPage'])->name('pages.show');
+        Route::put('/{id}', [PageController::class, 'update'])->name('pages.update');
+        Route::delete('/{id}', [PageController::class, 'destroy'])->name('pages.delete');
+
+        // Pages Export API
+        Route::post('/{id}/exports', [PageController::class, 'exportPage'])->name('pages.exports.create');
+
+        // Pages Tracking Script API
+        Route::prefix('{id}/tracking-scripts')->group(function () {
+            Route::get('/', [PageController::class, 'getTrackingScript'])->name('pages.tracking-scripts.show');
+            Route::put('/', [PageController::class, 'updateTrackingScript'])->name('pages.tracking-scripts.update');
+            Route::delete('/', [PageController::class, 'removeTrackingScript'])->name('pages.tracking-scripts.delete');
+        });
     });
 
-    //workspace
-    Route::prefix('/workspace')->group(function () {
-        Route::get('/list', [WorkspaceController::class, 'index']);
-        Route::post('/create', [WorkspaceController::class, 'store']);
-        Route::get('/{id}', [WorkspaceController::class, 'show']);
-        Route::post('/update/{id}', [WorkspaceController::class, 'update']);
-        Route::get('/delete/{id}', [WorkspaceController::class, 'destroy']);
+    // Workspaces API
+    Route::prefix('workspaces')->group(function () {
+        Route::get('/', [WorkspaceController::class, 'index'])->name('workspaces.index');
+        Route::post('/', [WorkspaceController::class, 'store'])->name('workspaces.create');
+        Route::get('/{id}', [WorkspaceController::class, 'show'])->name('workspaces.show');
+        Route::put('/{id}', [WorkspaceController::class, 'update'])->name('workspaces.update');
+        Route::delete('/{id}', [WorkspaceController::class, 'destroy'])->name('workspaces.delete');
 
-        //workspace-user
-        Route::post('/{id}/join', [WorkspaceController::class, 'joinPublicWorkspace']);
-        Route::post('/{id}/add-member', [WorkspaceController::class, 'addMember']);
-        Route::post('/remove-members', [WorkspaceController::class, 'removeMember']);
-        Route::get('/{id}/members', [WorkspaceController::class, 'listMembers']);
+        // Workspace Members API
+        Route::prefix('{id}/members')->group(function () {
+            Route::get('/', [WorkspaceController::class, 'listMembers'])->name('workspaces.members.index');
+            Route::post('/', [WorkspaceController::class, 'addMember'])->name('workspaces.members.create');
+            Route::post('/join', [WorkspaceController::class, 'joinPublicWorkspace'])->name('workspaces.members.join');
+            Route::delete('/', [WorkspaceController::class, 'removeMember'])->name('workspaces.members.delete');
+        });
+
+        // Workspace Boards API
+        Route::get('/{id}/boards', [BoardController::class, 'index'])->name('workspaces.boards.index'); // Lấy danh sách Board
     });
 
-    //board
-    Route::get('/workspace/{id}/boards', [BoardController::class, 'index']); // Lấy danh sách Board
-    Route::prefix('board')->group(function () {
-        Route::post('/create', [BoardController::class, 'store']); // Tạo Board
-        Route::get('/{id}', [BoardController::class, 'show']);
-        Route::post('/update/{id}', [BoardController::class, 'update']); // Cập nhật Board
-        Route::get('/delete/{id}', [BoardController::class, 'destroy']); // Xóa Board
-        //board-user
-        Route::post('/board/{id}/join', [BoardController::class, 'joinPublicBoard']);
-        Route::post('/board/{id}/add-member', [BoardController::class, 'addMember']);
-        Route::post('/board/remove-members', [BoardController::class, 'removeMember']);
-        Route::get('/board/{id}/members', [BoardController::class, 'listMembers']);
+    // Boards API
+    Route::prefix('boards')->group(function () {
+        Route::post('/', [BoardController::class, 'store'])->name('boards.create');
+        Route::get('/{id}', [BoardController::class, 'show'])->name('boards.show');
+        Route::put('/{id}', [BoardController::class, 'update'])->name('boards.update');
+        Route::delete('/{id}', [BoardController::class, 'destroy'])->name('boards.delete');
+
+        // Board Members API
+        Route::prefix('{id}/members')->group(function () {
+            Route::get('/', [BoardController::class, 'listMembers'])->name('boards.members.index');
+            Route::post('/', [BoardController::class, 'addMember'])->name('boards.members.create');
+            Route::post('/join', [BoardController::class, 'joinPublicBoard'])->name('boards.members.join');
+            Route::delete('/', [BoardController::class, 'removeMember'])->name('boards.members.delete');
+        });
+
+        // Board Lists API
+        Route::get('/{id}/lists', [ListBoardController::class, 'index'])->name('boards.lists.index');
     });
 
-    //list
-    Route::get('/board/{boardId}/lists', [ListBoardController::class, 'index']); // Lấy danh sách list
-    Route::prefix('list')->group(function () {
-        Route::post('/create', [ListBoardController::class, 'store']); // Tạo list
-        Route::get('/{id}', [ListBoardController::class, 'show']);
-        Route::post('/update/{id}', [ListBoardController::class, 'update']); // Cập nhật list
-        Route::get('/delete/{id}', [ListBoardController::class, 'destroy']); // Xóa list
+    // Lists API
+    Route::prefix('lists')->group(function () {
+        Route::post('/', [ListBoardController::class, 'store'])->name('lists.create');
+        Route::get('/{id}', [ListBoardController::class, 'show'])->name('lists.show');
+        Route::put('/{id}', [ListBoardController::class, 'update'])->name('lists.update');
+        Route::delete('/{id}', [ListBoardController::class, 'destroy'])->name('lists.delete');
+        Route::put('/positions', [ListBoardController::class, 'updatePositions'])->name('lists.positions.update');
+
+        // List Cards API
+        Route::prefix('{id}/cards')->group(function () {
+            Route::get('/', [CardController::class, 'index'])->name('lists.cards.index');
+            Route::post('/', [CardController::class, 'store'])->name('lists.cards.create');
+        });
     });
 
-    //card
-    Route::prefix('/list/{list}')->group(function () {
-        Route::get('/cards', [CardController::class, 'index']); // Lấy danh sách card theo list
-        Route::post('/card/create', [CardController::class, 'store']); // Tạo card mới
+    // Cards API
+    Route::prefix('cards')->group(function () {
+        Route::get('/{id}', [CardController::class, 'show'])->name('cards.show');
+        Route::put('/{id}', [CardController::class, 'update'])->name('cards.update');
+        Route::delete('/{id}', [CardController::class, 'destroy'])->name('cards.delete');
+        Route::post('/{id}/move', [CardController::class, 'move'])->name('cards.move');
+        Route::put('/positions', [CardController::class, 'updatePositions'])->name('cards.positions.update');
+        Route::get('/{id}/activity', [CardController::class, 'getLogsByCard'])->name('cards.activity.index');
+
+        // Card Members API
+        Route::prefix('{id}/members')->group(function () {
+            Route::post('/join', [CardController::class, 'join'])->name('cards.members.join');
+            Route::post('/leave', [CardController::class, 'leave'])->name('cards.members.leave');
+            Route::post('/', [CardController::class, 'assignMember'])->name('cards.members.create');
+            Route::delete('/{user_id}', [CardController::class, 'removeMember'])->name('cards.members.delete');
+        });
+
+        // Card Labels API
+        Route::prefix('{id}/labels')->group(function () {
+            Route::post('/', [CardController::class, 'assignLabel'])->name('cards.labels.create');
+            Route::delete('/{label_id}', [CardController::class, 'removeLabel'])->name('cards.labels.delete');
+        });
+
+        // Card Checklists API
+        Route::prefix('{id}/checklists')->group(function () {
+            Route::get('/', [CheckListController::class, 'index'])->name('cards.checklists.index');
+            Route::post('/', [CheckListController::class, 'store'])->name('cards.checklists.create');
+        });
+
+        // Card Comments API
+        Route::prefix('{id}/comments')->group(function () {
+            Route::get('/', [CommentController::class, 'index'])->name('cards.comments.index');
+            Route::post('/', [CommentController::class, 'store'])->name('cards.comments.create');
+        });
+
+        // Card Due Dates API
+        Route::prefix('{id}/due-dates')->group(function () {
+            Route::post('/', [DueDateController::class, 'store'])->name('cards.due-dates.create');
+        });
+
+        // Card Attachments API
+        Route::prefix('{id}/attachments')->group(function () {
+            Route::get('/', [AttachmentController::class, 'index'])->name('cards.attachments.index');
+            Route::post('/', [AttachmentController::class, 'store'])->name('cards.attachments.create');
+        });
     });
-    Route::post('/card/update/{card}', [CardController::class, 'update']); // Cập nhật card
-    Route::delete('/card/delete/{card}', [CardController::class, 'destroy']); // Xóa card
-    Route::post('/card/{card}/move', [CardController::class, 'move']); // Di chuyển card giữa các list
 
-    //list log activity
-    Route::get('/cards/{cardId}/logs', [CardController::class, 'getLogsByCard']);
-
-    //label
-    Route::prefix('/label')->group(function () {
-        Route::post('/create', [LabelController::class, 'store']); // Tạo label
-        Route::get('/{id}', [LabelController::class, 'show']);
-        Route::get('/list', [LabelController::class, 'index']); // Lấy danh sách label
-        Route::post('/update/{id}', [LabelController::class, 'update']); // Cập nhật label
-        Route::delete('/delete/{id}', [LabelController::class, 'destroy']); // Xóa label
+    // Labels API
+    Route::prefix('labels')->group(function () {
+        Route::get('/', [LabelController::class, 'index'])->name('labels.index');
+        Route::post('/', [LabelController::class, 'store'])->name('labels.create');
+        Route::get('/{id}', [LabelController::class, 'show'])->name('labels.show');
+        Route::put('/{id}', [LabelController::class, 'update'])->name('labels.update');
+        Route::delete('/{id}', [LabelController::class, 'destroy'])->name('labels.delete');
     });
 
-    // member-card
-    Route::post('/cards/{card}/join', [CardController::class, 'join']);
-    Route::post('/cards/{card}/leave', [CardController::class, 'leave']);
-    Route::post('/cards/{card}/assign-members', [CardController::class, 'assignMember']);
-    Route::delete('/cards/{card}/members/{user}', [CardController::class, 'removeMember']);
+    // Checklists API
+    Route::prefix('checklists')->group(function () {
+        Route::put('/{id}', [CheckListController::class, 'update'])->name('checklists.update');
+        Route::delete('/{id}', [CheckListController::class, 'destroy'])->name('checklists.delete');
 
-    //assign-label-to-card
-    Route::post('/card/{cardId}/assign-label', [CardController::class, 'assignLabel']);
-    Route::delete('/card/{cardId}/label/{labelId}', [CardController::class, 'removeLabel']);
-
-    // checkList
-    Route::get('/cards/{card}/checklists', [CheckListController::class, 'index']);
-    Route::post('/cards/{card}/checklist/store', [CheckListController::class, 'store']);
-    Route::post('/checklist/update/{id}', [CheckListController::class, 'update']);
-    Route::delete('/checklist/delete/{id}', [CheckListController::class, 'destroy']);
-
-    //checkListItem
-    Route::prefix('/checklist')->group(function () {
-        Route::get('/{checklist}/checklist-item/list', [CheckListItemController::class, 'index']);
-        Route::post('/{checklist}/checklist-item/store', [CheckListItemController::class, 'store']); // Chi tiết 1 checklist
-        Route::post('/{checklist}/checklist-item/update/{item}', [CheckListItemController::class, 'update']); // Cập nhật checklist
-        Route::delete('/{checklist}/checklist-item/delete/{item}', [CheckListItemController::class, 'destroy']); // Xoá checklist
-        Route::post('/{checklist}/checklist-item/toggle/{item}', [ChecklistItemController::class, 'toggle']); // Check/Uncheck
+        // Checklist Items API
+        Route::prefix('{id}/items')->group(function () {
+            Route::get('/', [CheckListItemController::class, 'index'])->name('checklists.items.index');
+            Route::post('/', [CheckListItemController::class, 'store'])->name('checklists.items.create');
+            Route::put('/{item_id}', [CheckListItemController::class, 'update'])->name('checklists.items.update');
+            Route::delete('/{item_id}', [CheckListItemController::class, 'destroy'])->name('checklists.items.delete');
+            Route::post('/{item_id}/toggle', [CheckListItemController::class, 'toggle'])->name('checklists.items.toggle');
+        });
     });
 
-    //comment
-    Route::prefix('/card/{card}/comment')->group(function () {
-        Route::get('/list', [CommentController::class, 'index']); // Lấy tất cả comment (kèm replies)
-        Route::post('/create', [CommentController::class, 'store']); // Tạo comment hoặc reply
+    // Comments API
+    Route::prefix('comments')->group(function () {
+        Route::post('/{id}/replies', [CommentController::class, 'reply'])->name('comments.replies.create');
+        Route::put('/{id}', [CommentController::class, 'update'])->name('comments.update');
+        Route::delete('/{id}', [CommentController::class, 'destroy'])->name('comments.delete');
     });
-    Route::post('/comment/{comment}/reply', [CommentController::class, 'reply']); // Tạo comment hoặc reply
-    Route::post('/comment/update/{comment}', [CommentController::class, 'update']); // Cập nhật comment
-    Route::delete('/comment/delete/{comment}', [CommentController::class, 'destroy']); // Xóa comment
 
-    //due date
-    Route::prefix('card/{card}/due-date')->group(function () {
-        Route::post('/create', [DueDateController::class, 'store']);     // Tạo hoặc cập nhật due date
+    // Due Dates API
+    Route::prefix('due-dates')->group(function () {
+        Route::put('/{id}', [DueDateController::class, 'update'])->name('due-dates.update');
+        Route::delete('/{id}', [DueDateController::class, 'destroy'])->name('due-dates.delete');
+        Route::patch('/{id}/toggle', [DueDateController::class, 'toggleComplete'])->name('due-dates.toggle');
     });
-    Route::put('/due-date/update/{id}', [DueDateController::class, 'update']);     // Sửa due date
-    Route::delete('/due-date/delete/{id}', [DueDateController::class, 'destroy']); // Xoá due date
-    Route::patch('/due-date/toggle-complete/{id}', [DueDateController::class, 'toggleComplete']);
 
-    //attachment
-    Route::get('/card/{cardId}/attachments', [AttachmentController::class, 'index']);
-    Route::post('/card/{cardId}/attachment/store', [AttachmentController::class, 'store']);
-    Route::put('/attachment/{id}', [AttachmentController::class, 'update']);
-    Route::delete('/attachment/{id}', [AttachmentController::class, 'destroy']);
+    // Attachments API
+    Route::prefix('attachments')->group(function () {
+        Route::put('/{id}', [AttachmentController::class, 'update'])->name('attachments.update');
+        Route::delete('/{id}', [AttachmentController::class, 'destroy'])->name('attachments.delete');
+    });
 
     Route::prefix('domains')->group(function () {
         Route::get('/', [DomainController::class, 'listDomain'])->name('domain.list');
@@ -201,34 +273,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [TeamController::class, 'index'])->name('team.list');
         Route::post('/store', [TeamController::class, 'store'])->name('team.store');
         Route::post('/update/{id}', [TeamController::class, 'update'])->name('team.update');
-        Route::delete('/delete/{id}', [TeamController::class, 'destroy'])->name('team.destroy');
+        Route::get('/delete/{id}', [TeamController::class, 'destroy'])->name('team.destroy');
         Route::get('/get-permission-by-team', [TeamController::class, 'getPermissionByTeam'])->name('team.get.permission');
-        Route::get('/list-with-permission', [TeamController::class, 'listTeamWithPermission'])->name('team.list.with.permission');
     });
 
     Route::prefix('users')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('user.list');
-        Route::post('/store', [UserController::class, 'store'])->name('user.store');
+        Route::get('/{id}', [UserController::class, 'show'])->name('user.edit');
         Route::post('/update/{id}', [UserController::class, 'update'])->name('user.update');
         Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('user.destroy');
-    });
-
-    Route::prefix('sites')->group(function () {
-        Route::get('/', [SiteController::class, 'index'])->name('sites.list');
-        Route::post('/', [SiteController::class, 'store'])->name('sites.store');
-        Route::get('/{id}', [SiteController::class, 'show'])->name('sites.show');
-        Route::put('/{id}', [SiteController::class, 'update'])->name('sites.update');
-        Route::delete('/{id}', [SiteController::class, 'destroy'])->name('sites.destroy');
-        Route::patch('/{id}/language', [SiteController::class, 'updateLanguage'])->name('sites.update.language');
-    });
-
-    Route::prefix('cloudflare')->group(function () {
-        Route::get('/projects', [CloudflareController::class, 'getProjects'])->name('cloudflare.get.projects');
-        Route::post('/project/create', [CloudflareController::class, 'createProject'])->name('cloudflare.create.project');
-        Route::post('/project/update', [CloudflareController::class, 'updateProject'])->name('cloudflare.update.project');
-        Route::post('/deploy', [CloudflareController::class, 'createDeployment'])->name('cloudflare.create.deployment');
-        Route::post('/domain/apply', [CloudflareController::class, 'applyDomain'])->name('cloudflare.apply.domain');
-        Route::post('/deploy-exports', [CloudflareController::class, 'deployExports'])->name('cloudflare.deploy.exports');
     });
 
     Route::prefix('push-system')->group(function () {
@@ -237,11 +290,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/user-active/list', [PushSystemController::class, 'listPushSystemUserActive'])->name('push.system.user.active.list');
         Route::post('/config/update/{id}', [PushSystemController::class, 'updatePushSystemConfig'])->name('push.system.config.update');
         Route::get('/count-current-push', [PushSystemController::class, 'getCountCurrentPush'])->name('push.system.count.current.push');
-    });
-
-    Route::prefix('html-source')->group(function () {
-        Route::get('/', [HtmlSourceController::class, 'listHtmlSource'])->name('html.source.list');
-        Route::get('/{id}', [HtmlSourceController::class, 'showHtmlSource'])->name('html.source.show');
     });
 
     Route::prefix('server')->group(function () {

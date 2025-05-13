@@ -22,18 +22,18 @@ class CartRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'list_id' => 'required',
             'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
         ];
     }
-    
+
     public function messages()
     {
         return [
-            'list_id.required' => __('validation.required'),
             'title.required' => __('validation.required'),
             'title.string' => __('validation.string'),
             'title.max' => __('validation.max'),
+            'description.string' => __('validation.string'),
         ];
     }
 }
