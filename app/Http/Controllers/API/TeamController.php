@@ -211,4 +211,31 @@ class TeamController extends Controller
             ], 500);
         }
     }
+
+    public function listTeamWithPermission()
+    {
+        try {
+            $teams = $this->teamRepository->getList();
+            $permissions = $this->permissionRepository->get();
+ 
+            $data = [
+                'teams' => $teams,
+                'permissions' => $permissions,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lấy danh sách team thành công',
+                'type' => 'list_team_no_filter_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy danh sách team không thành công',
+                'type' => 'list_team_no_filter_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
