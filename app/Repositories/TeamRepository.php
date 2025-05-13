@@ -26,4 +26,9 @@ class TeamRepository extends BaseRepository
     {
         return $this->model->with('permissions')->where('id', $id)->first();
     }
+
+    public function getList()
+    {
+        return $this->model->get();
+    }
 }
