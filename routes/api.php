@@ -55,6 +55,8 @@ Route::middleware('auth:sanctum')->group(function () {
     //admin change password for user
     Route::post('/change-password-user/{id}/', [UserController::class, 'updatePassword']);
 
+    //Sau comment này tất cả các route sẽ được tính vào phân quyền của hệ thống.
+
     // Page routes
     Route::post('/create-page', [PageController::class, 'create']);
     Route::post('/update-page/{pageId}', [PageController::class, 'update']);
@@ -201,7 +203,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [TeamController::class, 'index'])->name('team.list');
         Route::post('/store', [TeamController::class, 'store'])->name('team.store');
         Route::post('/update/{id}', [TeamController::class, 'update'])->name('team.update');
-        Route::delete('/delete/{id}', [TeamController::class, 'destroy'])->name('team.destroy');
+        Route::get('/{id}', [TeamController::class, 'edit'])->name('team.edit');
+        Route::delete('/delete', [TeamController::class, 'destroy'])->name('team.destroy');
         Route::get('/get-permission-by-team', [TeamController::class, 'getPermissionByTeam'])->name('team.get.permission');
         Route::get('/list-with-permission', [TeamController::class, 'listTeamWithPermission'])->name('team.list.with.permission');
     });

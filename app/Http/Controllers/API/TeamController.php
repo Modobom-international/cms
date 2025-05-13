@@ -81,6 +81,7 @@ class TeamController extends Controller
     public function store(TeamRequest $request)
     {
         try {
+            $input = $request->all();
             $getPermission = $request->get('permissions');
             $permissions = array();
 
@@ -150,9 +151,11 @@ class TeamController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy(Request $request)
     {
         try {
+            $input = $request->all();
+            $id = $request->get('id');
             $team = $this->teamRepository->getByID($id);
             if (!$team) {
                 return response()->json([
@@ -217,10 +220,10 @@ class TeamController extends Controller
         try {
             $teams = $this->teamRepository->getList();
             $permissions = $this->permissionRepository->get();
- 
+
             $data = [
-                'teams' => $teams,
-                'permissions' => $permissions,
+                'teams' => $teams ?? [],
+                'permissions' => $permissions ?? [],
             ];
 
             return response()->json([
@@ -234,6 +237,35 @@ class TeamController extends Controller
                 'success' => false,
                 'message' => 'Lấy danh sách team không thành công',
                 'type' => 'list_team_no_filter_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function edit($id)
+    {
+        try {
+            $team = $this->teamRepository->findTeam($id);
+            if (empty($team)) {
+                return response()->json([
+                    'success' => false,
+                    'data' => $team,
+                    'message' => 'Không tìm thấy team',
+                    'type' => 'team_not_found',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $team,
+                'message' => 'Lấy team thành công',
+                'type' => 'get_team_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy team không thành công',
+                'type' => 'get_team_fail',
                 'error' => $e->getMessage()
             ], 500);
         }

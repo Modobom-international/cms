@@ -35,6 +35,4 @@ class CommentRepository extends BaseRepository
     {
         return $this->model->where('id', $id)->delete();
     }
-    
-    
 }
