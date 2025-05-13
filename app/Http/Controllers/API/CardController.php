@@ -15,6 +15,7 @@ use App\Repositories\UserRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\UpdateCardPositionsRequest;
 
 class CardController extends Controller
 {
@@ -23,35 +24,34 @@ class CardController extends Controller
     protected $userRepository;
     protected $labelRepository;
     protected $logActivityUserRepository;
-    
+
     public function __construct(
         ListBoardRepository $listBoardRepository,
         UserRepository $userRepository,
         CardRepository $cardRepository,
         LogActivityUserRepository $logActivityUserRepository,
         LabelRepository $labelRepository
-    )
-    {
+    ) {
         $this->listBoardRepository = $listBoardRepository;
         $this->userRepository = $userRepository;
         $this->cardRepository = $cardRepository;
         $this->logActivityUserRepository = $logActivityUserRepository;
         $this->labelRepository = $labelRepository;
     }
-    
+
     // 📌 1️⃣ Lấy danh sách Card theo List
     public function index($listId)
     {
         $listBoard = $this->listBoardRepository->show($listId);
-    
-        if(!$listBoard) {
+
+        if (!$listBoard) {
             return response()->json([
                 'success' => false,
                 'message' => 'Không tìm thấy listBoard',
                 'type' => 'listBoard_not_found',
             ], 404);
         }
-    
+
         // Kiểm tra xem user có quyền hay không
         if (!Auth::user()->boards()->where('board_id', $listBoard->board_id)->exists()) {
             return response()->json([
@@ -60,31 +60,31 @@ class CardController extends Controller
                 'type' => 'unauthorized',
             ], 403);
         }
-        
+
         $cards = $listBoard->cards;
-    
+
         return response()->json([
             'success' => true,
             'cards' => $cards,
             'message' => 'Danh sách cards',
             'type' => 'list_cards',
-        ], 403);
+        ], 200);
     }
-    
+
     // 📌 2️⃣ Tạo Card mới
     public function store(CartRequest $request, $listId)
     {
-        try{
+        try {
             $input = $request->except('token');
             $listBoard = $this->listBoardRepository->show($listId);
-            if(!$listBoard) {
+            if (!$listBoard) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không tìm thấy listBoard',
                     'type' => 'listBoard_not_found',
                 ], 404);
             }
-    
+
             // Kiểm tra quyền truy cập
             if (!Auth::user()->boards()->where('board_id', $listBoard->board_id)->exists()) {
                 return response()->json([
@@ -93,16 +93,16 @@ class CardController extends Controller
                     'type' => 'unauthorized',
                 ], 403);
             }
-            
+
             $maxPosition = $this->cardRepository->maxPosition($listBoard->id);
-            $position = is_null($maxPosition) ? 0 : $maxPosition + 1;
+            $position = is_null($maxPosition) ? 1 : $maxPosition + 1;
             $card = [
                 'list_id' => $listBoard->id,
                 'title' => $input['title'],
                 'position' => $position,
                 'description' => $input['description'] ?? "",
-           ];
-            
+            ];
+
             $dataCard = $this->cardRepository->createCard($card);
             // Ghi log hoạt động
             $log = [
@@ -111,11 +111,11 @@ class CardController extends Controller
                 'action_type' => 'create',
                 'target_type' => 'create card',
                 'target_id' => $dataCard->id,
-                'content' => Auth::user()->name . ' đã tạo card từ ' .$listBoard->title   ?? '',
+                'content' => Auth::user()->name . ' đã tạo card từ ' . $listBoard->title ?? '',
             ];
-            
+
             $this->logActivityUserRepository->create($log);
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $dataCard,
@@ -132,11 +132,11 @@ class CardController extends Controller
             ], 500);
         }
     }
-    
+
     // 📌 3️⃣ Cập nhật Card
     public function update(CartUpdateRequest $request, $id)
     {
-        try{
+        try {
             $input = $request->except('token');
             $card = $this->cardRepository->show($id);
             if (!$card) {
@@ -147,7 +147,7 @@ class CardController extends Controller
                 ], 404);
             }
             $listBoard = $this->listBoardRepository->show($card['list_id']);
-            if(!$listBoard) {
+            if (!$listBoard) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không tìm thấy listBoard',
@@ -164,7 +164,7 @@ class CardController extends Controller
             }
             $maxPosition = $this->cardRepository->maxPosition($listBoard->id);
             $position = is_null($maxPosition) ? 0 : $maxPosition + 1;
-        
+
             $card = [
                 'title' => $input['title'],
                 'position' => $position,
@@ -172,7 +172,7 @@ class CardController extends Controller
                 'list_id' => $listBoard->id,
             ];
             $dataCard = $this->cardRepository->updateCard($card, $id);
-    
+
             // Ghi log hoạt động
             $log = [
                 'user_id' => Auth::user()->id,
@@ -180,11 +180,11 @@ class CardController extends Controller
                 'action_type' => 'update',
                 'target_type' => 'Update card',
                 'target_id' => $dataCard->id,
-                'content' => Auth::user()->name . ' đã cập nhập card từ ' .$listBoard->title   ?? '',
+                'content' => Auth::user()->name . ' đã cập nhập card từ ' . $listBoard->title ?? '',
             ];
-    
+
             $this->logActivityUserRepository->create($log);
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $dataCard,
@@ -201,8 +201,8 @@ class CardController extends Controller
             ], 500);
         }
     }
-    
-      // 📌 4️⃣ Xóa Card
+
+    // 📌 4️⃣ Xóa Card
     public function destroy($id)
     {
         $card = $this->cardRepository->show($id);
@@ -230,14 +230,14 @@ class CardController extends Controller
             'list_id' => 'required',
             'position' => 'required|integer|min:1',
         ]);
-    
+
         if ($validator->fails()) {
             return response()->json([
                 'errors' => $validator->errors()
             ], 422);
         }
-        
-        try{
+
+        try {
             $card = $this->cardRepository->show($id);
             if (!$card) {
                 return response()->json([
@@ -248,16 +248,16 @@ class CardController extends Controller
             }
             $input = $request->except('token');
             $listBoard = $this->listBoardRepository->show($input['list_id']);
-            if(!$listBoard) {
+            if (!$listBoard) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không tìm thấy listBoard',
                     'type' => 'listBoard_not_found',
                 ], 404);
             }
-        
+
             $card = $this->cardRepository->moveCard($id, $input['list_id'], $input['position']);
-        
+
             return response()->json([
                 'success' => true,
                 'message' => 'Card đã được di chuyển thành công',
@@ -273,7 +273,7 @@ class CardController extends Controller
             ], 500);
         }
     }
-    
+
     public function getLogsByCard($cardId)
     {
         try {
@@ -294,7 +294,7 @@ class CardController extends Controller
                 ], 403);
             }
             $logs = $this->logActivityUserRepository->listLog($card);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Lấy log thành công',
@@ -308,8 +308,8 @@ class CardController extends Controller
             ], 500);
         }
     }
-    
-    
+
+
     public function join($cardId)
     {
         $card = $this->cardRepository->show($cardId);
@@ -320,9 +320,9 @@ class CardController extends Controller
                 'type' => 'card_not_found',
             ], 404);
         }
-        
+
         $user = Auth::user();
-        
+
         if ($card->members()->where('user_id', $user->id)->exists()) {
             return response()->json([
                 'success' => false,
@@ -330,10 +330,10 @@ class CardController extends Controller
                 'type' => 'user_exists',
             ], 400);
         }
-        
+
         // Attach user to card
         $card->members()->attach($user->id);
-        
+
         // Ghi log hoạt động
         $log = [
             'user_id' => $user->id,
@@ -343,7 +343,7 @@ class CardController extends Controller
             'target_id' => $card->id,
             'content' => "{$user->name} tham gia  \"{$card->title}\"",
         ];
-        
+
         $this->logActivityUserRepository->create($log);
         return response()->json([
             'success' => true,
@@ -351,8 +351,8 @@ class CardController extends Controller
             'type' => 'join_card_success',
         ], 200);
     }
-    
-    
+
+
     public function leave($cardId)
     {
         $card = $this->cardRepository->show($cardId);
@@ -371,9 +371,9 @@ class CardController extends Controller
                 'type' => 'user_exists',
             ], 400);
         }
-        
+
         $card->members()->detach($user->id);
-        
+
         // Ghi log hoạt động
         $log = [
             'user_id' => $user->id,
@@ -390,7 +390,7 @@ class CardController extends Controller
             'type' => 'leave_card_success',
         ], 200);
     }
-    
+
     public function assignMember(AssignMultipleMembersRequest $request, $cardId)
     {
         try {
@@ -411,11 +411,11 @@ class CardController extends Controller
                     'type' => 'unauthorized',
                 ], 403);
             }
-            
+
             // Lặp qua danh sách user_id từ request để assign nhiều user
             $assigned = [];
             $skipped = [];
-            
+
             foreach ($request->user_ids as $userId) {
                 $user = $this->userRepository->find($userId);
                 if (!$user) {
@@ -425,7 +425,7 @@ class CardController extends Controller
                     ];
                     continue;
                 }
-                
+
                 $alreadyAssigned = $card->members()->where('user_id', $userId)->exists();
                 if ($alreadyAssigned) {
                     $skipped[] = [
@@ -438,7 +438,7 @@ class CardController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-    
+
                 //log activity
                 $userAssign = User::find($userId);
                 $log = [
@@ -452,7 +452,7 @@ class CardController extends Controller
                 $this->logActivityUserRepository->create($log);
                 $assigned[] = $userId;
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Assign member hoàn tất',
@@ -462,7 +462,7 @@ class CardController extends Controller
                     'skipped' => $skipped,
                 ]
             ], 201);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -472,7 +472,7 @@ class CardController extends Controller
             ], 500);
         }
     }
-    
+
     public function removeMember($cardId, $userId)
     {
         try {
@@ -484,7 +484,7 @@ class CardController extends Controller
                     'type' => 'card_not_found',
                 ], 404);
             }
-            
+
             // Kiểm tra quyền truy cập vào board chứa card
             $boardId = optional($card->listBoard)->board_id;
             if (!$boardId || !Auth::user()->boards()->where('board_id', $boardId)->exists()) {
@@ -494,7 +494,7 @@ class CardController extends Controller
                     'type' => 'unauthorized',
                 ], 403);
             }
-            
+
             $user = $this->userRepository->find($userId);
             if (!$user) {
                 return response()->json([
@@ -503,7 +503,7 @@ class CardController extends Controller
                     'type' => 'user_not_found',
                 ], 404);
             }
-            
+
             // Kiểm tra user đã tham gia card chưa
             if (!$card->members()->where('user_id', $user->id)->exists()) {
                 return response()->json([
@@ -512,10 +512,10 @@ class CardController extends Controller
                     'type' => 'user_not_assigned',
                 ], 400);
             }
-            
+
             // Xoá user khỏi card
             $card->members()->detach($user->id);
-    
+
             // Ghi log
             $log = [
                 'user_id' => Auth::id(), // người thực hiện
@@ -526,13 +526,13 @@ class CardController extends Controller
                 'content' => Auth::user()->name . ' đã xóa ' . $user->name . ' khỏi card"' . $card->title . '"',
             ];
             $this->logActivityUserRepository->create($log);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Xoá member thành công',
                 'type' => 'remove_member_success',
             ], 200);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -542,33 +542,35 @@ class CardController extends Controller
             ], 500);
         }
     }
-    
+
     protected function userHasAccessToCard(Card $card): bool
     {
         $user = auth()->user();
-        if (!$user) return false;
-        
+        if (!$user)
+            return false;
+
         $boardId = optional($card->listBoard)->board_id;
-        
-        if (!$boardId) return false;
-        
+
+        if (!$boardId)
+            return false;
+
         return $user->boards()->where('board_id', $boardId)->exists();
     }
-    
-    
-    public function assignLabel(Request  $request, $cardId)
+
+
+    public function assignLabel(Request $request, $cardId)
     {
         // Validate the incoming request
         $validator = Validator::make($request->all(), [
             'label_id' => 'required|integer',
         ]);
-    
+
         if ($validator->fails()) {
             return response()->json([
                 'errors' => $validator->errors()
             ], 422);
         }
-        
+
         try {
             $input = $request->except('token');
             $card = $this->cardRepository->show($cardId);
@@ -579,7 +581,7 @@ class CardController extends Controller
                     'type' => 'card_not_found',
                 ], 404);
             }
-        
+
             $label = $this->labelRepository->show($input['label_id']);
             if (!$label) {
                 return response()->json([
@@ -596,7 +598,7 @@ class CardController extends Controller
                     'type' => 'label_exist',
                 ], 400);
             }
-        
+
             // Kiểm tra user có thuộc board chứa card này không
             if (!$this->userHasAccessToCard($card)) {
                 return response()->json([
@@ -605,7 +607,7 @@ class CardController extends Controller
                     'type' => 'unauthorized',
                 ], 403);
             }
-    
+
             // Gán label vào card
             $card->labels()->attach($label);
             // Ghi log
@@ -617,9 +619,9 @@ class CardController extends Controller
                 'target_id' => $label->id,
                 'content' => Auth::user()->name . ' gán nhãn "' . $label->name . '" vào card"' . $card->title . '"',
             ];
-    
+
             $this->logActivityUserRepository->create($log);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Assign label thành công',
@@ -646,7 +648,7 @@ class CardController extends Controller
                     'type' => 'card_not_found',
                 ], 404);
             }
-        
+
             $label = $this->labelRepository->show($labelId);
             if (!$label) {
                 return response()->json([
@@ -663,7 +665,7 @@ class CardController extends Controller
                     'type' => 'label_exist',
                 ], 400);
             }
-    
+
             // Kiểm tra user có thuộc board chứa card này không
             if (!$this->userHasAccessToCard($card)) {
                 return response()->json([
@@ -672,10 +674,10 @@ class CardController extends Controller
                     'type' => 'unauthorized',
                 ], 403);
             }
-            
+
             // Xóa label khỏi card
             $card->labels()->detach($label);
-    
+
             // Ghi log
             $log = [
                 'user_id' => Auth::id(), // người thực hiện
@@ -686,7 +688,7 @@ class CardController extends Controller
                 'content' => Auth::user()->name . ' xóa gán nhãn "' . $label->name . '" từ card"' . $card->title . '"',
             ];
             $this->logActivityUserRepository->create($log);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => ' xóa label khỏi card thành công',
@@ -697,6 +699,76 @@ class CardController extends Controller
                 'success' => false,
                 'message' => 'Lỗi khi xóa label khỏi card ',
                 'type' => 'error_delete_label_to_card',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update positions for multiple cards at once.
+     */
+    public function updatePositions(UpdateCardPositionsRequest $request)
+    {
+        try {
+            $positions = $request->input('positions');
+
+            // Get the first card to check board access
+            $firstCard = $this->cardRepository->show($positions[0]['id']);
+            if (!$firstCard) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy card',
+                    'type' => 'card_not_found',
+                ], 404);
+            }
+
+            // Check if user has access to the board
+            $listBoard = $this->listBoardRepository->show($firstCard->list_id);
+            if (!$listBoard || !Auth::user()->boards()->where('board_id', $listBoard->board_id)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền cập nhật vị trí card',
+                    'type' => 'Unauthorized',
+                ], 403);
+            }
+
+            // Verify all cards and lists belong to the same board
+            foreach ($positions as $position) {
+                $card = $this->cardRepository->show($position['id']);
+                $list = $this->listBoardRepository->show($position['list_id']);
+
+                if (!$card || !$list || $list->board_id !== $listBoard->board_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Tất cả card và list phải thuộc cùng một board',
+                        'type' => 'invalid_board',
+                    ], 400);
+                }
+            }
+
+            $this->cardRepository->updatePositions($positions);
+
+            // Log the activity
+            $log = [
+                'user_id' => Auth::id(),
+                'card_id' => $firstCard->id,
+                'action_type' => 'update positions',
+                'target_type' => 'Update card positions',
+                'target_id' => $firstCard->id,
+                'content' => Auth::user()->name . ' đã cập nhật vị trí nhiều card'
+            ];
+            $this->logActivityUserRepository->create($log);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật vị trí card thành công',
+                'type' => 'update_positions_success',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi cập nhật vị trí card',
+                'type' => 'error_update_positions',
                 'error' => $e->getMessage()
             ], 500);
         }

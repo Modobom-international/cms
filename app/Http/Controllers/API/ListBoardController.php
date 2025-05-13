@@ -17,39 +17,40 @@ use App\Enums\Utility;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use App\Traits\LogsActivity;
+use App\Http\Requests\UpdateListPositionsRequest;
 
 class ListBoardController extends Controller
 {
     use LogsActivity;
-    
+
     protected $boardRepository;
     protected $workspaceUserRepository;
     protected $utility;
     protected $userRepository;
     protected $listBoardRepository;
-    
+
     public function __construct(
         Utility $utility,
         BoardRepository $boardRepository,
         ListBoardRepository $listBoardRepository,
         WorkspaceUserRepository $workspaceUserRepository,
-        UserRepository $userRepository)
-    {
+        UserRepository $userRepository
+    ) {
         $this->utility = $utility;
         $this->listBoardRepository = $listBoardRepository;
         $this->workspaceUserRepository = $workspaceUserRepository;
         $this->boardRepository = $boardRepository;
         $this->userRepository = $userRepository;
     }
-    
+
     /**
-     * Lấy danh sách workspace của user.
+     * Lấy danh sách List của board.
      */
     public function index($boardId)
     {
         try {
             $board = $this->boardRepository->show($boardId);
-            if(!$board) {
+            if (!$board) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không tìm thấy board',
@@ -65,7 +66,7 @@ class ListBoardController extends Controller
                 ], 403);
             }
             $lists = $this->listBoardRepository->getListsByBoard($boardId);
-        
+
             return response()->json([
                 'success' => true,
                 'message' => 'Lấy danh sách list thành công',
@@ -79,7 +80,7 @@ class ListBoardController extends Controller
             ], 500);
         }
     }
-    
+
     /**
      * Tạo workspace mới.
      */
@@ -88,7 +89,7 @@ class ListBoardController extends Controller
         try {
             $input = $input = $request->except(['_token']);
             $board = $this->boardRepository->show($input['board_id']);
-            if(!$board) {
+            if (!$board) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không tìm thấy board',
@@ -103,20 +104,20 @@ class ListBoardController extends Controller
                     'type' => 'Unauthorized',
                 ], 403);
             }
-        
+
             // Xác định position nếu không có
-            $maxPosition = $this->listBoardRepository->maxPosition( $board->id);
-            $position = is_null($maxPosition) ? 0 : $maxPosition + 1;
-        
+            $maxPosition = $this->listBoardRepository->maxPosition($board->id);
+            $position = is_null($maxPosition) ? 1 : $maxPosition + 1;
+
             // Tạo list mới
             $dataList = [
                 'board_id' => $board->id,
                 'title' => $input['title'],
                 'position' => $position
             ];
-    
-            $this->listBoardRepository->createListBoard( $dataList);
-        
+
+            $this->listBoardRepository->createListBoard($dataList);
+
             return response()->json([
                 'success' => true,
                 'data' => $dataList,
@@ -131,16 +132,16 @@ class ListBoardController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-        
+
     }
-    
+
     /**
      * Lấy chi tiết workspace theo ID.
      */
     public function show($id)
     {
         $listBoard = $this->listBoardRepository->show($id);
-        if(!$listBoard) {
+        if (!$listBoard) {
             return response()->json([
                 'success' => false,
                 'message' => 'Không tìm thấy listBoard',
@@ -154,25 +155,25 @@ class ListBoardController extends Controller
             'type' => 'listBoard_information',
         ], 201);
     }
-    
+
     /**
-     * Cập nhật workspace.
+     * Cập nhật list.
      */
     public function update(UpdateListRequest $request, $id)
     {
         try {
-            $input = $input = $request->except(['_token']);
+            $input = $request->except(['_token']);
             $listBoard = $this->listBoardRepository->show($id);
-            if(!$listBoard) {
+            if (!$listBoard) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không tìm thấy listBoard',
                     'type' => 'listBoard_not_found',
                 ], 404);
             }
-            
+
             $board = $this->boardRepository->show($listBoard->board_id);
-            
+
             // Kiểm tra quyền truy cập
             if (!$this->boardRepository->userHasAccess($board->id)) {
                 return response()->json([
@@ -181,7 +182,7 @@ class ListBoardController extends Controller
                     'type' => 'Unauthorized',
                 ], 403);
             }
-        
+
             // Xác định position nếu không có
             // Nếu có thay đổi vị trí, cập nhật lại vị trí
             if (isset($input['position'])) {
@@ -190,12 +191,12 @@ class ListBoardController extends Controller
             // Tạo list mới
             $dataList = [
                 'board_id' => $board->id,
-                'title' => $input['title'],
+                'title' => $input['title'] ?? $listBoard->title,
                 'position' => $input['position'] ?? $listBoard->position
             ];
-        
-            $this->listBoardRepository->updateListBoard( $dataList, $id);
-        
+
+            $this->listBoardRepository->updateListBoard($dataList, $id);
+
             return response()->json([
                 'success' => true,
                 'data' => $dataList,
@@ -210,21 +211,21 @@ class ListBoardController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-        
+
     }
-    
+
     // Hàm cập nhật vị trí list
     private function updateListPosition($list, $newPosition)
     {
         if ($newPosition < 1) {
             throw ValidationException::withMessages(['position' => 'Vị trí không hợp lệ']);
         }
-        
+
         $maxPosition = ListBoard::max('position');
         if ($newPosition > $maxPosition) {
             throw ValidationException::withMessages(['position' => 'Vị trí vượt quá giới hạn']);
         }
-        
+
         // Nếu di chuyển lên hoặc xuống, cập nhật lại vị trí của các list khác
         if ($newPosition < $list->position) {
             ListBoard::whereBetween('position', [$newPosition, $list->position - 1])
@@ -233,10 +234,10 @@ class ListBoardController extends Controller
             ListBoard::whereBetween('position', [$list->position + 1, $newPosition])
                 ->decrement('position');
         }
-        
+
         $list->update(['position' => $newPosition]);
     }
-    
+
     /**
      * Xóa workspace.
      */
@@ -244,14 +245,14 @@ class ListBoardController extends Controller
     {
         try {
             $listBoard = $this->listBoardRepository->show($id);
-            if(!$listBoard) {
+            if (!$listBoard) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không tìm thấy listBoard',
                     'type' => 'listBoard_not_found',
                 ], 404);
             }
-            
+
             // Kiểm tra xem user có quyền xóa hay không
             if (!Auth::user()->boards()->where('board_id', $listBoard->board_id)->exists()) {
                 return response()->json([
@@ -260,9 +261,9 @@ class ListBoardController extends Controller
                     'type' => 'unauthorized',
                 ], 403);
             }
-            
+
             $this->listBoardRepository->destroy($id);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'listBoard được xóa thành công',
@@ -277,19 +278,19 @@ class ListBoardController extends Controller
             ], 500);
         }
     }
-    
+
     public function joinPublicWorkspace($workspaceId)
     {
         try {
             $workspace = $this->workspaceRepository->show($workspaceId);
-            if(!$workspace) {
+            if (!$workspace) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không tìm thấy workspace',
                     'type' => 'workspace_not_found',
                 ], 404);
             }
-            
+
             if ($workspace->visibility !== Workspace::WORKSPACE_PUBLIC) {
                 return response()->json([
                     'success' => false,
@@ -297,9 +298,9 @@ class ListBoardController extends Controller
                     'type' => 'workspace_is_private',
                 ], 403);
             }
-            
+
             $user = Auth::user();
-            
+
             // Kiểm tra user đã có trong workspace chưa
             $memberExist = $this->workspaceUserRepository->checkMemberExist($user->id, $workspaceId);
             if ($memberExist) {
@@ -309,15 +310,15 @@ class ListBoardController extends Controller
                     'type' => 'user_exist',
                 ], 400);
             }
-            
+
             $dataWorkspaceUser = [
                 'workspace_id' => $workspaceId,
                 'user_id' => $user->id,
                 'role' => $request->role ?? Workspace::ROLE_MEMBER,
             ];
-            
+
             $this->workspaceUserRepository->createWorkSpaceUser($dataWorkspaceUser);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Bạn đã join workspace thành công',
@@ -332,7 +333,7 @@ class ListBoardController extends Controller
             ], 500);
         }
     }
-    
+
     public function addMember(Request $request, $workspaceId)
     {
         try {
@@ -340,13 +341,13 @@ class ListBoardController extends Controller
             $validator = Validator::make($request->all(), [
                 'email' => 'required|email|exists:users,email',
             ]);
-            
+
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 422);
             }
             //check workspace
             $workspace = $this->workspaceRepository->show($workspaceId);
-            if(!$workspace) {
+            if (!$workspace) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không tìm thấy workspace',
@@ -355,8 +356,8 @@ class ListBoardController extends Controller
             }
             $user = Auth::user();
             // Chỉ owner hoặc admin mới có quyền mời user
-            $isAdmin = $this->workspaceUserRepository->checkRoleAdmin($user->id ,$workspaceId);
-            
+            $isAdmin = $this->workspaceUserRepository->checkRoleAdmin($user->id, $workspaceId);
+
             if (!$isAdmin && $workspace->owner_id !== $user->id) {
                 return response()->json([
                     'success' => false,
@@ -364,7 +365,7 @@ class ListBoardController extends Controller
                     'type' => 'Unauthorized',
                 ], 403);
             }
-            
+
             $user = $this->userRepository->getInfo($request->email);
             if (!$user) {
                 return response()->json([
@@ -382,15 +383,15 @@ class ListBoardController extends Controller
                     'type' => 'user_exist',
                 ], 400);
             }
-            
+
             $dataWorkspaceUser = [
                 'workspace_id' => $workspaceId,
                 'user_id' => $user->id,
                 'role' => $request->role ?? Workspace::ROLE_MEMBER,
             ];
-            
+
             $this->workspaceUserRepository->createWorkSpaceUser($dataWorkspaceUser);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Thêm member thành công',
@@ -405,7 +406,7 @@ class ListBoardController extends Controller
             ], 500);
         }
     }
-    
+
     public function listMembers($workspaceId)
     {
         $members = $this->workspaceUserRepository->getMembers($workspaceId);
@@ -416,23 +417,79 @@ class ListBoardController extends Controller
             'type' => 'list_members',
         ], 201);
     }
-    
+
     public function removeMember(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'workspace_id' => 'required|exists:workspaces,id',
             'user_id' => 'required|exists:users,id',
         ]);
-        
+
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
-        
+
         $this->workspaceUserRepository->removeMember($request->workspace_id, $request->user_id);
         return response()->json([
             'success' => true,
             'message' => 'Member được xóa thành công',
             'type' => 'delete_member_success',
         ], 201);
+    }
+
+    /**
+     * Update positions for multiple lists at once.
+     */
+    public function updatePositions(UpdateListPositionsRequest $request)
+    {
+        try {
+            $positions = $request->input('positions');
+
+            // Get the first list to check board access
+            $firstList = $this->listBoardRepository->show($positions[0]['id']);
+            if (!$firstList) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy list',
+                    'type' => 'list_not_found',
+                ], 404);
+            }
+
+            // Check if user has access to the board
+            if (!$this->boardRepository->userHasAccess($firstList->board_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền cập nhật vị trí list',
+                    'type' => 'Unauthorized',
+                ], 403);
+            }
+
+            // Verify all lists belong to the same board
+            foreach ($positions as $position) {
+                $list = $this->listBoardRepository->show($position['id']);
+                if ($list->board_id !== $firstList->board_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Tất cả list phải thuộc cùng một board',
+                        'type' => 'invalid_board',
+                    ], 400);
+                }
+            }
+
+            $this->listBoardRepository->updatePositions($positions);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật vị trí list thành công',
+                'type' => 'update_positions_success',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi cập nhật vị trí list',
+                'type' => 'error_update_positions',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
