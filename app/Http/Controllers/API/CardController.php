@@ -707,7 +707,7 @@ class CardController extends Controller
     /**
      * Update positions for multiple cards at once.
      */
-    public function updatePositions(UpdateCardPositionsRequest $request)
+    public function updateCardPositions(UpdateCardPositionsRequest $request)
     {
         try {
             $positions = $request->input('positions');

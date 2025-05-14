@@ -440,7 +440,7 @@ class ListBoardController extends Controller
     /**
      * Update positions for multiple lists at once.
      */
-    public function updatePositions(UpdateListPositionsRequest $request)
+    public function updateListPositions(UpdateListPositionsRequest $request)
     {
         try {
             $positions = $request->input('positions');
