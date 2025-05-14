@@ -69,7 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('cloudflare/projects')->group(function () {
         Route::get('/', [CloudflareController::class, 'getProjects'])->name('cloudflare.projects.index');
         Route::post('/', [CloudflareController::class, 'createProject'])->name('cloudflare.projects.create');
-        Route::put('/{id}', [CloudflareController::class, 'updateProject'])->name('cloudflare.projects.update');
+        Route::post('/{id}', [CloudflareController::class, 'updateProject'])->name('cloudflare.projects.update');
     });
 
     // Cloudflare Deployments API
@@ -88,7 +88,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [SiteController::class, 'index'])->name('sites.index');
         Route::post('/', [SiteController::class, 'store'])->name('sites.create');
         Route::get('/{id}', [SiteController::class, 'show'])->name('sites.show');
-        Route::put('/{id}', [SiteController::class, 'update'])->name('sites.update');
+        Route::post('/{id}', [SiteController::class, 'update'])->name('sites.update');
         Route::delete('/{id}', [SiteController::class, 'destroy'])->name('sites.delete');
         Route::patch('/{id}/language', [SiteController::class, 'updateLanguage'])->name('sites.language.update');
 
@@ -101,7 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [PageController::class, 'getPages'])->name('pages.index');
         Route::post('/', [PageController::class, 'create'])->name('pages.create');
         Route::get('/{id}', [PageController::class, 'getPage'])->name('pages.show');
-        Route::put('/{id}', [PageController::class, 'update'])->name('pages.update');
+        Route::post('/{id}', [PageController::class, 'update'])->name('pages.update');
         Route::delete('/{id}', [PageController::class, 'destroy'])->name('pages.delete');
 
         // Pages Export API
@@ -110,7 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Pages Tracking Script API
         Route::prefix('{id}/tracking-scripts')->group(function () {
             Route::get('/', [PageController::class, 'getTrackingScript'])->name('pages.tracking-scripts.show');
-            Route::put('/', [PageController::class, 'updateTrackingScript'])->name('pages.tracking-scripts.update');
+            Route::post('/', [PageController::class, 'updateTrackingScript'])->name('pages.tracking-scripts.update');
             Route::delete('/', [PageController::class, 'removeTrackingScript'])->name('pages.tracking-scripts.delete');
         });
     });
@@ -120,7 +120,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [WorkspaceController::class, 'index'])->name('workspaces.index');
         Route::post('/', [WorkspaceController::class, 'store'])->name('workspaces.create');
         Route::get('/{id}', [WorkspaceController::class, 'show'])->name('workspaces.show');
-        Route::put('/{id}', [WorkspaceController::class, 'update'])->name('workspaces.update');
+        Route::post('/{id}', [WorkspaceController::class, 'update'])->name('workspaces.update');
         Route::delete('/{id}', [WorkspaceController::class, 'destroy'])->name('workspaces.delete');
 
         // Workspace Members API
@@ -139,7 +139,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('boards')->group(function () {
         Route::post('/', [BoardController::class, 'store'])->name('boards.create');
         Route::get('/{id}', [BoardController::class, 'show'])->name('boards.show');
-        Route::put('/{id}', [BoardController::class, 'update'])->name('boards.update');
+        Route::post('/{id}', [BoardController::class, 'update'])->name('boards.update');
         Route::delete('/{id}', [BoardController::class, 'destroy'])->name('boards.delete');
 
         // Board Members API
@@ -158,9 +158,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('lists')->group(function () {
         Route::post('/', [ListBoardController::class, 'store'])->name('lists.create');
         Route::get('/{id}', [ListBoardController::class, 'show'])->name('lists.show');
-        Route::put('/{id}', [ListBoardController::class, 'update'])->name('lists.update');
+        Route::post('/{id}', [ListBoardController::class, 'update'])->name('lists.update');
         Route::delete('/{id}', [ListBoardController::class, 'destroy'])->name('lists.delete');
-        Route::put('/positions', [ListBoardController::class, 'updatePositions'])->name('lists.positions.update');
+        Route::put('/positions', [ListBoardController::class, 'updateListPositions'])->name('lists.positions.update');
+
 
         // List Cards API
         Route::prefix('{id}/cards')->group(function () {
@@ -172,10 +173,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Cards API
     Route::prefix('cards')->group(function () {
         Route::get('/{id}', [CardController::class, 'show'])->name('cards.show');
-        Route::put('/{id}', [CardController::class, 'update'])->name('cards.update');
+        Route::post('/{id}', [CardController::class, 'update'])->name('cards.update');
         Route::delete('/{id}', [CardController::class, 'destroy'])->name('cards.delete');
         Route::post('/{id}/move', [CardController::class, 'move'])->name('cards.move');
-        Route::put('/positions', [CardController::class, 'updatePositions'])->name('cards.positions.update');
+        Route::put('/positions', [CardController::class, 'updateCardPositions'])->name('cards.positions.update');
+
         Route::get('/{id}/activity', [CardController::class, 'getLogsByCard'])->name('cards.activity.index');
 
         // Card Members API
@@ -221,20 +223,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [LabelController::class, 'index'])->name('labels.index');
         Route::post('/', [LabelController::class, 'store'])->name('labels.create');
         Route::get('/{id}', [LabelController::class, 'show'])->name('labels.show');
-        Route::put('/{id}', [LabelController::class, 'update'])->name('labels.update');
+        Route::post('/{id}', [LabelController::class, 'update'])->name('labels.update');
         Route::delete('/{id}', [LabelController::class, 'destroy'])->name('labels.delete');
     });
 
     // Checklists API
     Route::prefix('checklists')->group(function () {
-        Route::put('/{id}', [CheckListController::class, 'update'])->name('checklists.update');
+        Route::post('/{id}', [CheckListController::class, 'update'])->name('checklists.update');
         Route::delete('/{id}', [CheckListController::class, 'destroy'])->name('checklists.delete');
 
         // Checklist Items API
         Route::prefix('{id}/items')->group(function () {
             Route::get('/', [CheckListItemController::class, 'index'])->name('checklists.items.index');
             Route::post('/', [CheckListItemController::class, 'store'])->name('checklists.items.create');
-            Route::put('/{item_id}', [CheckListItemController::class, 'update'])->name('checklists.items.update');
+            Route::post('/{item_id}', [CheckListItemController::class, 'update'])->name('checklists.items.update');
             Route::delete('/{item_id}', [CheckListItemController::class, 'destroy'])->name('checklists.items.delete');
             Route::post('/{item_id}/toggle', [CheckListItemController::class, 'toggle'])->name('checklists.items.toggle');
         });
@@ -243,20 +245,20 @@ Route::middleware('auth:sanctum')->group(function () {
     // Comments API
     Route::prefix('comments')->group(function () {
         Route::post('/{id}/replies', [CommentController::class, 'reply'])->name('comments.replies.create');
-        Route::put('/{id}', [CommentController::class, 'update'])->name('comments.update');
+        Route::post('/{id}', [CommentController::class, 'update'])->name('comments.update');
         Route::delete('/{id}', [CommentController::class, 'destroy'])->name('comments.delete');
     });
 
     // Due Dates API
     Route::prefix('due-dates')->group(function () {
-        Route::put('/{id}', [DueDateController::class, 'update'])->name('due-dates.update');
+        Route::post('/{id}', [DueDateController::class, 'update'])->name('due-dates.update');
         Route::delete('/{id}', [DueDateController::class, 'destroy'])->name('due-dates.delete');
         Route::patch('/{id}/toggle', [DueDateController::class, 'toggleComplete'])->name('due-dates.toggle');
     });
 
     // Attachments API
     Route::prefix('attachments')->group(function () {
-        Route::put('/{id}', [AttachmentController::class, 'update'])->name('attachments.update');
+        Route::post('/{id}', [AttachmentController::class, 'update'])->name('attachments.update');
         Route::delete('/{id}', [AttachmentController::class, 'destroy'])->name('attachments.delete');
     });
 
