@@ -29,11 +29,6 @@ class MonitorServer extends Command
             $ip = $ip = trim(shell_exec("hostname -I | awk '{print $1}'"));
             $server = $this->serverRepository->getByIp($ip);
 
-            Log::info('get server ------', [
-                'ip' => $ip,
-                'server' => $server,
-            ]);
-
             if (!$server) {
                 $this->error('Server not found');
                 return;
