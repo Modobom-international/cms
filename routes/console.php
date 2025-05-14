@@ -1,10 +1,8 @@
 <?php
 
-use App\Jobs\StoreServerStat;
 use Illuminate\Support\Facades\Schedule;
 use App\Console\Commands\Domain\SyncDomainForAccount;
 use App\Console\Commands\MonitorServer;
 
-Schedule::job(new StoreServerStat)->everyFiveSeconds();
 Schedule::command(SyncDomainForAccount::class)->everyFiveMinutes()->withoutOverlapping();
 Schedule::command(MonitorServer::class)->everyFiveMinutes()->withoutOverlapping();
