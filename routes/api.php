@@ -54,9 +54,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //admin change password for user
     Route::post('/change-password-user/{id}/', [UserController::class, 'updatePassword']);
-
-    //Sau comment này tất cả các route sẽ được tính vào phân quyền của hệ thống.
-
     // Page routes
     Route::post('/create-page', [PageController::class, 'create']);
     Route::post('/update-page/{pageId}', [PageController::class, 'update']);
@@ -65,6 +62,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sites/{siteId}/pages', [PageController::class, 'getPagesBySite']);
     Route::post('/export-pages/{pageId}', [PageController::class, 'exportPage']);
     Route::delete('/pages/{pageId}', [PageController::class, 'destroy']);
+
+    //Sau comment này tất cả các route sẽ được tính vào phân quyền của hệ thống.
+
     // Cloudflare Projects API
     Route::prefix('cloudflare/projects')->group(function () {
         Route::get('/', [CloudflareController::class, 'getProjects'])->name('cloudflare.projects.index');
@@ -286,6 +286,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [TeamController::class, 'edit'])->name('team.edit');
         Route::delete('/delete', [TeamController::class, 'destroy'])->name('team.destroy');
         Route::get('/get-permission-by-team', [TeamController::class, 'getPermissionByTeam'])->name('team.get.permission');
+        Route::get('/list-with-permission', [TeamController::class, 'listTeamWithPermission'])->name('team.list.with.permission');
     });
 
     Route::prefix('users')->group(function () {
