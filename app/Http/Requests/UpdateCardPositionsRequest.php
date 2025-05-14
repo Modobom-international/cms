@@ -23,9 +23,9 @@ class UpdateCardPositionsRequest extends FormRequest
     {
         return [
             'positions' => 'required|array',
-            'positions.*.id' => 'required|exists:cards,id',
+            'positions.*.id' => 'required',
             'positions.*.position' => 'required|integer|min:0',
-            'positions.*.list_id' => 'required|exists:lists,id'
+            'positions.*.list_id' => 'required'
         ];
     }
 
