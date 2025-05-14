@@ -316,4 +316,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('activity-log')->group(function () {
         Route::get('/', [ActivityLogController::class, 'listActivityLog'])->name('activity.log.list');
     });
+
+    Route::prefix('monitor-server')->group(function () {
+        Route::get('/detail', [ServerController::class, 'getDiskUsage'])->name('monitor.server.detail');
+    });
 });

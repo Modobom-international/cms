@@ -10,4 +10,9 @@ class MonitorServerRepository extends BaseRepository
     {
         return MonitorServer::class;
     }
+
+    public function getByServer($server_id)
+    {
+        return $this->model->where('server_id', $server_id)->orderBy('created_at', 'desc')->get();
+    }
 }
