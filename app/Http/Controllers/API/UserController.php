@@ -445,4 +445,49 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    public function store(Request $request)
+    {
+        try {
+            $getPermission = $request->get('permissions');
+            $team_id = $request->get('team_id');
+            $password = $request->get('password');
+            $email = $request->get('email');
+            $name = $request->get('name');
+            $permissions = array();
+
+            foreach ($getPermission as $permission => $tick) {
+                $permissions[] = $permission;
+            }
+
+            $user = $this->teamRepository->create([
+                'email' => $email,
+                'name' => $name,
+                'password' => Hash::make($password)
+            ]);
+
+            if (!empty($permissions)) {
+                $user->permissions()->sync($permissions);
+            }
+
+            if (isset($team_id)) {
+                $user->teams()->sync($team_id);
+            }
+
+            $this->logActivity(ActivityAction::CREATE_RECORD, ['filters' => $request->all(), 'user' => $user], 'Thêm user');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Xóa user thành công',
+                'type' => 'delete_user_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Xóa user không thành công',
+                'type' => 'delete_user_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

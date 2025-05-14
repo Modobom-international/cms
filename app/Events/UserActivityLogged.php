@@ -18,7 +18,7 @@ class UserActivityLogged
     /**
      * Create a new event instance.
      */
-    public function __construct(string $action, ?array $details = null, string $description, ?int $userId = null)
+    public function __construct(string $action, array $details, string $description, int $userId)
     {
         $this->action = $action;
         $this->details = $details;

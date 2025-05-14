@@ -43,18 +43,22 @@ class SyncRouteForPermission extends Command
                 continue;
             }
 
-            $middleware = $route->middleware();
-            if (!in_array('App\Http\Middleware\Authenticate', $middleware)) {
-                continue;
-            }
-
             $getPrefix = $route->getPrefix();
+            $explode = explode('/', $getPrefix);
+
             if ($getPrefix == '/admin') {
                 continue;
             }
 
-            $explode = explode('/', $getPrefix);
-            $name = $route->getName() ?? 'N/A';
+            if (count($explode) < 2) {
+                continue;
+            }
+
+            if ($explode[1] == 'api') {
+                continue;
+            }
+
+            $name = $route->getName();
             $prefix = $explode[1];
             $description = $route->getActionName() ?? 'N/A';
             $data = [

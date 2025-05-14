@@ -272,13 +272,14 @@ Route::prefix('team')->group(function () {
     Route::get('/', [TeamController::class, 'index'])->name('team.list');
     Route::post('/store', [TeamController::class, 'store'])->name('team.store');
     Route::post('/update/{id}', [TeamController::class, 'update'])->name('team.update');
-    Route::get('/delete/{id}', [TeamController::class, 'destroy'])->name('team.destroy');
+    Route::delete('/delete/{id}', [TeamController::class, 'destroy'])->name('team.destroy');
     Route::get('/get-permission-by-team', [TeamController::class, 'getPermissionByTeam'])->name('team.get.permission');
+    Route::get('/list-with-permission', [TeamController::class, 'listTeamWithPermission'])->name('team.list.with.permission');
 });
 
 Route::prefix('users')->group(function () {
     Route::get('/', [UserController::class, 'index'])->name('user.list');
-    Route::get('/{id}', [UserController::class, 'show'])->name('user.edit');
+    Route::post('/store', [UserController::class, 'store'])->name('user.store');
     Route::post('/update/{id}', [UserController::class, 'update'])->name('user.update');
     Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('user.destroy');
 });
