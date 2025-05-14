@@ -26,8 +26,7 @@ class MonitorServer extends Command
     public function handle()
     {
         try {
-
-            $ip = getHostByName(getHostName());
+            $ip = $ip = trim(shell_exec("hostname -I | awk '{print $1}'"));
             $server = $this->serverRepository->getByIp($ip);
 
             Log::info('get server ------', [
