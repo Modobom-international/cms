@@ -30,6 +30,11 @@ class MonitorServer extends Command
             $ip = getHostByName(getHostName());
             $server = $this->serverRepository->getByIp($ip);
 
+            Log::info('get server ------', [
+                'ip' => $ip,
+                'server' => $server,
+            ]);
+
             if (!$server) {
                 $this->error('Server not found');
                 return;

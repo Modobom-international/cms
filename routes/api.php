@@ -22,6 +22,7 @@ use App\Http\Controllers\API\SiteController;
 use App\Http\Controllers\API\PushSystemController;
 use App\Http\Controllers\API\DomainController;
 use App\Http\Controllers\API\ActivityLogController;
+use App\Http\Controllers\API\MonitorServerController;
 use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\ServerController;
 use App\Http\Middleware\ExcludeDomainTracking;
@@ -318,6 +319,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::prefix('monitor-server')->group(function () {
-        Route::get('/detail', [ServerController::class, 'getDiskUsage'])->name('monitor.server.detail');
+        Route::get('/detail', [MonitorServerController::class, 'detail'])->name('monitor.server.detail');
     });
 });
