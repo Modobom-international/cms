@@ -120,7 +120,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [WorkspaceController::class, 'index'])->name('workspaces.index');
         Route::post('/', [WorkspaceController::class, 'store'])->name('workspaces.create');
         Route::get('/{id}', [WorkspaceController::class, 'show'])->name('workspaces.show');
-        Route::post('/{id}', [WorkspaceController::class, 'update'])->name('workspaces.update');
+        Route::put('/{id}', [WorkspaceController::class, 'update'])->name('workspaces.update');
         Route::delete('/{id}', [WorkspaceController::class, 'destroy'])->name('workspaces.delete');
 
         // Workspace Members API

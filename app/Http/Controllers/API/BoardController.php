@@ -73,7 +73,7 @@ class BoardController extends Controller
     public function store(BoardRequest $request)
     {
         $input = $request->except(['_token']);
-        $workspace = $this->workspaceRepository->show($request->workspace_id);
+        $workspace = $this->workspaceRepository->show($input['workspace_id']);
         if (!$workspace) {
             return response()->json([
                 'success' => false,
@@ -91,9 +91,10 @@ class BoardController extends Controller
         }
 
         $board = [
-            'workspace_id' => $request->workspace_id,
-            'name' => $request->name,
-            'visibility' => $request->visibility ?? 'private',
+            'workspace_id' => $input['workspace_id'],
+            'name' => $input['name'],
+            'description' => $input['description'] ?? '',
+            'visibility' => $input['visibility'] ?? 'private',
             'owner_id' => Auth::id(),
         ];
 
@@ -209,7 +210,7 @@ class BoardController extends Controller
                     'type' => 'board_is_private',
                 ], 403);
             }
-            
+
             // Kiểm tra user đã có trong workspace chưa
             $user = Auth::user();
             $memberExist = $this->boardUserRepository->checkMemberExist($user->id, $boardId);
@@ -224,7 +225,7 @@ class BoardController extends Controller
             $dataBoardsUser = [
                 'board_id' => $boardId,
                 'user_id' => $user->id,
-                'role' =>  Boards::ROLE_VIEWER,
+                'role' => Boards::ROLE_VIEWER,
             ];
 
             $this->boardUserRepository->createBoardUser($dataBoardsUser);
