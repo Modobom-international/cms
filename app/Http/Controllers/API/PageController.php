@@ -714,7 +714,7 @@ EOT;
                     $exportResult = $this->exportPageFromServer($pageId);
 
                     if (!$exportResult['success']) {
-                        throw new \Exception('Failed to export page: ' . ($exportResult['error'] ?? 'Unknown error'));
+                        throw new \Exception('Failed to export page: ' . ($exportResult['error'] ?? 'Please deploy the page manually before updating the tracking script'));
                     }
 
                     dispatch(new \App\Jobs\DeployExportsJob(
