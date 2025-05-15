@@ -67,9 +67,16 @@ class BoardController extends Controller
         }
 
         $boards = $this->boardRepository->index($workspace->id);
+        $isAdmin = $this->workspaceUserRepository->checkRoleAdmin($user->id, $workspaceId);
+
+        // Add isAdmin to workspace data
+        $workspace = $workspace->toArray();
+        $workspace['is_admin'] = $isAdmin || $workspace['owner_id'] === $user->id;
+
         return response()->json([
             'success' => true,
             'boards' => $boards,
+            'workspace' => $workspace,
             'message' => 'Danh sách boards',
             'type' => 'list_boards',
         ], 200);
