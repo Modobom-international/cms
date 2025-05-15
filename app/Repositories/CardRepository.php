@@ -117,40 +117,52 @@ class CardRepository extends BaseRepository
     public function userHasAccess($cardId)
     {
         $user = Auth::user();
-        $card = $this->model->with('listBoard.board')->where('id', $cardId)->first();
+        $card = $this->show($cardId);
 
         if (!$card || !$card->listBoard || !$card->listBoard->board) {
             return false;
         }
 
-        // If board is public, allow viewing
-        if ($card->listBoard->board->visibility === Boards::BOARD_PUBLIC) {
-            return true;
+        $board = $card->listBoard->board;
+
+        // If board is public, check workspace access
+        if ($board->visibility === Boards::BOARD_PUBLIC) {
+            // Check if user has access to the workspace through workspace_users table
+            return $user->workspaces()
+                ->where('workspaces.id', $board->workspace_id)
+                ->exists();
         }
 
-        // Otherwise, check if user is a member
-        return $user->boards()->where('boards.id', $card->listBoard->board_id)->exists();
+        // For private boards, check if user is a board member
+        return $user->boards()
+            ->where('boards.id', $board->id)
+            ->exists();
     }
 
     public function userCanEdit($cardId)
     {
         $user = Auth::user();
-        $card = $this->model->with('listBoard.board')->where('id', $cardId)->first();
+        $card = $this->show($cardId);
 
         if (!$card || !$card->listBoard || !$card->listBoard->board) {
             return false;
         }
 
-        // Get user's role in the board
-        $boardUser = $user->boards()
-            ->where('boards.id', $card->listBoard->board_id)
-            ->first();
+        $board = $card->listBoard->board;
 
-        if (!$boardUser) {
+        // First check workspace access through workspace_users table
+        $hasWorkspaceAccess = $user->workspaces()
+            ->where('workspaces.id', $board->workspace_id)
+            ->exists();
+
+        if (!$hasWorkspaceAccess) {
             return false;
         }
 
-        // Both admin and member can edit
-        return in_array($boardUser->pivot->role, [Boards::ROLE_ADMIN, Boards::ROLE_MEMBER]);
+        // Then check board membership
+        return $user->boards()
+            ->where('boards.id', $board->id)
+            ->whereIn('board_users.role', [Boards::ROLE_ADMIN, Boards::ROLE_MEMBER])
+            ->exists();
     }
 }
