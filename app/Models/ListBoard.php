@@ -21,14 +21,14 @@ class ListBoard extends Model
         'board_id',
         'position',
     ];
-    
+
     public function cards()
     {
         return $this->hasMany(Card::class, 'list_id');
     }
-    
-    public function boards()
+
+    public function board()
     {
-        return $this->belongsTo(ListBoard::class);
+        return $this->belongsTo(Board::class);
     }
 }

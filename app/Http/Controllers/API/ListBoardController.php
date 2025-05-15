@@ -57,6 +57,7 @@ class ListBoardController extends Controller
                     'type' => 'board_not_found',
                 ], 404);
             }
+
             $checkRoleUser = $this->listBoardRepository->userHasAccess($boardId);
             if (!$checkRoleUser) {
                 return response()->json([
@@ -67,15 +68,26 @@ class ListBoardController extends Controller
             }
             $lists = $this->listBoardRepository->getListsByBoard($boardId);
 
+            if ($lists->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Board chưa có list nào',
+                    'type' => 'board_empty',
+                    'data' => []
+                ], 200);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Lấy danh sách list thành công',
+                'type' => 'get_lists_success',
                 'data' => $lists
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => true,
+                'success' => false,
                 'message' => 'Lỗi khi lấy danh sách list',
+                'type' => 'error_get_lists',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -87,7 +99,7 @@ class ListBoardController extends Controller
     public function store(ListRequest $request)
     {
         try {
-            $input = $input = $request->except(['_token']);
+            $input = $request->except(['_token']);
             $board = $this->boardRepository->show($input['board_id']);
             if (!$board) {
                 return response()->json([
@@ -96,8 +108,8 @@ class ListBoardController extends Controller
                     'type' => 'board_not_found',
                 ], 404);
             }
-            // Kiểm tra quyền truy cập
-            if (!$this->boardRepository->userHasAccess($board->id)) {
+            // Kiểm tra quyền chỉnh sửa
+            if (!$this->listBoardRepository->userCanEdit($board->id)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền thêm list vào board này',
@@ -115,7 +127,6 @@ class ListBoardController extends Controller
                 'title' => $input['title'],
                 'position' => $position
             ];
-
             $this->listBoardRepository->createListBoard($dataList);
 
             return response()->json([
@@ -132,7 +143,6 @@ class ListBoardController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-
     }
 
     /**
@@ -174,11 +184,11 @@ class ListBoardController extends Controller
 
             $board = $this->boardRepository->show($listBoard->board_id);
 
-            // Kiểm tra quyền truy cập
-            if (!$this->boardRepository->userHasAccess($board->id)) {
+            // Kiểm tra quyền chỉnh sửa
+            if (!$this->listBoardRepository->userCanEdit($board->id)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bạn không có quyền thêm list vào board này',
+                    'message' => 'Bạn không có quyền chỉnh sửa list này',
                     'type' => 'Unauthorized',
                 ], 403);
             }
@@ -211,7 +221,6 @@ class ListBoardController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-
     }
 
     // Hàm cập nhật vị trí list
@@ -253,11 +262,11 @@ class ListBoardController extends Controller
                 ], 404);
             }
 
-            // Kiểm tra xem user có quyền xóa hay không
-            if (!Auth::user()->boards()->where('board_id', $listBoard->board_id)->exists()) {
+            // Kiểm tra quyền chỉnh sửa
+            if (!$this->listBoardRepository->userCanEdit($listBoard->board_id)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bạn không có quyền xóa',
+                    'message' => 'Bạn không có quyền xóa list này',
                     'type' => 'unauthorized',
                 ], 403);
             }
@@ -455,8 +464,8 @@ class ListBoardController extends Controller
                 ], 404);
             }
 
-            // Check if user has access to the board
-            if (!$this->boardRepository->userHasAccess($firstList->board_id)) {
+            // Check if user has edit access to the board
+            if (!$this->listBoardRepository->userCanEdit($firstList->board_id)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền cập nhật vị trí list',

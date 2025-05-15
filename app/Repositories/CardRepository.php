@@ -5,6 +5,8 @@ namespace App\Repositories;
 use App\Models\Card;
 use App\Models\ListBoard;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use App\Enums\Boards;
 
 class CardRepository extends BaseRepository
 {
@@ -110,5 +112,45 @@ class CardRepository extends BaseRepository
             }
             return true;
         });
+    }
+
+    public function userHasAccess($cardId)
+    {
+        $user = Auth::user();
+        $card = $this->model->with('listBoard.board')->where('id', $cardId)->first();
+
+        if (!$card || !$card->listBoard || !$card->listBoard->board) {
+            return false;
+        }
+
+        // If board is public, allow viewing
+        if ($card->listBoard->board->visibility === Boards::BOARD_PUBLIC) {
+            return true;
+        }
+
+        // Otherwise, check if user is a member
+        return $user->boards()->where('boards.id', $card->listBoard->board_id)->exists();
+    }
+
+    public function userCanEdit($cardId)
+    {
+        $user = Auth::user();
+        $card = $this->model->with('listBoard.board')->where('id', $cardId)->first();
+
+        if (!$card || !$card->listBoard || !$card->listBoard->board) {
+            return false;
+        }
+
+        // Get user's role in the board
+        $boardUser = $user->boards()
+            ->where('boards.id', $card->listBoard->board_id)
+            ->first();
+
+        if (!$boardUser) {
+            return false;
+        }
+
+        // Both admin and member can edit
+        return in_array($boardUser->pivot->role, [Boards::ROLE_ADMIN, Boards::ROLE_MEMBER]);
     }
 }

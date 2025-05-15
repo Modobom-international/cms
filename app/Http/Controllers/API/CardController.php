@@ -84,18 +84,17 @@ class CardController extends Controller
                     'type' => 'listBoard_not_found',
                 ], 404);
             }
-
-            // Kiểm tra quyền truy cập
-            if (!Auth::user()->boards()->where('board_id', $listBoard->board_id)->exists()) {
+            // Check edit permission for the list
+            if (!$this->listBoardRepository->userCanEdit($listBoard->board->id)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bạn không có quyền ',
+                    'message' => 'Bạn không có quyền tạo card trong list này',
                     'type' => 'unauthorized',
                 ], 403);
             }
 
             $maxPosition = $this->cardRepository->maxPosition($listBoard->id);
-            $position = is_null($maxPosition) ? 1 : $maxPosition + 1;
+            $position = is_null($maxPosition) ? 0 : $maxPosition + 1;
             $card = [
                 'list_id' => $listBoard->id,
                 'title' => $input['title'],
@@ -146,6 +145,16 @@ class CardController extends Controller
                     'type' => 'card_not_found',
                 ], 404);
             }
+
+            // Check edit permission
+            if (!$this->cardRepository->userCanEdit($card->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền chỉnh sửa card này',
+                    'type' => 'unauthorized',
+                ], 403);
+            }
+
             $listBoard = $this->listBoardRepository->show($card['list_id']);
             if (!$listBoard) {
                 return response()->json([
@@ -154,48 +163,28 @@ class CardController extends Controller
                     'type' => 'listBoard_not_found',
                 ], 404);
             }
-            // Kiểm tra quyền truy cập
-            if (!Auth::user()->boards()->where('board_id', $listBoard->board_id)->exists()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Bạn không có quyền xóa',
-                    'type' => 'unauthorized',
-                ], 403);
-            }
+
             $maxPosition = $this->cardRepository->maxPosition($listBoard->id);
             $position = is_null($maxPosition) ? 0 : $maxPosition + 1;
 
-            $card = [
+            $cardData = [
                 'title' => $input['title'],
                 'position' => $position,
                 'description' => $input['description'] ?? "",
                 'list_id' => $listBoard->id,
             ];
-            $dataCard = $this->cardRepository->updateCard($card, $id);
-
-            // Ghi log hoạt động
-            $log = [
-                'user_id' => Auth::user()->id,
-                'card_id' => $dataCard->id,
-                'action_type' => 'update',
-                'target_type' => 'Update card',
-                'target_id' => $dataCard->id,
-                'content' => Auth::user()->name . ' đã cập nhập card từ ' . $listBoard->title ?? '',
-            ];
-
-            $this->logActivityUserRepository->create($log);
+            $dataCard = $this->cardRepository->updateCard($cardData, $id);
 
             return response()->json([
                 'success' => true,
-                'data' => $dataCard,
-                'log' => $log,
-                'message' => 'update card thành công',
-                'type' => 'success_update_card',
+                'message' => 'Card được cập nhật thành công',
+                'type' => 'update_card_success',
+                'data' => $dataCard
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Lỗi khi update card',
+                'message' => 'Lỗi khi cập nhật card',
                 'type' => 'error_update_card',
                 'error' => $e->getMessage()
             ], 500);
@@ -205,21 +194,40 @@ class CardController extends Controller
     // 📌 4️⃣ Xóa Card
     public function destroy($id)
     {
-        $card = $this->cardRepository->show($id);
-        if (!$card) {
+        try {
+            $card = $this->cardRepository->show($id);
+            if (!$card) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy card',
+                    'type' => 'card_not_found',
+                ], 404);
+            }
+
+            // Check edit permission
+            if (!$this->cardRepository->userCanEdit($card->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền xóa card này',
+                    'type' => 'unauthorized',
+                ], 403);
+            }
+
+            $this->cardRepository->destroy($id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Card được xóa thành công',
+                'type' => 'delete_card_success',
+            ], 201);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Không tìm thấy card',
-                'type' => 'card_not_found',
-            ], 404);
+                'message' => 'Lỗi khi xóa card',
+                'type' => 'error_delete_card',
+                'error' => $e->getMessage()
+            ], 500);
         }
-        $this->cardRepository->destroy($id);
-        return response()->json([
-            'success' => true,
-            'message' => 'Card được xóa thành công',
-            'type' => 'delete_card_success',
-        ], 201);
-
     }
 
     // 📌 5️⃣ Di chuyển Card giữa các List
@@ -722,9 +730,8 @@ class CardController extends Controller
                 ], 404);
             }
 
-            // Check if user has access to the board
-            $listBoard = $this->listBoardRepository->show($firstCard->list_id);
-            if (!$listBoard || !Auth::user()->boards()->where('board_id', $listBoard->board_id)->exists()) {
+            // Check edit permission
+            if (!$this->cardRepository->userCanEdit($firstCard->id)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền cập nhật vị trí card',
@@ -732,32 +739,20 @@ class CardController extends Controller
                 ], 403);
             }
 
-            // Verify all cards and lists belong to the same board
+            // Verify all cards belong to the same board
+            $boardId = $firstCard->listBoard->board_id;
             foreach ($positions as $position) {
                 $card = $this->cardRepository->show($position['id']);
-                $list = $this->listBoardRepository->show($position['list_id']);
-
-                if (!$card || !$list || $list->board_id !== $listBoard->board_id) {
+                if (!$card || $card->listBoard->board_id !== $boardId) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Tất cả card và list phải thuộc cùng một board',
+                        'message' => 'Tất cả card phải thuộc cùng một board',
                         'type' => 'invalid_board',
                     ], 400);
                 }
             }
 
             $this->cardRepository->updatePositions($positions);
-
-            // Log the activity
-            $log = [
-                'user_id' => Auth::id(),
-                'card_id' => $firstCard->id,
-                'action_type' => 'update positions',
-                'target_type' => 'Update card positions',
-                'target_id' => $firstCard->id,
-                'content' => Auth::user()->name . ' đã cập nhật vị trí nhiều card'
-            ];
-            $this->logActivityUserRepository->create($log);
 
             return response()->json([
                 'success' => true,
@@ -769,6 +764,43 @@ class CardController extends Controller
                 'success' => false,
                 'message' => 'Lỗi khi cập nhật vị trí card',
                 'type' => 'error_update_positions',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function show($id)
+    {
+        try {
+            $card = $this->cardRepository->show($id);
+            if (!$card) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy card',
+                    'type' => 'card_not_found',
+                ], 404);
+            }
+
+            // Check view permission
+            if (!$this->cardRepository->userHasAccess($card->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền xem card này',
+                    'type' => 'unauthorized',
+                ], 403);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Lấy thông tin card thành công',
+                'type' => 'get_card_success',
+                'data' => $card
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi lấy thông tin card',
+                'type' => 'error_get_card',
                 'error' => $e->getMessage()
             ], 500);
         }

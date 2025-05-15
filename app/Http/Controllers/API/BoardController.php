@@ -305,7 +305,7 @@ class BoardController extends Controller
             $dataBoardsUser = [
                 'board_id' => $boardId,
                 'user_id' => $user->id,
-                'role' => Boards::ROLE_VIEWER,
+                'role' => Boards::ROLE_MEMBER,
             ];
 
             $this->boardUserRepository->createBoardUser($dataBoardsUser);
@@ -331,6 +331,7 @@ class BoardController extends Controller
             //validate
             $validator = Validator::make($request->all(), [
                 'email' => 'required|email|exists:users,email',
+                'role' => 'sometimes|in:admin,member'
             ]);
 
             if ($validator->fails()) {
@@ -387,7 +388,7 @@ class BoardController extends Controller
             $dataBoardsUser = [
                 'board_id' => $boardId,
                 'user_id' => $user->id,
-                'role' => $request->role ?? Boards::ROLE_VIEWER,
+                'role' => $request->role ?? Boards::ROLE_MEMBER,
             ];
 
             $this->boardUserRepository->createBoardUser($dataBoardsUser);

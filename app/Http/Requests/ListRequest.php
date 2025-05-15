@@ -14,7 +14,7 @@ class ListRequest extends FormRequest
     {
         return true;
     }
-    
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -28,7 +28,7 @@ class ListRequest extends FormRequest
             'position' => 'nullable|integer'
         ];
     }
-    
+
     public function messages()
     {
         return [
