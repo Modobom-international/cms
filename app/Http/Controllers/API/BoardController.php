@@ -103,8 +103,9 @@ class BoardController extends Controller
                 'workspace_id' => $input['workspace_id'],
                 'name' => $input['name'],
                 'description' => $input['description'] ?? '',
-                'visibility' => $input['visibility'] ?? 'private',
                 'owner_id' => $user->id,
+                // Inherit visibility from workspace
+                'visibility' => $workspace->visibility
             ];
 
             $board = $this->boardRepository->createBoard($board);
@@ -149,6 +150,7 @@ class BoardController extends Controller
             $workspace = $this->workspaceRepository->show($board->workspace_id);
             $user = Auth::user();
 
+            // Check if user has access to the workspace
             if ($workspace->visibility === Workspace::WORKSPACE_PRIVATE) {
                 $isMember = $this->workspaceUserRepository->checkMemberExist($user->id, $workspace->id);
                 if (!$isMember && $workspace->owner_id !== $user->id) {
@@ -201,7 +203,7 @@ class BoardController extends Controller
                 ], 403);
             }
 
-            $input = $request->except(['_token']);
+            $input = $request->except(['_token', 'visibility']); // Remove visibility from updateable fields
             $this->boardRepository->updateBoard($input, $id);
 
             return response()->json([
@@ -272,21 +274,23 @@ class BoardController extends Controller
                 ], 404);
             }
 
-            if ($board->visibility !== Boards::BOARD_PUBLIC) {
+            // Check workspace visibility
+            $workspace = $this->workspaceRepository->show($board->workspace_id);
+            if ($workspace->visibility !== Workspace::WORKSPACE_PUBLIC) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Board là private',
-                    'type' => 'board_is_private',
+                    'message' => 'Board thuộc workspace private',
+                    'type' => 'workspace_is_private',
                 ], 403);
             }
 
-            // Kiểm tra user đã có trong workspace chưa
+            // Check if user is already a member
             $user = Auth::user();
             $memberExist = $this->boardUserRepository->checkMemberExist($user->id, $boardId);
             if ($memberExist) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bạn đã là 1 member',
+                    'message' => 'Bạn đã là thành viên của board',
                     'type' => 'user_exist',
                 ], 400);
             }
