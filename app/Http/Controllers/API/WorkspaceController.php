@@ -312,12 +312,22 @@ class WorkspaceController extends Controller
             //validate
             $validator = Validator::make($request->all(), [
                 'email' => 'required|email|exists:users,email',
+                'role' => 'required|in:' . implode(',', [
+                    Workspace::ROLE_ADMIN,
+                    Workspace::ROLE_LEADER,
+                    Workspace::ROLE_MEMBER
+                ])
             ]);
 
             if ($validator->fails()) {
-                return response()->json(['errors' => $validator->errors()], 422);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation error',
+                    'errors' => $validator->errors()
+                ], 422);
             }
-            //check workspace
+
+            // Check workspace
             $workspace = $this->workspaceRepository->show($workspaceId);
             if (!$workspace) {
                 return response()->json([
@@ -327,53 +337,64 @@ class WorkspaceController extends Controller
                 ], 404);
             }
 
-            // Chỉ owner hoặc admin mới có quyền mời user
-            $user = Auth::user();
-            $isAdmin = $this->workspaceUserRepository->checkRoleAdmin($user->id, $workspaceId);
+            // Check if current user has permission to add members
+            $currentUser = Auth::user();
+            $isAdmin = $this->workspaceUserRepository->checkRoleAdmin($currentUser->id, $workspaceId);
 
-            if (!$isAdmin && $workspace->owner_id !== $user->id) {
+            if (!$isAdmin && $workspace->owner_id !== $currentUser->id) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bạn không có quyền',
-                    'type' => 'Unauthorized',
+                    'message' => 'Chỉ admin workspace mới có quyền thêm thành viên',
+                    'type' => 'unauthorized',
                 ], 403);
             }
 
-            $user = $this->userRepository->getUserByEmail($request->email);
-            if (!$user) {
+            // Get user to add
+            $userToAdd = $this->userRepository->getUserByEmail($request->email);
+            if (!$userToAdd) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không tìm thấy user',
                     'type' => 'user_not_found',
                 ], 404);
             }
-            // Kiểm tra nếu user đã trong workspace
-            $memberExist = $this->workspaceUserRepository->checkMemberExist($user->id, $workspaceId);
+
+            // Check if user is already in workspace
+            $memberExist = $this->workspaceUserRepository->checkMemberExist($userToAdd->id, $workspaceId);
             if ($memberExist) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Bạn đã là 1 member',
+                    'message' => 'User đã là thành viên của workspace',
                     'type' => 'user_exist',
                 ], 400);
             }
 
+            // Only workspace owner can add admins
+            if ($request->role === Workspace::ROLE_ADMIN && $workspace->owner_id !== $currentUser->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Chỉ chủ sở hữu workspace mới có quyền thêm admin',
+                    'type' => 'unauthorized',
+                ], 403);
+            }
+
             $dataWorkspaceUser = [
                 'workspace_id' => $workspaceId,
-                'user_id' => $user->id,
-                'role' => $request->role ?? Workspace::ROLE_MEMBER,
+                'user_id' => $userToAdd->id,
+                'role' => $request->role
             ];
 
             $this->workspaceUserRepository->createWorkSpaceUser($dataWorkspaceUser);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Thêm member thành công',
+                'message' => 'Thêm thành viên thành công',
                 'type' => 'add_workspace_member_success',
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Lỗi khi add member workspace',
+                'message' => 'Lỗi khi thêm thành viên workspace',
                 'type' => 'error_add_member_workspace',
                 'error' => $e->getMessage()
             ], 500);
