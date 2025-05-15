@@ -5,6 +5,8 @@ namespace App\Repositories;
 use App\Models\ListBoard;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Enums\Boards;
+use App\Models\Board;
 
 class ListBoardRepository extends BaseRepository
 {
@@ -28,7 +30,34 @@ class ListBoardRepository extends BaseRepository
 
     public function userHasAccess($boardId)
     {
-        return Auth::user()->boards()->where('boards.id', $boardId)->exists();
+        $user = Auth::user();
+
+        // Get the board directly from the Board model
+        $board = Board::find($boardId);
+
+        // If board is public, allow viewing
+        if ($board->visibility === Boards::BOARD_PUBLIC) {
+            return true;
+        }
+
+        // Otherwise, check if user is a member
+        return $user->boards()->where('boards.id', $boardId)->exists();
+    }
+
+    public function userCanEdit($boardId)
+    {
+        $user = Auth::user();
+
+        // Get user's role in the board
+        $boardUser = $user->boards()
+            ->where('boards.id', $boardId)
+            ->first();
+        if (!$boardUser) {
+            return false;
+        }
+
+        // Both admin and member can edit
+        return in_array($boardUser->pivot->role, [Boards::ROLE_ADMIN, Boards::ROLE_MEMBER]);
     }
 
     public function createListBoard($data)

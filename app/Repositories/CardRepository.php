@@ -5,6 +5,8 @@ namespace App\Repositories;
 use App\Models\Card;
 use App\Models\ListBoard;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use App\Enums\Boards;
 
 class CardRepository extends BaseRepository
 {
@@ -110,5 +112,57 @@ class CardRepository extends BaseRepository
             }
             return true;
         });
+    }
+
+    public function userHasAccess($cardId)
+    {
+        $user = Auth::user();
+        $card = $this->show($cardId);
+
+        if (!$card || !$card->listBoard || !$card->listBoard->board) {
+            return false;
+        }
+
+        $board = $card->listBoard->board;
+
+        // If board is public, check workspace access
+        if ($board->visibility === Boards::BOARD_PUBLIC) {
+            // Check if user has access to the workspace through workspace_users table
+            return $user->workspaces()
+                ->where('workspaces.id', $board->workspace_id)
+                ->exists();
+        }
+
+        // For private boards, check if user is a board member
+        return $user->boards()
+            ->where('boards.id', $board->id)
+            ->exists();
+    }
+
+    public function userCanEdit($cardId)
+    {
+        $user = Auth::user();
+        $card = $this->show($cardId);
+
+        if (!$card || !$card->listBoard || !$card->listBoard->board) {
+            return false;
+        }
+
+        $board = $card->listBoard->board;
+
+        // First check workspace access through workspace_users table
+        $hasWorkspaceAccess = $user->workspaces()
+            ->where('workspaces.id', $board->workspace_id)
+            ->exists();
+
+        if (!$hasWorkspaceAccess) {
+            return false;
+        }
+
+        // Then check board membership
+        return $user->boards()
+            ->where('boards.id', $board->id)
+            ->whereIn('board_users.role', [Boards::ROLE_ADMIN, Boards::ROLE_MEMBER])
+            ->exists();
     }
 }

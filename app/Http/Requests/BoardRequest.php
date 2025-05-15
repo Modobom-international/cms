@@ -14,7 +14,7 @@ class BoardRequest extends FormRequest
     {
         return true;
     }
-    
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -24,19 +24,20 @@ class BoardRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'visibility' => 'required',
-            'workspace_id' => 'required',
+            'workspace_id' => 'required|exists:workspaces,id',
+            'description' => 'nullable|string'
         ];
     }
-    
+
     public function messages()
     {
         return [
             'name.required' => __('validation.required'),
             'name.string' => __('validation.string'),
             'name.max' => __('validation.max'),
-            'visibility.required' => __('validation.required'),
             'workspace_id.required' => __('validation.required'),
+            'workspace_id.exists' => __('validation.exists'),
+            'description.string' => __('validation.string'),
         ];
     }
 }

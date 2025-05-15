@@ -9,7 +9,7 @@ use App\Traits\LogsModelActivity;
 class Board extends Model
 {
     use HasFactory, LogsModelActivity;
-    
+
     protected $fillable = [
         'workspace_id',
         'name',
@@ -17,7 +17,7 @@ class Board extends Model
         'visibility',
         'owner_id',
     ];
-    
+
     /**
      * Quan hệ với Workspace
      */
@@ -25,7 +25,7 @@ class Board extends Model
     {
         return $this->belongsTo(Workspace::class);
     }
-    
+
     /**
      * Quan hệ với User (người sở hữu board)
      */
@@ -33,7 +33,7 @@ class Board extends Model
     {
         return $this->belongsTo(User::class, 'owner_id');
     }
-    
+
     /**
      * Quan hệ với các user trong board thông qua bảng board_users
      */
@@ -43,7 +43,7 @@ class Board extends Model
             ->withPivot('role')
             ->withTimestamps();
     }
-    
+
     /**
      * Quan hệ với List trong board
      */
