@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 use App\Models\Workspace;
+use App\Enums\Workspace as WorkspaceEnum;
 
 class WorkspaceRepository extends BaseRepository
 {
@@ -40,4 +41,31 @@ class WorkspaceRepository extends BaseRepository
         return $this->model->find($data);
     }
 
+    /**
+     * Get all public workspaces
+     */
+    public function getPublicWorkspaces()
+    {
+        return $this->model->where('visibility', WorkspaceEnum::WORKSPACE_PUBLIC)
+            ->with('owner')
+            ->get();
+    }
+
+    /**
+     * Get all workspaces owned by a specific user
+     */
+    public function getWorkspacesByOwnerId($userId)
+    {
+        return $this->model->where('owner_id', $userId)
+            ->with('owner')
+            ->get();
+    }
+
+    /**
+     * Get all workspaces with owner information
+     */
+    public function getAllWorkspaces()
+    {
+        return $this->model->with('owner')->get();
+    }
 }
