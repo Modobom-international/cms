@@ -140,7 +140,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('boards')->group(function () {
         Route::post('/', [BoardController::class, 'store'])->name('boards.create');
         Route::get('/{id}', [BoardController::class, 'show'])->name('boards.show');
-        Route::post('/{id}', [BoardController::class, 'update'])->name('boards.update');
+        Route::put('/{id}', [BoardController::class, 'update'])->name('boards.update');
         Route::delete('/{id}', [BoardController::class, 'destroy'])->name('boards.delete');
 
         // Board Members API
