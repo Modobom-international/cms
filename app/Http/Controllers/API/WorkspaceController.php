@@ -45,58 +45,83 @@ class WorkspaceController extends Controller
     {
         $user = Auth::user();
         $workspaces = collect();
+        $workspaceIds = collect();
 
-        // If user is admin, return all workspaces with role information
+        // If user is admin, get all workspaces at once
         if ($user->role === Users::ADMIN) {
             $allWorkspaces = $this->workspaceRepository->getAllWorkspaces();
+            $workspaceIds = $allWorkspaces->pluck('id');
+        } else {
+            // Get owned workspaces
+            $ownedWorkspaces = $this->workspaceRepository->getWorkspacesByOwnerId($user->id);
+            $workspaceIds = $ownedWorkspaces->pluck('id');
+
+            // Get member workspaces
+            $memberWorkspaces = $this->workspaceUserRepository->getMembers($user->id);
+            $memberWorkspaceIds = $memberWorkspaces->pluck('workspace.id');
+            $workspaceIds = $workspaceIds->merge($memberWorkspaceIds);
+
+            // Get public workspaces
+            $publicWorkspaces = $this->workspaceRepository->getPublicWorkspaces();
+            $workspaceIds = $workspaceIds->merge($publicWorkspaces->pluck('id'))->unique();
+        }
+
+        // Fetch all members for the collected workspace IDs in a single query
+        $allMembers = $this->workspaceUserRepository->getMembersForWorkspaces($workspaceIds->toArray());
+        $membersGrouped = $allMembers->groupBy('workspace_id');
+
+        // Build response for admin
+        if ($user->role === Users::ADMIN) {
             foreach ($allWorkspaces as $workspace) {
                 $role = null;
                 if ($workspace->owner_id === $user->id) {
                     $role = 'owner';
                 } else {
-                    $memberInfo = $this->workspaceUserRepository->getMemberRole($user->id, $workspace->id);
+                    $memberInfo = $membersGrouped->get($workspace->id, collect())
+                        ->where('user_id', $user->id)
+                        ->first();
                     $role = $memberInfo ? $memberInfo->role : null;
                 }
 
                 $workspaces->push([
                     'workspace' => $workspace,
                     'role' => $role,
-                    'is_member' => ($role !== null)
+                    'is_member' => ($role !== null),
+                    'members' => $membersGrouped->get($workspace->id, collect())
                 ]);
             }
-        }
-        // If user is regular user, return only accessible workspaces
-        else {
-            // Get workspaces owned by the user
-            $ownedWorkspaces = $this->workspaceRepository->getWorkspacesByOwnerId($user->id);
+        } else {
+            // Build response for regular users
+            // Add owned workspaces
             foreach ($ownedWorkspaces as $workspace) {
                 $workspaces->push([
                     'workspace' => $workspace,
                     'role' => 'owner',
-                    'is_member' => true
+                    'is_member' => true,
+                    'members' => $membersGrouped->get($workspace->id, collect())
                 ]);
             }
 
-            // Get workspaces where user is a member
-            $memberWorkspaces = $this->workspaceUserRepository->getMembers($user->id);
+            // Add member workspaces
             foreach ($memberWorkspaces as $member) {
-                if (!in_array($member->workspace_id, $ownedWorkspaces->pluck('id')->toArray())) {
+                if (!$workspaces->pluck('workspace.id')->contains($member->workspace_id)) {
                     $workspaces->push([
                         'workspace' => $member->workspace,
                         'role' => $member->role,
-                        'is_member' => true
+                        'is_member' => true,
+                        'members' => $membersGrouped->get($member->workspace_id, collect())
                     ]);
                 }
             }
 
-            // Get public workspaces (excluding already added ones)
-            $publicWorkspaces = $this->workspaceRepository->getPublicWorkspaces();
+            // Add public workspaces
             foreach ($publicWorkspaces as $workspace) {
-                if (!in_array($workspace->id, $workspaces->pluck('workspace.id')->toArray())) {
+                if (!$workspaces->pluck('workspace.id')->contains($workspace->id)) {
                     $workspaces->push([
                         'workspace' => $workspace,
                         'role' => null,
-                        'is_member' => false
+                        'is_member' => false,
+                        'members' => $membersGrouped->get($workspace->id, collect())
                     ]);
                 }
             }
@@ -403,7 +428,7 @@ class WorkspaceController extends Controller
 
     public function listMembers($workspaceId)
     {
-        $members = $this->workspaceUserRepository->getMembers($workspaceId);
+        $members = $this->workspaceUserRepository->getMembersForWorkspaces([$workspaceId]);
         return response()->json([
             'success' => true,
             'members' => $members,

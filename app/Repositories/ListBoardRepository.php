@@ -35,12 +35,25 @@ class ListBoardRepository extends BaseRepository
         // Get the board directly from the Board model
         $board = Board::find($boardId);
 
-        // If board is public, allow viewing
+        if (!$board) {
+            return false;
+        }
+
+        // First check if user has access to the workspace
+        $hasWorkspaceAccess = $user->workspaces()
+            ->where('workspaces.id', $board->workspace_id)
+            ->exists();
+
+        if (!$hasWorkspaceAccess) {
+            return false;
+        }
+
+        // If board is public and user has workspace access, allow viewing
         if ($board->visibility === Boards::BOARD_PUBLIC) {
             return true;
         }
 
-        // Otherwise, check if user is a member
+        // For private boards, check if user is a board member
         return $user->boards()->where('boards.id', $boardId)->exists();
     }
 
