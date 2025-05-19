@@ -39,9 +39,10 @@ class ListBoardRepository extends BaseRepository
             return false;
         }
 
-        // First check if user has access to the workspace
-        $hasWorkspaceAccess = $user->workspaces()
-            ->where('workspaces.id', $board->workspace_id)
+        // First check if user has access to the workspace through workspace_users table
+        $hasWorkspaceAccess = DB::table('workspace_users')
+            ->where('workspace_id', $board->workspace_id)
+            ->where('user_id', $user->id)
             ->exists();
 
         if (!$hasWorkspaceAccess) {
@@ -53,24 +54,40 @@ class ListBoardRepository extends BaseRepository
             return true;
         }
 
-        // For private boards, check if user is a board member
-        return $user->boards()->where('boards.id', $boardId)->exists();
+        // For private boards, check if user is a board member through board_users table
+        return DB::table('board_users')
+            ->where('board_id', $boardId)
+            ->where('user_id', $user->id)
+            ->exists();
     }
 
     public function userCanEdit($boardId)
     {
         $user = Auth::user();
 
-        // Get user's role in the board
-        $boardUser = $user->boards()
-            ->where('boards.id', $boardId)
-            ->first();
-        if (!$boardUser) {
+        // Get the board directly from the Board model
+        $board = Board::find($boardId);
+
+        if (!$board) {
             return false;
         }
 
-        // Both admin and member can edit
-        return in_array($boardUser->pivot->role, [Boards::ROLE_ADMIN, Boards::ROLE_MEMBER]);
+        // First check if user has access to the workspace through workspace_users table
+        $hasWorkspaceAccess = DB::table('workspace_users')
+            ->where('workspace_id', $board->workspace_id)
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if (!$hasWorkspaceAccess) {
+            return false;
+        }
+
+        // Check if user has admin or member role in the board through board_users table
+        return DB::table('board_users')
+            ->where('board_id', $boardId)
+            ->where('user_id', $user->id)
+            ->whereIn('role', [Boards::ROLE_ADMIN, Boards::ROLE_MEMBER])
+            ->exists();
     }
 
     public function createListBoard($data)

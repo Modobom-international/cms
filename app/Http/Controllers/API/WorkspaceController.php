@@ -8,11 +8,13 @@ use App\Http\Requests\WorkspaceRequest;
 use App\Repositories\UserRepository;
 use App\Repositories\WorkspaceRepository;
 use App\Repositories\WorkspaceUserRepository;
+use App\Repositories\BoardUserRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Enums\Utility;
 use Illuminate\Support\Facades\Validator;
 use App\Enums\Users;
+use App\Enums\Boards;
 
 class WorkspaceController extends Controller
 {
@@ -20,17 +22,20 @@ class WorkspaceController extends Controller
     protected $workspaceUserRepository;
     protected $utility;
     protected $userRepository;
+    protected $boardUserRepository;
 
     public function __construct(
         Utility $utility,
         WorkspaceRepository $workspaceRepository,
         WorkspaceUserRepository $workspaceUserRepository,
-        UserRepository $userRepository
+        UserRepository $userRepository,
+        BoardUserRepository $boardUserRepository
     ) {
         $this->utility = $utility;
         $this->workspaceUserRepository = $workspaceUserRepository;
         $this->workspaceRepository = $workspaceRepository;
         $this->userRepository = $userRepository;
+        $this->boardUserRepository = $boardUserRepository;
     }
 
     /**
@@ -158,6 +163,19 @@ class WorkspaceController extends Controller
             ];
 
             $this->workspaceUserRepository->createWorkSpaceUser($dataWorkspaceUser);
+
+            // Get all boards in the workspace and add user to each board
+            $workspace = $this->workspaceRepository->show($dataWorkspace->id);
+            $boards = $workspace->boards;
+
+            foreach ($boards as $board) {
+                $dataBoardUser = [
+                    'board_id' => $board->id,
+                    'user_id' => Auth::user()->id,
+                    'role' => Workspace::ROLE_ADMIN === Workspace::ROLE_ADMIN ? Boards::ROLE_ADMIN : Boards::ROLE_MEMBER
+                ];
+                $this->boardUserRepository->createBoardUser($dataBoardUser);
+            }
 
             return response()->json([
                 'success' => true,
@@ -410,6 +428,22 @@ class WorkspaceController extends Controller
             ];
 
             $this->workspaceUserRepository->createWorkSpaceUser($dataWorkspaceUser);
+
+            // Get all boards in the workspace and add user to each board
+            $workspace = $this->workspaceRepository->show($workspaceId);
+            $boards = $workspace->boards;
+
+            foreach ($boards as $board) {
+                // Check if user is already a member of the board
+                if (!$this->boardUserRepository->checkMemberExist($userToAdd->id, $board->id)) {
+                    $dataBoardUser = [
+                        'board_id' => $board->id,
+                        'user_id' => $userToAdd->id,
+                        'role' => $request->role === Workspace::ROLE_ADMIN ? Boards::ROLE_ADMIN : Boards::ROLE_MEMBER
+                    ];
+                    $this->boardUserRepository->createBoardUser($dataBoardUser);
+                }
+            }
 
             return response()->json([
                 'success' => true,
