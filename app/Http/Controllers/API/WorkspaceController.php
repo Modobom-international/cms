@@ -482,11 +482,37 @@ class WorkspaceController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $this->workspaceUserRepository->removeMember($request->workspace_id, $request->user_id);
-        return response()->json([
-            'success' => true,
-            'message' => 'Member được xóa thành công',
-            'type' => 'delete_member_success',
-        ], 201);
+        try {
+            // Get workspace and its boards
+            $workspace = $this->workspaceRepository->show($request->workspace_id);
+            if (!$workspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Workspace không tồn tại',
+                    'type' => 'workspace_not_found',
+                ], 404);
+            }
+
+            // Remove member from all boards in the workspace
+            foreach ($workspace->boards as $board) {
+                $this->boardUserRepository->removeMember($board->id, $request->user_id);
+            }
+
+            // Remove member from workspace
+            $this->workspaceUserRepository->removeMember($request->workspace_id, $request->user_id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Member được xóa thành công khỏi workspace và các boards',
+                'type' => 'delete_member_success',
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi xóa member',
+                'type' => 'error_remove_member',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
