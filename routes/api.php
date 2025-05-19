@@ -320,5 +320,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('monitor-server')->group(function () {
         Route::get('/detail', [MonitorServerController::class, 'detail'])->name('monitor.server.detail');
+        Route::get('/store', [MonitorServerController::class, 'store'])->name('monitor.server.store');
     });
 });
