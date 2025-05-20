@@ -63,4 +63,49 @@ class MonitorServerController extends Controller
             ], 500);
         }
     }
+
+    public function store(Request $request)
+    {
+        try {
+            $input = $request->all();
+            $ip = $request->get('ip');
+
+            $server = $this->serverRepository->getByIp($ip);
+
+            if (empty($server)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Server không tồn tại',
+                    'type' => 'server_empty',
+                ], 400);
+            }
+
+            $data = [
+                'server_id' => $server->id,
+                'cpu' => $request->get('cpu'),
+                'ram' => $request->get('ram'),
+                'disk' => $request->get('disk'),
+                'services' => $request->get('services'),
+                'logs' => $request->get('logs'),
+                'timestamp' => $request->get('timestamp'),
+            ];
+
+            $this->monitorServerRepository->create($data);
+
+            $this->logActivity(ActivityAction::CREATE_RECORD, ['filters' => $input], 'Thêm mới thông số server');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Thêm mới thông số server thành công',
+                'type' => 'create_monitor_server_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Thêm mới thông số server không thành công',
+                'type' => 'create_monitor_server_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

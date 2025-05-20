@@ -15,6 +15,7 @@
         "laravel/tinker": "^2.10.1",
         "mongodb/laravel-mongodb": "^5.2",
         "predis/predis": "^2.3",
+        "spatie/image": "^3.8",
         "spatie/laravel-server-monitor": "^1.10"
     },
     "require-dev": {
