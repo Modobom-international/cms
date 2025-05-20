@@ -2,25 +2,25 @@
 
 namespace App\Repositories;
 
-use App\Models\ChecklistItem;
+use App\Models\CheckListItem;
 
 class CheckListItemRepository extends BaseRepository
 {
     public function model()
     {
-        return ChecklistItem::class;
+        return CheckListItem::class;
     }
-    
+
     public function index($cardId)
     {
         return $this->model->where('card_id', $cardId)->with('item')->get();
     }
-    
+
     public function storeItem($data)
     {
-       return $this->model->create($data);
+        return $this->model->create($data);
     }
-    
+
     public function show($id)
     {
         return $this->model->with('checklist')->where('id', $id)->first();
@@ -35,6 +35,6 @@ class CheckListItemRepository extends BaseRepository
     {
         return $this->model->where('id', $id)->delete();
     }
-    
-    
+
+
 }

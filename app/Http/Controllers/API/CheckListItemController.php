@@ -5,7 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Enums\CheckListItem;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CheckCompletedRequest;
-use App\Models\Checklist;
+use App\Models\CheckList;
 use App\Repositories\CheckListItemRepository;
 use App\Repositories\CheckListRepository;
 use App\Http\Requests\CheckListItemRequest;
@@ -28,7 +28,7 @@ class CheckListItemController extends Controller
         $this->logActivityUserRepository = $logActivityUserRepository;
     }
 
-    protected function userHasAccessToChecklist(Checklist $checklist): bool
+    protected function userHasAccessToChecklist(CheckList $checklist): bool
     {
         $user = auth()->user();
         if (!$user) {

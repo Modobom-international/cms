@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\ChecklistRequest;
+use App\Http\Requests\CheckListRequest;
 use App\Models\Card;
 use App\Repositories\CardRepository;
 use App\Repositories\CheckListRepository;
@@ -65,7 +65,7 @@ class CheckListController extends Controller
     }
 
     // Tạo checklist mới
-    public function store(ChecklistRequest $request, $id)
+    public function store(CheckListRequest $request, $id)
     {
         try {
             $input = $request->except('token');

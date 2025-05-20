@@ -29,7 +29,7 @@ class Card extends Model
 
     public function checklists()
     {
-        return $this->hasMany(Checklist::class);
+        return $this->hasMany(CheckList::class);
     }
 
     public function comments()
