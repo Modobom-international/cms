@@ -2,13 +2,13 @@
 
 namespace App\Repositories;
 
-use App\Models\Checklist;
+use App\Models\CheckList;
 
 class CheckListRepository extends BaseRepository
 {
     public function model()
     {
-        return Checklist::class;
+        return CheckList::class;
     }
 
     public function index($cardId)
