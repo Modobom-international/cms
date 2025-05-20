@@ -16,15 +16,22 @@ final class Utility
             return $status;
         }
     }
-    
+
     public function saveFileAttachment($input)
     {
         if ($input) {
-            $status = Storage::disk('public-file-attachment')->put($input['file_path']->getClientOriginalName(), $input['file_path']->get());
+            $status = Storage::disk('public-file-attachment')->put($input['file_pathname'], $input['file_path']->get());
             return $status;
         }
     }
 
+    public function deleteFileAttachment($input)
+    {
+        if ($input) {
+            $status = Storage::disk('public-file-attachment')->delete($input);
+            return $status;
+        }
+    }
     public function paginate($items, $perPage = 15, $path = null, $page = null, $pageName = 'page', $options = [])
     {
         $page = $page ?: Paginator::resolveCurrentPage($pageName);

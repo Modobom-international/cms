@@ -62,6 +62,7 @@ class CardController extends Controller
             }
 
             $cards = $listBoard->cards;
+            $cards->load('labels');
 
             if ($cards->isEmpty()) {
                 return response()->json([
@@ -643,13 +644,13 @@ class CardController extends Controller
             }
 
             // Check if label belongs to the same board
-            if ($label->board_id !== $card->listBoard->board_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Label không thuộc board này',
-                    'type' => 'invalid_label',
-                ], 400);
-            }
+            // if ($label->board_id !== $card->listBoard->board_id) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Label không thuộc board này',
+            //         'type' => 'invalid_label',
+            //     ], 400);
+            // }
 
             $exists = $card->labels()->where('label_id', $input['label_id'])->exists();
             if ($exists) {
@@ -834,6 +835,9 @@ class CardController extends Controller
                     'type' => 'unauthorized',
                 ], 403);
             }
+
+            // Load the labels and attachments relationships
+            $card->load(['labels', 'attachments']);
 
             return response()->json([
                 'success' => true,

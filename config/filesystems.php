@@ -41,7 +41,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'url' => env('APP_URL') . '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
@@ -59,19 +59,19 @@ return [
             'throw' => false,
             'report' => false,
         ],
-    
+
         'public-image-user' => [
             'driver' => 'local',
-            'root' => public_path() . '/images/user/',
-            'url' => env('APP_URL') . '/images/user/',
+            'root' => public_path() . '/storage/images/user/',
+            'url' => env('APP_URL') . '/storage/images/user/',
             'visibility' => 'public',
             'throw' => false,
         ],
-    
+
         'public-file-attachment' => [
             'driver' => 'local',
-            'root' => public_path() . '/file/attachment/',
-            'url' => env('APP_URL') . '/file/attachment/',
+            'root' => public_path() . '/storage/attachment/',
+            'url' => env('APP_URL') . '/storage/attachment/',
             'visibility' => 'public',
             'throw' => false,
         ],

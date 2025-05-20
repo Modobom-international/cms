@@ -194,10 +194,9 @@ class CheckListItemController extends Controller
         }
     }
 
-    public function toggle(CheckCompletedRequest $request, $checklistId, $itemId)
+    public function toggle($checklistId, $itemId)
     {
         // Validate the incoming request
-        $input = $request->except('token');
         $checkList = $this->checkListRepository->show($checklistId);
         if (!$checkList) {
             return response()->json([
@@ -222,7 +221,7 @@ class CheckListItemController extends Controller
                 'type' => 'unauthorized',
             ], 403);
         }
-        if ($item->is_completed) {
+        if ($item->is_completed == 1) {
             $item->is_completed = 0;
         } else {
             $item->is_completed = 1;

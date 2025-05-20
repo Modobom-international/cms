@@ -9,25 +9,23 @@ class AttachmentRequest extends FormRequest
     {
         return true; // hoặc kiểm tra quyền ở đây nếu cần
     }
-    
+
     public function rules()
     {
         return [
-            'title'      => 'string|max:255',
-            'file_path'      => 'required|file|max:10240', // 10MB
-            'url'       => 'required|url',
+            'title' => 'string|max:255',
+            'file_path' => 'file|max:10240', // 10MB
+            'url' => 'url',
         ];
     }
-    
+
     public function messages()
     {
         return [
             'title.required' => __('validation.string'),
             'title.max' => __('validation.max'),
             'file_path.file' => __('validation.file'),
-            'file_path.required' => __('validation.required'),
             'file_path.max' => __('validation.max'),
-            'url.required' => __('validation.required'),
             'url.url' => __('validation.url'),
         ];
     }

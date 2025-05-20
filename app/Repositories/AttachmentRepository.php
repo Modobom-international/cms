@@ -10,17 +10,17 @@ class AttachmentRepository extends BaseRepository
     {
         return Attachment::class;
     }
-    
+
     public function index($cardId)
     {
-        return $this->model->where('card_id', $cardId)->with('user')->get();
+        return $this->model->where('card_id', $cardId)->get();
     }
-    
+
     public function store($data)
     {
-       return $this->model->create($data);
+        return $this->model->create($data);
     }
-    
+
     public function show($id)
     {
         return $this->model->with('card')->where('id', $id)->first();
@@ -35,6 +35,6 @@ class AttachmentRepository extends BaseRepository
     {
         return $this->model->where('id', $id)->delete();
     }
-    
-    
+
+
 }
