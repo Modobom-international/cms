@@ -172,23 +172,9 @@ class CardController extends Controller
                 ], 403);
             }
 
-            $listBoard = $this->listBoardRepository->show($card['list_id']);
-            if (!$listBoard) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Không tìm thấy listBoard',
-                    'type' => 'listBoard_not_found',
-                ], 404);
-            }
-
-            $maxPosition = $this->cardRepository->maxPosition($listBoard->id);
-            $position = is_null($maxPosition) ? 0 : $maxPosition + 1;
-
             $cardData = [
                 'title' => $input['title'],
-                'position' => $position,
                 'description' => $input['description'] ?? "",
-                'list_id' => $listBoard->id,
             ];
             $dataCard = $this->cardRepository->updateCard($cardData, $id);
 
@@ -197,7 +183,7 @@ class CardController extends Controller
                 'message' => 'Card được cập nhật thành công',
                 'type' => 'update_card_success',
                 'data' => $dataCard
-            ], 201);
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

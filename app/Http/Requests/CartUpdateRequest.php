@@ -23,15 +23,17 @@ class CartUpdateRequest extends FormRequest
     {
         return [
             'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
         ];
     }
-    
+
     public function messages()
     {
         return [
             'title.required' => __('validation.required'),
             'title.string' => __('validation.string'),
             'title.max' => __('validation.max'),
+            'description.string' => __('validation.string'),
         ];
     }
 }
