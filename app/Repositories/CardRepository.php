@@ -125,17 +125,25 @@ class CardRepository extends BaseRepository
 
         $board = $card->listBoard->board;
 
-        // If board is public, check workspace access
-        if ($board->visibility === Boards::BOARD_PUBLIC) {
-            // Check if user has access to the workspace through workspace_users table
-            return $user->workspaces()
-                ->where('workspaces.id', $board->workspace_id)
-                ->exists();
+        // First check if user has access to the workspace through workspace_users table
+        $hasWorkspaceAccess = DB::table('workspace_users')
+            ->where('workspace_id', $board->workspace_id)
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if (!$hasWorkspaceAccess) {
+            return false;
         }
 
-        // For private boards, check if user is a board member
-        return $user->boards()
-            ->where('boards.id', $board->id)
+        // If board is public and user has workspace access, allow viewing
+        if ($board->visibility === Boards::BOARD_PUBLIC) {
+            return true;
+        }
+
+        // For private boards, check if user is a board member through board_users table
+        return DB::table('board_users')
+            ->where('board_id', $board->id)
+            ->where('user_id', $user->id)
             ->exists();
     }
 
@@ -150,19 +158,20 @@ class CardRepository extends BaseRepository
 
         $board = $card->listBoard->board;
 
-        // First check workspace access through workspace_users table
-        $hasWorkspaceAccess = $user->workspaces()
-            ->where('workspaces.id', $board->workspace_id)
+        // First check if user has access to the workspace through workspace_users table
+        $hasWorkspaceAccess = DB::table('workspace_users')
+            ->where('workspace_id', $board->workspace_id)
+            ->where('user_id', $user->id)
             ->exists();
 
         if (!$hasWorkspaceAccess) {
             return false;
         }
-
-        // Then check board membership
-        return $user->boards()
-            ->where('boards.id', $board->id)
-            ->whereIn('board_users.role', [Boards::ROLE_ADMIN, Boards::ROLE_MEMBER])
+        // Check if user has admin or member role in the board through board_users table
+        return DB::table('board_users')
+            ->where('board_id', $board->id)
+            ->where('user_id', $user->id)
+            ->whereIn('role', [Boards::ROLE_ADMIN, Boards::ROLE_MEMBER])
             ->exists();
     }
 }

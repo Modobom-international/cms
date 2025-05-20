@@ -73,6 +73,11 @@ class BoardController extends Controller
         $workspace = $workspace->toArray();
         $workspace['is_admin'] = $isAdmin || $workspace['owner_id'] === $user->id;
 
+        // Get members for each board
+        $boards->each(function ($board) {
+            $board->members = $this->boardUserRepository->getMembers($board->id);
+        });
+
         return response()->json([
             'success' => true,
             'boards' => $boards,

@@ -66,4 +66,18 @@ class WorkspaceUserRepository extends BaseRepository
             ->where('user_id', $userId)
             ->first();
     }
+
+    /**
+     * Get all members for multiple workspaces in a single query
+     * 
+     * @param array $workspaceIds
+     * @return \Illuminate\Support\Collection
+     */
+    public function getMembersForWorkspaces(array $workspaceIds)
+    {
+        return $this->model
+            ->with('users')
+            ->whereIn('workspace_id', $workspaceIds)
+            ->get();
+    }
 }

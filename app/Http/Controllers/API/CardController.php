@@ -62,6 +62,7 @@ class CardController extends Controller
             }
 
             $cards = $listBoard->cards;
+            $cards->load(['labels', "members"]);
 
             if ($cards->isEmpty()) {
                 return response()->json([
@@ -172,23 +173,9 @@ class CardController extends Controller
                 ], 403);
             }
 
-            $listBoard = $this->listBoardRepository->show($card['list_id']);
-            if (!$listBoard) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Không tìm thấy listBoard',
-                    'type' => 'listBoard_not_found',
-                ], 404);
-            }
-
-            $maxPosition = $this->cardRepository->maxPosition($listBoard->id);
-            $position = is_null($maxPosition) ? 0 : $maxPosition + 1;
-
             $cardData = [
                 'title' => $input['title'],
-                'position' => $position,
                 'description' => $input['description'] ?? "",
-                'list_id' => $listBoard->id,
             ];
             $dataCard = $this->cardRepository->updateCard($cardData, $id);
 
@@ -197,7 +184,7 @@ class CardController extends Controller
                 'message' => 'Card được cập nhật thành công',
                 'type' => 'update_card_success',
                 'data' => $dataCard
-            ], 201);
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -657,13 +644,13 @@ class CardController extends Controller
             }
 
             // Check if label belongs to the same board
-            if ($label->board_id !== $card->listBoard->board_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Label không thuộc board này',
-                    'type' => 'invalid_label',
-                ], 400);
-            }
+            // if ($label->board_id !== $card->listBoard->board_id) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Label không thuộc board này',
+            //         'type' => 'invalid_label',
+            //     ], 400);
+            // }
 
             $exists = $card->labels()->where('label_id', $input['label_id'])->exists();
             if ($exists) {
@@ -849,6 +836,9 @@ class CardController extends Controller
                 ], 403);
             }
 
+            // Load the labels and attachments relationships
+            $card->load(['labels', 'attachments', "members"]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Lấy thông tin card thành công',
@@ -860,6 +850,48 @@ class CardController extends Controller
                 'success' => false,
                 'message' => 'Lỗi khi lấy thông tin card',
                 'type' => 'error_get_card',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all members of a card
+     */
+    public function getMembers($cardId)
+    {
+        try {
+            $card = $this->cardRepository->show($cardId);
+            if (!$card) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy card',
+                    'type' => 'card_not_found',
+                ], 404);
+            }
+
+            // Check view permission
+            if (!$this->cardRepository->userHasAccess($card->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền xem thành viên của card này',
+                    'type' => 'unauthorized',
+                ], 403);
+            }
+
+            $members = $card->members;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Lấy danh sách thành viên thành công',
+                'type' => 'get_members_success',
+                'data' => $members
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi lấy danh sách thành viên',
+                'type' => 'error_get_members',
                 'error' => $e->getMessage()
             ], 500);
         }

@@ -186,6 +186,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Card Members API
         Route::prefix('{id}/members')->group(function () {
+            Route::get('/', [CardController::class, 'getMembers'])->name('cards.members.index');
             Route::post('/join', [CardController::class, 'join'])->name('cards.members.join');
             Route::post('/leave', [CardController::class, 'leave'])->name('cards.members.leave');
             Route::post('/', [CardController::class, 'assignMember'])->name('cards.members.create');

@@ -23,17 +23,15 @@ class CheckListRequest extends FormRequest
     {
         return [
             'title' => 'required|string|max:255',
-            'card_id' => 'required',
         ];
     }
-    
+
     public function messages(): array
     {
         return [
             'title.required' => __('validation.required'),
             'title.string' => __('validation.string'),
             'title.max' => __('validation.max'),
-            'card_id.required' => __('validation.required'),
         ];
     }
 }

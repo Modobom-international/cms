@@ -8,11 +8,13 @@ use App\Http\Requests\WorkspaceRequest;
 use App\Repositories\UserRepository;
 use App\Repositories\WorkspaceRepository;
 use App\Repositories\WorkspaceUserRepository;
+use App\Repositories\BoardUserRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Enums\Utility;
 use Illuminate\Support\Facades\Validator;
 use App\Enums\Users;
+use App\Enums\Boards;
 
 class WorkspaceController extends Controller
 {
@@ -20,17 +22,20 @@ class WorkspaceController extends Controller
     protected $workspaceUserRepository;
     protected $utility;
     protected $userRepository;
+    protected $boardUserRepository;
 
     public function __construct(
         Utility $utility,
         WorkspaceRepository $workspaceRepository,
         WorkspaceUserRepository $workspaceUserRepository,
-        UserRepository $userRepository
+        UserRepository $userRepository,
+        BoardUserRepository $boardUserRepository
     ) {
         $this->utility = $utility;
         $this->workspaceUserRepository = $workspaceUserRepository;
         $this->workspaceRepository = $workspaceRepository;
         $this->userRepository = $userRepository;
+        $this->boardUserRepository = $boardUserRepository;
     }
 
     /**
@@ -45,58 +50,83 @@ class WorkspaceController extends Controller
     {
         $user = Auth::user();
         $workspaces = collect();
+        $workspaceIds = collect();
 
-        // If user is admin, return all workspaces with role information
+        // If user is admin, get all workspaces at once
         if ($user->role === Users::ADMIN) {
             $allWorkspaces = $this->workspaceRepository->getAllWorkspaces();
+            $workspaceIds = $allWorkspaces->pluck('id');
+        } else {
+            // Get owned workspaces
+            $ownedWorkspaces = $this->workspaceRepository->getWorkspacesByOwnerId($user->id);
+            $workspaceIds = $ownedWorkspaces->pluck('id');
+
+            // Get member workspaces
+            $memberWorkspaces = $this->workspaceUserRepository->getMembers($user->id);
+            $memberWorkspaceIds = $memberWorkspaces->pluck('workspace.id');
+            $workspaceIds = $workspaceIds->merge($memberWorkspaceIds);
+
+            // Get public workspaces
+            $publicWorkspaces = $this->workspaceRepository->getPublicWorkspaces();
+            $workspaceIds = $workspaceIds->merge($publicWorkspaces->pluck('id'))->unique();
+        }
+
+        // Fetch all members for the collected workspace IDs in a single query
+        $allMembers = $this->workspaceUserRepository->getMembersForWorkspaces($workspaceIds->toArray());
+        $membersGrouped = $allMembers->groupBy('workspace_id');
+
+        // Build response for admin
+        if ($user->role === Users::ADMIN) {
             foreach ($allWorkspaces as $workspace) {
                 $role = null;
                 if ($workspace->owner_id === $user->id) {
                     $role = 'owner';
                 } else {
-                    $memberInfo = $this->workspaceUserRepository->getMemberRole($user->id, $workspace->id);
+                    $memberInfo = $membersGrouped->get($workspace->id, collect())
+                        ->where('user_id', $user->id)
+                        ->first();
                     $role = $memberInfo ? $memberInfo->role : null;
                 }
 
                 $workspaces->push([
                     'workspace' => $workspace,
                     'role' => $role,
-                    'is_member' => ($role !== null)
+                    'is_member' => ($role !== null),
+                    'members' => $membersGrouped->get($workspace->id, collect())
                 ]);
             }
-        }
-        // If user is regular user, return only accessible workspaces
-        else {
-            // Get workspaces owned by the user
-            $ownedWorkspaces = $this->workspaceRepository->getWorkspacesByOwnerId($user->id);
+        } else {
+            // Build response for regular users
+            // Add owned workspaces
             foreach ($ownedWorkspaces as $workspace) {
                 $workspaces->push([
                     'workspace' => $workspace,
                     'role' => 'owner',
-                    'is_member' => true
+                    'is_member' => true,
+                    'members' => $membersGrouped->get($workspace->id, collect())
                 ]);
             }
 
-            // Get workspaces where user is a member
-            $memberWorkspaces = $this->workspaceUserRepository->getMembers($user->id);
+            // Add member workspaces
             foreach ($memberWorkspaces as $member) {
-                if (!in_array($member->workspace_id, $ownedWorkspaces->pluck('id')->toArray())) {
+                if (!$workspaces->pluck('workspace.id')->contains($member->workspace_id)) {
                     $workspaces->push([
                         'workspace' => $member->workspace,
                         'role' => $member->role,
-                        'is_member' => true
+                        'is_member' => true,
+                        'members' => $membersGrouped->get($member->workspace_id, collect())
                     ]);
                 }
             }
 
-            // Get public workspaces (excluding already added ones)
-            $publicWorkspaces = $this->workspaceRepository->getPublicWorkspaces();
+            // Add public workspaces
             foreach ($publicWorkspaces as $workspace) {
-                if (!in_array($workspace->id, $workspaces->pluck('workspace.id')->toArray())) {
+                if (!$workspaces->pluck('workspace.id')->contains($workspace->id)) {
                     $workspaces->push([
                         'workspace' => $workspace,
                         'role' => null,
-                        'is_member' => false
+                        'is_member' => false,
+                        'members' => $membersGrouped->get($workspace->id, collect())
                     ]);
                 }
             }
@@ -133,6 +163,19 @@ class WorkspaceController extends Controller
             ];
 
             $this->workspaceUserRepository->createWorkSpaceUser($dataWorkspaceUser);
+
+            // Get all boards in the workspace and add user to each board
+            $workspace = $this->workspaceRepository->show($dataWorkspace->id);
+            $boards = $workspace->boards;
+
+            foreach ($boards as $board) {
+                $dataBoardUser = [
+                    'board_id' => $board->id,
+                    'user_id' => Auth::user()->id,
+                    'role' => Workspace::ROLE_ADMIN === Workspace::ROLE_ADMIN ? Boards::ROLE_ADMIN : Boards::ROLE_MEMBER
+                ];
+                $this->boardUserRepository->createBoardUser($dataBoardUser);
+            }
 
             return response()->json([
                 'success' => true,
@@ -386,6 +429,22 @@ class WorkspaceController extends Controller
 
             $this->workspaceUserRepository->createWorkSpaceUser($dataWorkspaceUser);
 
+            // Get all boards in the workspace and add user to each board
+            $workspace = $this->workspaceRepository->show($workspaceId);
+            $boards = $workspace->boards;
+
+            foreach ($boards as $board) {
+                // Check if user is already a member of the board
+                if (!$this->boardUserRepository->checkMemberExist($userToAdd->id, $board->id)) {
+                    $dataBoardUser = [
+                        'board_id' => $board->id,
+                        'user_id' => $userToAdd->id,
+                        'role' => $request->role === Workspace::ROLE_ADMIN ? Boards::ROLE_ADMIN : Boards::ROLE_MEMBER
+                    ];
+                    $this->boardUserRepository->createBoardUser($dataBoardUser);
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Thêm thành viên thành công',
@@ -403,7 +462,7 @@ class WorkspaceController extends Controller
 
     public function listMembers($workspaceId)
     {
-        $members = $this->workspaceUserRepository->getMembers($workspaceId);
+        $members = $this->workspaceUserRepository->getMembersForWorkspaces([$workspaceId]);
         return response()->json([
             'success' => true,
             'members' => $members,
@@ -423,11 +482,37 @@ class WorkspaceController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $this->workspaceUserRepository->removeMember($request->workspace_id, $request->user_id);
-        return response()->json([
-            'success' => true,
-            'message' => 'Member được xóa thành công',
-            'type' => 'delete_member_success',
-        ], 201);
+        try {
+            // Get workspace and its boards
+            $workspace = $this->workspaceRepository->show($request->workspace_id);
+            if (!$workspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Workspace không tồn tại',
+                    'type' => 'workspace_not_found',
+                ], 404);
+            }
+
+            // Remove member from all boards in the workspace
+            foreach ($workspace->boards as $board) {
+                $this->boardUserRepository->removeMember($board->id, $request->user_id);
+            }
+
+            // Remove member from workspace
+            $this->workspaceUserRepository->removeMember($request->workspace_id, $request->user_id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Member được xóa thành công khỏi workspace và các boards',
+                'type' => 'delete_member_success',
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi xóa member',
+                'type' => 'error_remove_member',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
