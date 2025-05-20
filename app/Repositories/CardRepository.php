@@ -167,7 +167,6 @@ class CardRepository extends BaseRepository
         if (!$hasWorkspaceAccess) {
             return false;
         }
-
         // Check if user has admin or member role in the board through board_users table
         return DB::table('board_users')
             ->where('board_id', $board->id)

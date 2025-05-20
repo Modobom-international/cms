@@ -10,17 +10,17 @@ class CheckListRepository extends BaseRepository
     {
         return Checklist::class;
     }
-    
+
     public function index($cardId)
     {
-        return $this->model->where('card_id', $cardId)->with('item')->get();
+        return $this->model->where('card_id', $cardId)->with('items')->get();
     }
-    
+
     public function storeCheckList($data)
     {
-       return $this->model->create($data);
+        return $this->model->create($data);
     }
-    
+
     public function show($id)
     {
         return $this->model->with('card')->where('id', $id)->first();
@@ -35,6 +35,6 @@ class CheckListRepository extends BaseRepository
     {
         return $this->model->where('id', $id)->delete();
     }
-    
-    
+
+
 }
