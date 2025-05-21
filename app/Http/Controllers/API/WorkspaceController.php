@@ -63,7 +63,7 @@ class WorkspaceController extends Controller
 
             // Get member workspaces
             $memberWorkspaces = $this->workspaceUserRepository->getMembers($user->id);
-            $memberWorkspaceIds = $memberWorkspaces->pluck('workspace.id');
+            $memberWorkspaceIds = $memberWorkspaces->pluck('workspace_id');
             $workspaceIds = $workspaceIds->merge($memberWorkspaceIds);
 
             // Get public workspaces
@@ -109,12 +109,13 @@ class WorkspaceController extends Controller
 
             // Add member workspaces
             foreach ($memberWorkspaces as $member) {
-                if (!$workspaces->pluck('workspace.id')->contains($member->workspace_id)) {
+                $workspace = $this->workspaceRepository->show($member->workspace_id);
+                if ($workspace && !$workspaces->pluck('workspace.id')->contains($workspace->id)) {
                     $workspaces->push([
-                        'workspace' => $member->workspace,
+                        'workspace' => $workspace,
                         'role' => $member->role,
                         'is_member' => true,
-                        'members' => $membersGrouped->get($member->workspace_id, collect())
+                        'members' => $membersGrouped->get($workspace->id, collect())
                     ]);
                 }
             }

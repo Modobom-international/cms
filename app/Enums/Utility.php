@@ -27,11 +27,24 @@ final class Utility
 
     public function deleteFileAttachment($input)
     {
-        if ($input) {
-            $status = Storage::disk('public-file-attachment')->delete($input);
+        if (!$input) {
+            return false;
+        }
+
+        try {
+            // Convert database path to relative path for storage
+            $relativePath = str_replace('/file/attachment/', '', $input);
+
+            // Delete the file from storage
+            $status = Storage::disk('public-file-attachment')->delete($relativePath);
+
             return $status;
+        } catch (\Exception $e) {
+            \Log::error('Failed to delete file: ' . $e->getMessage());
+            return false;
         }
     }
+
     public function paginate($items, $perPage = 15, $path = null, $page = null, $pageName = 'page', $options = [])
     {
         $page = $page ?: Paginator::resolveCurrentPage($pageName);

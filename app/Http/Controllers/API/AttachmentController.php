@@ -221,6 +221,7 @@ class AttachmentController extends Controller
         }
         // Only attempt to delete file if it exists
         if ($attachment->file_path) {
+            // dd($attachment->file_path);
             try {
                 $this->utility->deleteFileAttachment($attachment->file_path);
             } catch (\Exception $e) {
