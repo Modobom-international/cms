@@ -28,6 +28,7 @@ use App\Http\Controllers\API\MonitorServerController;
 use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\ServerController;
 use App\Http\Controllers\API\ImageOptimizeController;
+use App\Http\Controllers\API\AttendanceController;
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
@@ -325,5 +326,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('monitor-server')->group(function () {
         Route::get('/detail', [MonitorServerController::class, 'detail'])->name('monitor.server.detail');
         Route::get('/store', [MonitorServerController::class, 'store'])->name('monitor.server.store');
+    });
+
+    // Attendance routes
+    Route::prefix('attendance')->group(function () {
+        Route::post('/checkin', [AttendanceController::class, 'checkin'])->name('attendance.checkin');
+        Route::post('/checkout', [AttendanceController::class, 'checkout'])->name('attendance.checkout');
+        Route::get('/{employee_id}/today', [AttendanceController::class, 'getTodayAttendance'])->name('attendance.today');
+    });
+
+    // Admin Attendance routes
+    Route::prefix('admin/attendances')->group(function () {
+        Route::get('/', [AttendanceController::class, 'getAttendanceReport'])->name('admin.attendances.report');
     });
 });
