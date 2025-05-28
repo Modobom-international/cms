@@ -352,5 +352,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admin Attendance routes
     Route::prefix('admin/attendances')->group(function () {
         Route::get('/', [AttendanceController::class, 'getAttendanceReport'])->name('admin.attendances.report');
+        Route::post('/custom', [AttendanceController::class, 'addCustomAttendance'])->name('admin.attendances.custom.store');
+        Route::put('/custom/{id}', [AttendanceController::class, 'updateCustomAttendance'])->name('admin.attendances.custom.update');
     });
 });

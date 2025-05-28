@@ -125,4 +125,95 @@ class AttendanceController extends Controller
 
         return response()->json($attendances);
     }
+
+    /**
+     * Admin: Add custom attendance record
+     */
+    public function addCustomAttendance(Request $request)
+    {
+        $request->validate([
+            'employee_id' => 'required|exists:users,id',
+            'date' => 'required|date',
+            'type' => 'required|in:full_day,half_day',
+            'checkin_time' => 'required|date_format:Y-m-d H:i:s',
+            'checkout_time' => 'required|date_format:Y-m-d H:i:s',
+            'branch_name' => 'required|string',
+            'description' => 'nullable|string'
+        ]);
+
+        // Check if attendance already exists for the date
+        $existingAttendance = Attendance::where('employee_id', $request->employee_id)
+            ->where('date', $request->date)
+            ->first();
+
+        if ($existingAttendance) {
+            return response()->json([
+                'message' => 'Attendance record already exists for this date'
+            ], 400);
+        }
+
+        // Create attendance record
+        $attendance = Attendance::create([
+            'employee_id' => $request->employee_id,
+            'date' => $request->date,
+            'type' => $request->type,
+            'checkin_time' => $request->checkin_time,
+            'checkout_time' => $request->checkout_time,
+            'branch_name' => $request->branch_name,
+            'description' => $request->description
+        ]);
+
+        // Calculate work hours and update status
+        $attendance->total_work_hours = $attendance->calculateWorkHours();
+        $attendance->updateStatus();
+        $attendance->save();
+
+        return response()->json([
+            'message' => 'Custom attendance record added successfully',
+            'data' => $attendance
+        ], 201);
+    }
+
+    /**
+     * Admin: Update custom attendance record
+     */
+    public function updateCustomAttendance(Request $request, $id)
+    {
+        $attendance = Attendance::findOrFail($id);
+
+        $request->validate([
+            'type' => 'nullable|in:full_day,half_day',
+            'checkin_time' => 'nullable|date_format:Y-m-d H:i:s',
+            'checkout_time' => 'nullable|date_format:Y-m-d H:i:s',
+            'branch_name' => 'nullable|string',
+            'description' => 'nullable|string'
+        ]);
+
+        // Update only provided fields
+        if ($request->has('type')) {
+            $attendance->type = $request->type;
+        }
+        if ($request->has('checkin_time')) {
+            $attendance->checkin_time = $request->checkin_time;
+        }
+        if ($request->has('checkout_time')) {
+            $attendance->checkout_time = $request->checkout_time;
+        }
+        if ($request->has('branch_name')) {
+            $attendance->branch_name = $request->branch_name;
+        }
+        if ($request->has('description')) {
+            $attendance->description = $request->description;
+        }
+
+        // Recalculate work hours and status
+        $attendance->total_work_hours = $attendance->calculateWorkHours();
+        $attendance->updateStatus();
+        $attendance->save();
+
+        return response()->json([
+            'message' => 'Attendance record updated successfully',
+            'data' => $attendance
+        ]);
+    }
 }

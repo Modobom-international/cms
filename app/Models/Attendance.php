@@ -17,7 +17,9 @@ class Attendance extends Model
         'checkin_time',
         'checkout_time',
         'total_work_hours',
-        'status'
+        'status',
+        'branch_name',
+        'description'
     ];
 
     protected $casts = [
