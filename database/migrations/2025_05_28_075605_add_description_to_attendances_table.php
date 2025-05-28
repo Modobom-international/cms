@@ -11,7 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('attendances', function (Blueprint $table) {
-            $table->text('description')->nullable()->after('branch_name');
+            $table->text('description')->nullable();
         });
     }
 
