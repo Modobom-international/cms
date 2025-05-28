@@ -339,13 +339,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Attendance routes
     Route::prefix('attendance')->group(function () {
-        // Routes that require IP verification
-        Route::middleware('verify.company.ip')->group(function () {
-            Route::post('/checkin', [AttendanceController::class, 'checkin'])->name('attendance.checkin');
-            Route::post('/checkout', [AttendanceController::class, 'checkout'])->name('attendance.checkout');
-        });
-
-        // Routes that don't need IP verification
+        Route::post('/checkin', [AttendanceController::class, 'checkin'])->name('attendance.checkin');
+        Route::post('/checkout', [AttendanceController::class, 'checkout'])->name('attendance.checkout');
         Route::get('/{employee_id}/today', [AttendanceController::class, 'getTodayAttendance'])->name('attendance.today');
     });
 

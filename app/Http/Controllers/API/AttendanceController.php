@@ -34,7 +34,6 @@ class AttendanceController extends Controller
             'type' => $request->type,
             'checkin_time' => Carbon::now(),
             'status' => 'incomplete',
-            'branch_name' => $request->attributes->get('branch_name')
         ]);
 
         return response()->json([
@@ -68,7 +67,6 @@ class AttendanceController extends Controller
         $attendance->checkout_time = Carbon::now();
         $attendance->total_work_hours = $attendance->calculateWorkHours();
         $attendance->updateStatus();
-        $attendance->branch_name = $request->attributes->get('branch_name');
         $attendance->save();
 
         return response()->json([

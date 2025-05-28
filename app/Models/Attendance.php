@@ -18,7 +18,6 @@ class Attendance extends Model
         'checkout_time',
         'total_work_hours',
         'status',
-        'branch_name',
         'description'
     ];
 
