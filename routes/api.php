@@ -29,6 +29,7 @@ use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\ServerController;
 use App\Http\Controllers\API\ImageOptimizeController;
 use App\Http\Controllers\API\AttendanceController;
+use App\Http\Controllers\API\CompanyIpController;
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
@@ -328,10 +329,23 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/store', [MonitorServerController::class, 'store'])->name('monitor.server.store');
     });
 
+    // Company IP Management routes
+    Route::prefix('company-ips')->group(function () {
+        Route::get('/', [CompanyIpController::class, 'index'])->name('company.ips.index');
+        Route::post('/', [CompanyIpController::class, 'store'])->name('company.ips.store');
+        Route::put('/{id}', [CompanyIpController::class, 'update'])->name('company.ips.update');
+        Route::delete('/{id}', [CompanyIpController::class, 'destroy'])->name('company.ips.destroy');
+    });
+
     // Attendance routes
     Route::prefix('attendance')->group(function () {
-        Route::post('/checkin', [AttendanceController::class, 'checkin'])->name('attendance.checkin');
-        Route::post('/checkout', [AttendanceController::class, 'checkout'])->name('attendance.checkout');
+        // Routes that require IP verification
+        Route::middleware('verify.company.ip')->group(function () {
+            Route::post('/checkin', [AttendanceController::class, 'checkin'])->name('attendance.checkin');
+            Route::post('/checkout', [AttendanceController::class, 'checkout'])->name('attendance.checkout');
+        });
+
+        // Routes that don't need IP verification
         Route::get('/{employee_id}/today', [AttendanceController::class, 'getTodayAttendance'])->name('attendance.today');
     });
 

@@ -33,7 +33,8 @@ class AttendanceController extends Controller
             'date' => Carbon::today(),
             'type' => $request->type,
             'checkin_time' => Carbon::now(),
-            'status' => 'incomplete'
+            'status' => 'incomplete',
+            'branch_name' => $request->attributes->get('branch_name')
         ]);
 
         return response()->json([
@@ -67,6 +68,7 @@ class AttendanceController extends Controller
         $attendance->checkout_time = Carbon::now();
         $attendance->total_work_hours = $attendance->calculateWorkHours();
         $attendance->updateStatus();
+        $attendance->branch_name = $request->attributes->get('branch_name');
         $attendance->save();
 
         return response()->json([
@@ -94,7 +96,8 @@ class AttendanceController extends Controller
     {
         $request->validate([
             'date' => 'required|date',
-            'type' => 'nullable|in:full_day,half_day'
+            'type' => 'nullable|in:full_day,half_day',
+            'branch_name' => 'nullable|string'
         ]);
 
         $query = Attendance::with('employee')
@@ -104,6 +107,10 @@ class AttendanceController extends Controller
             $query->where('type', $request->type);
         }
 
+        if ($request->branch_name) {
+            $query->where('branch_name', $request->branch_name);
+        }
+
         $attendances = $query->get()->map(function ($attendance) {
             return [
                 'employee_id' => $attendance->employee_id,
@@ -111,7 +118,8 @@ class AttendanceController extends Controller
                 'checkin_time' => $attendance->checkin_time->format('H:i'),
                 'checkout_time' => $attendance->checkout_time ? $attendance->checkout_time->format('H:i') : null,
                 'total_work_hours' => $attendance->total_work_hours,
-                'status' => $attendance->status
+                'status' => $attendance->status,
+                'branch_name' => $attendance->branch_name
             ];
         });
 
