@@ -30,12 +30,22 @@ class ApiKeyController extends BaseController
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('api_keys')->where(function ($query) {
+                    return $query->where('user_id', Auth::id());
+                })
+            ],
             'expires_at' => 'nullable|date|after:now',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
         }
 
         $keyData = ApiKey::generateKey();
@@ -82,13 +92,25 @@ class ApiKeyController extends BaseController
         $this->authorize('update', $apiKey);
 
         $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255',
+            'name' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('api_keys')->where(function ($query) use ($apiKey) {
+                    return $query->where('user_id', Auth::id())
+                        ->where('id', '!=', $apiKey->id);
+                })
+            ],
             'is_active' => 'sometimes|required|boolean',
             'expires_at' => 'sometimes|nullable|date|after:now',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
         }
 
         $apiKey->update($request->only(['name', 'is_active', 'expires_at']));
