@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'exclude.domain.tracking' => ExcludeDomainTracking::class,
             'cors' => Cors::class,
+            'api.key' => \App\Http\Middleware\ApiKeyMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
