@@ -99,4 +99,9 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Permission::class, 'user_permission', 'user_id', 'permission_id');
     }
+
+    public function apiKeys()
+    {
+        return $this->hasMany(ApiKey::class);
+    }
 }

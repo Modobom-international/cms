@@ -27,9 +27,15 @@ use App\Http\Controllers\API\ActivityLogController;
 use App\Http\Controllers\API\MonitorServerController;
 use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\ServerController;
+use App\Http\Controllers\API\ApiKeyController;
 use App\Http\Controllers\API\ImageOptimizeController;
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
+
+Route::middleware('api.key')->group(function () {
+
+    //API key routes
+});
 
 Route::middleware(ExcludeDomainTracking::class)->group(function () {
     Route::post('/create-video-timeline', [UsersTrackingController::class, 'storeVideoTimeline']);
@@ -50,6 +56,14 @@ Route::middleware(ExcludeDomainTracking::class)->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [UserController::class, 'me']);
+
+    // API Keys routes
+    Route::prefix('api-keys')->group(function () {
+        Route::get('/', [ApiKeyController::class, 'index'])->name('api-keys.index');
+        Route::post('/', [ApiKeyController::class, 'store'])->name('api-keys.create');
+        Route::put('/{apiKey}', [ApiKeyController::class, 'update'])->name('api-keys.update');
+        Route::delete('/{apiKey}', [ApiKeyController::class, 'destroy'])->name('api-keys.delete');
+    });
 
     Route::get('/notifications', [NotificationController::class, 'getNotifications']);
     Route::post('/refresh-token', [AuthController::class, 'refreshToken']);
