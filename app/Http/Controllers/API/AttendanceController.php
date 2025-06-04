@@ -184,8 +184,11 @@ class AttendanceController extends Controller
             'date' => 'required|date',
             'type' => 'nullable|in:full_day,half_day',
             'branch_name' => 'nullable|string',
-            'include_leave' => 'nullable|boolean'
+            'include_leave' => 'nullable|in:true,false,1,0'
         ]);
+
+        // Convert string boolean to actual boolean
+        $includeLeave = filter_var($request->include_leave, FILTER_VALIDATE_BOOLEAN);
 
         $query = Attendance::with('employee')
             ->where('date', $request->date);
@@ -226,7 +229,7 @@ class AttendanceController extends Controller
         });
 
         // If include_leave is true, also include employees who are on approved leave but don't have attendance records
-        if ($request->include_leave) {
+        if ($includeLeave) {
             $attendanceEmployeeIds = $attendances->pluck('employee_id')->toArray();
 
             $leavesToday = LeaveRequest::with('employee')
