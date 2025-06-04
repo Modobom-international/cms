@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
+use App\Models\LeaveRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -28,18 +29,64 @@ class AttendanceController extends Controller
             ], 400);
         }
 
+        // Check if employee has approved absence leave for today
+        $activeAbsenceLeave = LeaveRequest::where('employee_id', $request->employee_id)
+            ->approved()
+            ->where('request_type', 'absence')
+            ->activeOn(Carbon::today())
+            ->first();
+
+        if ($activeAbsenceLeave) {
+            // Auto-create attendance record for leave
+            $attendance = Attendance::create([
+                'employee_id' => $request->employee_id,
+                'date' => Carbon::today(),
+                'type' => 'full_day',
+                'status' => 'on_leave',
+                'description' => 'On approved leave: ' . $activeAbsenceLeave->leave_type
+            ]);
+
+            return response()->json([
+                'message' => 'Employee is on approved leave today',
+                'data' => $attendance,
+                'leave_info' => [
+                    'leave_type' => $activeAbsenceLeave->leave_type,
+                    'reason' => $activeAbsenceLeave->reason,
+                    'approved_by' => $activeAbsenceLeave->approver->name ?? null
+                ]
+            ]);
+        }
+
+        // Check if employee has approved remote work for today
+        $activeRemoteWork = LeaveRequest::where('employee_id', $request->employee_id)
+            ->approved()
+            ->where('request_type', 'remote_work')
+            ->activeOn(Carbon::today())
+            ->first();
+
         $attendance = Attendance::create([
             'employee_id' => $request->employee_id,
             'date' => Carbon::today(),
             'type' => $request->type,
             'checkin_time' => Carbon::now(),
-            'status' => 'incomplete',
+            'status' => $activeRemoteWork ? 'remote_work' : 'incomplete',
+            'description' => $activeRemoteWork ? 'Remote work: ' . $activeRemoteWork->reason : null
         ]);
 
-        return response()->json([
+        $response = [
             'message' => 'Check-in successful',
             'data' => $attendance
-        ]);
+        ];
+
+        if ($activeRemoteWork) {
+            $response['remote_work_info'] = [
+                'location' => $activeRemoteWork->remote_work_details['location'] ?? 'Not specified',
+                'reason' => $activeRemoteWork->reason,
+                'approved_by' => $activeRemoteWork->approver->name ?? null
+            ];
+        }
+
+        return response()->json($response);
     }
 
     public function checkout(Request $request)
@@ -64,6 +111,13 @@ class AttendanceController extends Controller
             ], 400);
         }
 
+        // Don't allow checkout for leave status
+        if ($attendance->status === 'on_leave') {
+            return response()->json([
+                'message' => 'Cannot checkout when on leave'
+            ], 400);
+        }
+
         $attendance->checkout_time = Carbon::now();
         $attendance->total_work_hours = $attendance->calculateWorkHours();
         $attendance->updateStatus();
@@ -82,12 +136,46 @@ class AttendanceController extends Controller
             ->first();
 
         if (!$attendance) {
+            // Check if there's an active leave for today
+            $activeLeave = LeaveRequest::where('employee_id', $employeeId)
+                ->approved()
+                ->activeOn(Carbon::today())
+                ->first();
+
+            if ($activeLeave) {
+                return response()->json([
+                    'message' => 'Employee is on leave today',
+                    'leave_info' => [
+                        'leave_type' => $activeLeave->leave_type,
+                        'request_type' => $activeLeave->request_type,
+                        'reason' => $activeLeave->reason,
+                        'start_date' => $activeLeave->start_date,
+                        'end_date' => $activeLeave->end_date
+                    ]
+                ]);
+            }
+
             return response()->json([
                 'message' => 'No attendance record found for today'
             ], 404);
         }
 
-        return response()->json($attendance);
+        $response = ['data' => $attendance];
+
+        // Add leave information if applicable
+        if (in_array($attendance->status, ['on_leave', 'remote_work'])) {
+            $activeLeave = $attendance->getActiveLeaveRequest();
+            if ($activeLeave) {
+                $response['leave_info'] = [
+                    'leave_type' => $activeLeave->leave_type,
+                    'request_type' => $activeLeave->request_type,
+                    'reason' => $activeLeave->reason,
+                    'remote_work_details' => $activeLeave->remote_work_details
+                ];
+            }
+        }
+
+        return response()->json($response);
     }
 
     public function getAttendanceReport(Request $request)
@@ -95,7 +183,8 @@ class AttendanceController extends Controller
         $request->validate([
             'date' => 'required|date',
             'type' => 'nullable|in:full_day,half_day',
-            'branch_name' => 'nullable|string'
+            'branch_name' => 'nullable|string',
+            'include_leave' => 'nullable|boolean'
         ]);
 
         $query = Attendance::with('employee')
@@ -110,16 +199,60 @@ class AttendanceController extends Controller
         }
 
         $attendances = $query->get()->map(function ($attendance) {
-            return [
+            $data = [
                 'employee_id' => $attendance->employee_id,
                 'employee_name' => $attendance->employee->name,
-                'checkin_time' => $attendance->checkin_time->format('H:i'),
+                'checkin_time' => $attendance->checkin_time ? $attendance->checkin_time->format('H:i') : null,
                 'checkout_time' => $attendance->checkout_time ? $attendance->checkout_time->format('H:i') : null,
                 'total_work_hours' => $attendance->total_work_hours,
                 'status' => $attendance->status,
+                'status_display' => $attendance->status_display,
                 'branch_name' => $attendance->branch_name
             ];
+
+            // Add leave information if applicable
+            if (in_array($attendance->status, ['on_leave', 'remote_work'])) {
+                $activeLeave = $attendance->getActiveLeaveRequest();
+                if ($activeLeave) {
+                    $data['leave_info'] = [
+                        'leave_type' => $activeLeave->leave_type,
+                        'request_type' => $activeLeave->request_type,
+                        'reason' => $activeLeave->reason
+                    ];
+                }
+            }
+
+            return $data;
         });
+
+        // If include_leave is true, also include employees who are on approved leave but don't have attendance records
+        if ($request->include_leave) {
+            $attendanceEmployeeIds = $attendances->pluck('employee_id')->toArray();
+
+            $leavesToday = LeaveRequest::with('employee')
+                ->approved()
+                ->activeOn($request->date)
+                ->whereNotIn('employee_id', $attendanceEmployeeIds)
+                ->get();
+
+            foreach ($leavesToday as $leave) {
+                $attendances->push([
+                    'employee_id' => $leave->employee_id,
+                    'employee_name' => $leave->employee->name,
+                    'checkin_time' => null,
+                    'checkout_time' => null,
+                    'total_work_hours' => null,
+                    'status' => $leave->request_type === 'absence' ? 'on_leave' : 'remote_work',
+                    'status_display' => $leave->request_type === 'absence' ? 'On Leave' : 'Remote Work',
+                    'branch_name' => null,
+                    'leave_info' => [
+                        'leave_type' => $leave->leave_type,
+                        'request_type' => $leave->request_type,
+                        'reason' => $leave->reason
+                    ]
+                ]);
+            }
+        }
 
         return response()->json($attendances);
     }
@@ -150,6 +283,12 @@ class AttendanceController extends Controller
             ], 400);
         }
 
+        // Check if there's an active leave for this date
+        $activeLeave = LeaveRequest::where('employee_id', $request->employee_id)
+            ->approved()
+            ->activeOn($request->date)
+            ->first();
+
         // Create attendance record
         $attendance = Attendance::create([
             'employee_id' => $request->employee_id,
@@ -166,10 +305,21 @@ class AttendanceController extends Controller
         $attendance->updateStatus();
         $attendance->save();
 
-        return response()->json([
+        $response = [
             'message' => 'Custom attendance record added successfully',
             'data' => $attendance
-        ], 201);
+        ];
+
+        if ($activeLeave) {
+            $response['warning'] = 'Employee had approved leave on this date';
+            $response['leave_info'] = [
+                'leave_type' => $activeLeave->leave_type,
+                'request_type' => $activeLeave->request_type,
+                'reason' => $activeLeave->reason
+            ];
+        }
+
+        return response()->json($response, 201);
     }
 
     /**
