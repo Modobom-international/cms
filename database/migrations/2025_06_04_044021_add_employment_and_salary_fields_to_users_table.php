@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::table('users', function (Blueprint $table) {
             // Employment information
-            $table->date('employment_start_date')->nullable()->after('profile_photo_path');
+            $table->date('employment_start_date')->nullable()->after('last_leave_calculation');
             $table->boolean('has_official_contract')->default(true)->after('employment_start_date');
             $table->boolean('is_probation')->default(false)->after('has_official_contract');
             $table->string('department')->nullable()->after('is_probation');
