@@ -210,4 +210,69 @@ class AttendanceComplaintController extends Controller
 
         return response()->json($stats);
     }
+
+    /**
+     * Admin: Respond to complaint and update attendance if needed
+     */
+    public function respondToComplaint(Request $request, $id)
+    {
+        $complaint = AttendanceComplaint::with('attendance')->findOrFail($id);
+
+        // Validate request
+        $request->validate([
+            'response_type' => 'required|in:approve,reject',
+            'admin_response' => 'required|string|min:10',
+            'attendance_updates' => 'required_if:response_type,approve|array',
+            'attendance_updates.checkin_time' => 'nullable|date',
+            'attendance_updates.checkout_time' => 'nullable|date',
+            'attendance_updates.type' => 'nullable|in:full_day,half_day',
+            'attendance_updates.description' => 'nullable|string'
+        ]);
+
+        // Start transaction to ensure both complaint and attendance are updated atomically
+        \DB::beginTransaction();
+
+        try {
+            if ($request->response_type === 'approve') {
+                // Update attendance record
+                $attendance = $complaint->attendance;
+                $updates = array_filter($request->attendance_updates);
+
+                $attendance->update($updates);
+
+                // Recalculate work hours if time was updated
+                if (isset($updates['checkin_time']) || isset($updates['checkout_time'])) {
+                    $attendance->total_work_hours = $attendance->calculateWorkHours();
+                }
+
+                // Update attendance status
+                $attendance->updateStatus();
+                $attendance->save();
+
+                // Mark complaint as resolved
+                $complaint->markAsResolved(Auth::id(), $request->admin_response);
+            } else {
+                // Mark complaint as rejected
+                $complaint->markAsRejected(Auth::id(), $request->admin_response);
+            }
+
+            \DB::commit();
+
+            return response()->json([
+                'message' => 'Complaint ' . ($request->response_type === 'approve' ? 'approved' : 'rejected') . ' successfully',
+                'data' => [
+                    'complaint' => $complaint->fresh()->load(['attendance', 'employee:id,name,email', 'reviewer:id,name']),
+                    'attendance' => $request->response_type === 'approve' ? $complaint->attendance : null
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+
+            return response()->json([
+                'message' => 'Failed to process complaint response',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

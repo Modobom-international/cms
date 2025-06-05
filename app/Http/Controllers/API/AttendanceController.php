@@ -178,6 +178,65 @@ class AttendanceController extends Controller
         return response()->json($response);
     }
 
+    /**
+     * Get attendance record for a specific date
+     */
+    public function getAttendanceByDate($employeeId, $date)
+    {
+        // Validate date format
+        if (!Carbon::hasFormat($date, 'Y-m-d')) {
+            return response()->json([
+                'message' => 'Invalid date format. Please use YYYY-MM-DD format.'
+            ], 400);
+        }
+
+        $attendance = Attendance::where('employee_id', $employeeId)
+            ->where('date', $date)
+            ->first();
+
+        if (!$attendance) {
+            // Check if there's an active leave for the date
+            $activeLeave = LeaveRequest::where('employee_id', $employeeId)
+                ->approved()
+                ->activeOn($date)
+                ->first();
+
+            if ($activeLeave) {
+                return response()->json([
+                    'message' => 'Employee was on leave on this date',
+                    'leave_info' => [
+                        'leave_type' => $activeLeave->leave_type,
+                        'request_type' => $activeLeave->request_type,
+                        'reason' => $activeLeave->reason,
+                        'start_date' => $activeLeave->start_date,
+                        'end_date' => $activeLeave->end_date
+                    ]
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'No attendance record found for the specified date'
+            ], 404);
+        }
+
+        $response = ['data' => $attendance];
+
+        // Add leave information if applicable
+        if (in_array($attendance->status, ['on_leave', 'remote_work'])) {
+            $activeLeave = $attendance->getActiveLeaveRequest();
+            if ($activeLeave) {
+                $response['leave_info'] = [
+                    'leave_type' => $activeLeave->leave_type,
+                    'request_type' => $activeLeave->request_type,
+                    'reason' => $activeLeave->reason,
+                    'remote_work_details' => $activeLeave->remote_work_details
+                ];
+            }
+        }
+
+        return response()->json($response);
+    }
+
     public function getAttendanceReport(Request $request)
     {
         $request->validate([

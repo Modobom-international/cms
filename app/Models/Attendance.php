@@ -73,14 +73,67 @@ class Attendance extends Model
         $checkin = Carbon::parse($this->checkin_time);
         $checkout = Carbon::parse($this->checkout_time);
 
-        $totalHours = $checkout->diffInMinutes($checkin) / 60;
+        $totalMinutes = $checkin->diffInMinutes($checkout);
 
-        // Subtract lunch break for full day
-        if ($this->type === 'full_day') {
-            $totalHours -= 1.5;
+        // Subtract lunch break if applicable
+        $lunchBreakMinutes = $this->getLunchBreakMinutes();
+        $totalMinutes -= $lunchBreakMinutes;
+
+        return round($totalMinutes / 60, 2);
+    }
+
+    /**
+     * Get lunch break minutes for this attendance record
+     */
+    private function getLunchBreakMinutes(): int
+    {
+        // Check if lunch break is enabled
+        if (!config('attendance.lunch_break.enabled')) {
+            return 0;
         }
 
-        return round($totalHours, 2);
+        // If this is a half day and lunch break only applies to full days, return 0
+        if ($this->type === 'half_day' && config('attendance.lunch_break.full_day_only')) {
+            return 0;
+        }
+
+        // Check if the employee actually worked during lunch break hours
+        if ($this->workedDuringLunchBreak()) {
+            return $this->getLunchBreakDurationMinutes();
+        }
+
+        return 0;
+    }
+
+    /**
+     * Get lunch break duration in minutes
+     */
+    private function getLunchBreakDurationMinutes(): int
+    {
+        $startTime = Carbon::createFromFormat('H:i', config('attendance.lunch_break.start_time'));
+        $endTime = Carbon::createFromFormat('H:i', config('attendance.lunch_break.end_time'));
+
+        return $startTime->diffInMinutes($endTime);
+    }
+
+    /**
+     * Check if employee worked during the configured lunch break time
+     */
+    private function workedDuringLunchBreak(): bool
+    {
+        if (!$this->checkin_time || !$this->checkout_time) {
+            return false;
+        }
+
+        $checkin = Carbon::parse($this->checkin_time);
+        $checkout = Carbon::parse($this->checkout_time);
+
+        // Create lunch break start and end times for the same date as checkin
+        $lunchStart = $checkin->copy()->setTimeFromTimeString(config('attendance.lunch_break.start_time'));
+        $lunchEnd = $checkin->copy()->setTimeFromTimeString(config('attendance.lunch_break.end_time'));
+
+        // Check if work period overlaps with lunch break period
+        return $checkin->lessThan($lunchEnd) && $checkout->greaterThan($lunchStart);
     }
 
     public function updateStatus()
@@ -102,7 +155,7 @@ class Attendance extends Model
             return;
         }
 
-        $requiredHours = $this->type === 'full_day' ? 8 : 4;
+        $requiredHours = config("attendance.required_hours.{$this->type}", 8);
 
         // If on remote work, consider it completed regardless of hours tracked
         if ($this->isOnRemoteWork()) {

@@ -360,6 +360,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/checkin', [AttendanceController::class, 'checkin'])->name('attendance.checkin');
         Route::post('/checkout', [AttendanceController::class, 'checkout'])->name('attendance.checkout');
         Route::get('/{employee_id}/today', [AttendanceController::class, 'getTodayAttendance'])->name('attendance.today');
+        Route::get('/{employee_id}/by-date/{date}', [AttendanceController::class, 'getAttendanceByDate'])->name('attendance.by.date');
     });
 
     // Admin Attendance routes
@@ -383,6 +384,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/statistics', [AttendanceComplaintController::class, 'getStatistics'])->name('admin.attendance.complaints.statistics');
         Route::get('/{id}', [AttendanceComplaintController::class, 'adminShow'])->name('admin.attendance.complaints.show');
         Route::put('/{id}/status', [AttendanceComplaintController::class, 'updateStatus'])->name('admin.attendance.complaints.status.update');
+        Route::post('/{id}/respond', [AttendanceComplaintController::class, 'respondToComplaint'])->name('admin.attendance.complaints.respond');
     });
 
     // Leave Requests routes

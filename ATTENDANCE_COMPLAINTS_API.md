@@ -134,6 +134,93 @@ Update the status of a complaint.
 - `resolved` - Mark as resolved (requires admin_response)
 - `rejected` - Mark as rejected (requires admin_response)
 
+### 5. Respond to Complaint
+
+**POST** `/api/admin/attendance-complaints/{id}/respond`
+
+Respond to a complaint and optionally update the attendance record.
+
+**Request Body:**
+
+```json
+{
+  "response_type": "approve",
+  "admin_response": "Approved based on evidence provided",
+  "attendance_updates": {
+    "checkin_time": "2025-06-04 08:00:00",
+    "checkout_time": "2025-06-04 17:00:00",
+    "type": "full_day",
+    "description": "Updated after reviewing complaint"
+  }
+}
+```
+
+**Parameters:**
+
+- `response_type` (required): Either `approve` or `reject`
+- `admin_response` (required): Admin's response message (min 10 characters)
+- `attendance_updates` (required if approving):
+  - `checkin_time` (optional): New check-in time (Y-m-d H:i:s format)
+  - `checkout_time` (optional): New check-out time (Y-m-d H:i:s format)
+  - `type` (optional): Either `full_day` or `half_day`
+  - `description` (optional): Updated description
+
+**Response:**
+
+For approved complaint:
+
+```json
+{
+  "message": "Complaint approved successfully",
+  "data": {
+    "complaint": {
+      "id": 5,
+      "status": "resolved",
+      "admin_response": "Approved based on evidence provided",
+      "reviewed_by": 1,
+      "reviewed_at": "2025-06-04T10:00:00.000000Z",
+      "attendance": {
+        "id": 123,
+        "checkin_time": "2025-06-04T08:00:00.000000Z",
+        "checkout_time": "2025-06-04T17:00:00.000000Z",
+        "total_work_hours": 8,
+        "status": "completed"
+      },
+      "employee": {
+        "id": 2,
+        "name": "John Doe",
+        "email": "john@example.com"
+      },
+      "reviewer": {
+        "id": 1,
+        "name": "Admin User"
+      }
+    },
+    "attendance": {
+      // Full attendance record details
+    }
+  }
+}
+```
+
+For rejected complaint:
+
+```json
+{
+  "message": "Complaint rejected successfully",
+  "data": {
+    "complaint": {
+      "id": 5,
+      "status": "rejected",
+      "admin_response": "Insufficient evidence provided",
+      "reviewed_by": 1,
+      "reviewed_at": "2025-06-04T10:00:00.000000Z"
+    },
+    "attendance": null
+  }
+}
+```
+
 ## Status Flow
 
 1. **pending** - Initial status when complaint is created
@@ -204,14 +291,19 @@ curl -X POST /api/attendance-complaints \
   }'
 ```
 
-### Admin Review Complaint
+### Admin Review and Update Attendance
 
 ```bash
-curl -X PUT /api/admin/attendance-complaints/1/status \
+curl -X POST /api/admin/attendance-complaints/5/respond \
   -H "Authorization: Bearer admin-token" \
   -H "Content-Type: application/json" \
   -d '{
-    "status": "resolved",
-    "admin_response": "Attendance record has been corrected."
+    "response_type": "approve",
+    "admin_response": "Approved based on evidence provided",
+    "attendance_updates": {
+      "checkin_time": "2025-06-04 08:00:00",
+      "checkout_time": "2025-06-04 17:00:00",
+      "type": "full_day"
+    }
   }'
 ```
