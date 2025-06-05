@@ -29,6 +29,12 @@ use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\ServerController;
 use App\Http\Controllers\API\ApiKeyController;
 use App\Http\Controllers\API\ImageOptimizeController;
+use App\Http\Controllers\API\AttendanceController;
+use App\Http\Controllers\API\CompanyIpController;
+use App\Http\Controllers\API\AttendanceComplaintController;
+use App\Http\Controllers\API\LeaveRequestController;
+use App\Http\Controllers\API\SalaryCalculationController;
+use App\Http\Controllers\API\PublicHolidayController;
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
@@ -339,5 +345,93 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('monitor-server')->group(function () {
         Route::get('/detail', [MonitorServerController::class, 'detail'])->name('monitor.server.detail');
         Route::get('/store', [MonitorServerController::class, 'store'])->name('monitor.server.store');
+    });
+
+    // Company IP Management routes
+    Route::prefix('company-ips')->group(function () {
+        Route::get('/', [CompanyIpController::class, 'index'])->name('company.ips.index');
+        Route::post('/', [CompanyIpController::class, 'store'])->name('company.ips.store');
+        Route::put('/{id}', [CompanyIpController::class, 'update'])->name('company.ips.update');
+        Route::delete('/{id}', [CompanyIpController::class, 'destroy'])->name('company.ips.destroy');
+    });
+
+    // Attendance routes
+    Route::prefix('attendance')->group(function () {
+        Route::post('/checkin', [AttendanceController::class, 'checkin'])->name('attendance.checkin');
+        Route::post('/checkout', [AttendanceController::class, 'checkout'])->name('attendance.checkout');
+        Route::get('/{employee_id}/today', [AttendanceController::class, 'getTodayAttendance'])->name('attendance.today');
+        Route::get('/{employee_id}/by-date/{date}', [AttendanceController::class, 'getAttendanceByDate'])->name('attendance.by.date');
+    });
+
+    // Admin Attendance routes
+    Route::prefix('admin/attendances')->group(function () {
+        Route::get('/', [AttendanceController::class, 'getAttendanceReport'])->name('admin.attendances.report');
+        Route::post('/custom', [AttendanceController::class, 'addCustomAttendance'])->name('admin.attendances.custom.store');
+        Route::put('/custom/{id}', [AttendanceController::class, 'updateCustomAttendance'])->name('admin.attendances.custom.update');
+    });
+
+    // Attendance Complaints routes
+    Route::prefix('attendance-complaints')->group(function () {
+        Route::get('/', [AttendanceComplaintController::class, 'index'])->name('attendance.complaints.index');
+        Route::post('/', [AttendanceComplaintController::class, 'store'])->name('attendance.complaints.store');
+        Route::get('/{id}', [AttendanceComplaintController::class, 'show'])->name('attendance.complaints.show');
+        Route::put('/{id}', [AttendanceComplaintController::class, 'update'])->name('attendance.complaints.update');
+    });
+
+    // Admin Attendance Complaints routes
+    Route::prefix('admin/attendance-complaints')->group(function () {
+        Route::get('/', [AttendanceComplaintController::class, 'adminIndex'])->name('admin.attendance.complaints.index');
+        Route::get('/statistics', [AttendanceComplaintController::class, 'getStatistics'])->name('admin.attendance.complaints.statistics');
+        Route::get('/{id}', [AttendanceComplaintController::class, 'adminShow'])->name('admin.attendance.complaints.show');
+        Route::put('/{id}/status', [AttendanceComplaintController::class, 'updateStatus'])->name('admin.attendance.complaints.status.update');
+        Route::post('/{id}/respond', [AttendanceComplaintController::class, 'respondToComplaint'])->name('admin.attendance.complaints.respond');
+    });
+
+    // Leave Requests routes
+    Route::prefix('leave-requests')->group(function () {
+        Route::get('/', [LeaveRequestController::class, 'index'])->name('leave.requests.index');
+        Route::post('/', [LeaveRequestController::class, 'store'])->name('leave.requests.store');
+        Route::get('/balance', [LeaveRequestController::class, 'getLeaveBalance'])->name('leave.requests.balance');
+        Route::get('/active-leaves', [LeaveRequestController::class, 'getActiveLeaves'])->name('leave.requests.active');
+        Route::get('/{id}', [LeaveRequestController::class, 'show'])->name('leave.requests.show');
+        Route::put('/{id}', [LeaveRequestController::class, 'update'])->name('leave.requests.update');
+        Route::patch('/{id}/cancel', [LeaveRequestController::class, 'cancel'])->name('leave.requests.cancel');
+    });
+
+    // Admin Leave Requests routes
+    Route::prefix('admin/leave-requests')->group(function () {
+        Route::get('/', [LeaveRequestController::class, 'adminIndex'])->name('admin.leave.requests.index');
+        Route::get('/statistics', [LeaveRequestController::class, 'getStatistics'])->name('admin.leave.requests.statistics');
+        Route::get('/active-leaves', [LeaveRequestController::class, 'getActiveLeaves'])->name('admin.leave.requests.active');
+        Route::get('/{id}', [LeaveRequestController::class, 'adminShow'])->name('admin.leave.requests.show');
+        Route::put('/{id}/status', [LeaveRequestController::class, 'updateStatus'])->name('admin.leave.requests.status.update');
+    });
+
+    // Salary calculation routes (Admin only)
+    Route::prefix('admin/salary')->middleware(['role:admin'])->group(function () {
+        Route::get('/calculate/{employeeId}', [SalaryCalculationController::class, 'calculateMonthlySalary']);
+        Route::get('/calculate-all', [SalaryCalculationController::class, 'calculateAllSalaries']);
+        Route::get('/attendance-summary/{employeeId}', [SalaryCalculationController::class, 'getAttendanceSummary']);
+        Route::get('/leave-summary/{employeeId}', [SalaryCalculationController::class, 'getLeaveSummary']);
+    });
+
+    // Public holidays (read-only for employees)
+    Route::prefix('holidays')->group(function () {
+        Route::get('/', [PublicHolidayController::class, 'index']);
+        Route::get('/upcoming', [PublicHolidayController::class, 'getUpcomingHolidays']);
+        Route::get('/check', [PublicHolidayController::class, 'checkHoliday']);
+        Route::get('/month', [PublicHolidayController::class, 'getHolidaysForMonth']);
+        Route::get('/{id}', [PublicHolidayController::class, 'show']);
+    });
+
+    // Admin routes
+    Route::middleware(['role:admin'])->group(function () {
+        // Holiday management (Admin only)
+        Route::prefix('admin/holidays')->group(function () {
+            Route::post('/', [PublicHolidayController::class, 'store']);
+            Route::put('/{id}', [PublicHolidayController::class, 'update']);
+            Route::delete('/{id}', [PublicHolidayController::class, 'destroy']);
+            Route::post('/generate-yearly', [PublicHolidayController::class, 'generateYearlyHolidays']);
+        });
     });
 });
