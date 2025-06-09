@@ -81,9 +81,9 @@ class ApiKeyController extends BaseController
         ], 201);
     }
 
-    public function show(Request $request): JsonResponse
+    public function show(string $id): JsonResponse
     {
-        $apiKey = Auth::user()->apiKeys()->where('id', $request->id)->first();
+        $apiKey = Auth::user()->apiKeys()->where('id', $id)->first();
 
         if (!$apiKey) {
             return response()->json([
@@ -109,9 +109,9 @@ class ApiKeyController extends BaseController
         ], 200);
     }
 
-    public function update(Request $request): JsonResponse
+    public function update(string $id, Request $request): JsonResponse
     {
-        $apiKey = Auth::user()->apiKeys()->where('id', $request->id)->first();
+        $apiKey = Auth::user()->apiKeys()->where('id', $id)->first();
         $validator = Validator::make($request->all(), [
             'name' => [
                 'sometimes',
@@ -123,7 +123,6 @@ class ApiKeyController extends BaseController
                 })
             ],
             'is_active' => 'sometimes|required|boolean',
-            'expires_at' => 'sometimes|nullable|date|after:now',
         ]);
 
         if ($validator->fails()) {
@@ -135,7 +134,7 @@ class ApiKeyController extends BaseController
             ], 422);
         }
 
-        $apiKey->update($request->only(['name', 'is_active', 'expires_at']));
+        $apiKey->update($request->only(['name', 'is_active']));
 
         return response()->json([
             'success' => true,
@@ -145,9 +144,9 @@ class ApiKeyController extends BaseController
         ], 200);
     }
 
-    public function destroy(Request $request): JsonResponse
+    public function destroy(string $id): JsonResponse
     {
-        $apiKey = Auth::user()->apiKeys()->where('id', $request->id)->first();
+        $apiKey = Auth::user()->apiKeys()->where('id', $id)->first();
 
         if (!$apiKey) {
             return response()->json([
@@ -165,9 +164,9 @@ class ApiKeyController extends BaseController
         ], 200);
     }
 
-    public function regenerate(Request $request): JsonResponse
+    public function regenerate(string $id): JsonResponse
     {
-        $apiKey = Auth::user()->apiKeys()->where('id', $request->id)->first();
+        $apiKey = Auth::user()->apiKeys()->where('id', $id)->first();
 
         $keyData = ApiKey::generateKey();
 
