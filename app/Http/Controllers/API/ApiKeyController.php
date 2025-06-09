@@ -81,9 +81,17 @@ class ApiKeyController extends BaseController
         ], 201);
     }
 
-    public function show(ApiKey $apiKey): JsonResponse
+    public function show(Request $request): JsonResponse
     {
-        $this->authorize('view', $apiKey);
+        $apiKey = Auth::user()->apiKeys()->where('id', $request->id)->first();
+
+        if (!$apiKey) {
+            return response()->json([
+                'success' => false,
+                'message' => 'API key không tồn tại',
+                'type' => 'api_key_not_found',
+            ], 404);
+        }
 
         return response()->json([
             'success' => true,
@@ -101,19 +109,17 @@ class ApiKeyController extends BaseController
         ], 200);
     }
 
-    public function update(Request $request, ApiKey $apiKey): JsonResponse
+    public function update(Request $request): JsonResponse
     {
-        $this->authorize('update', $apiKey);
-
+        $apiKey = Auth::user()->apiKeys()->where('id', $request->id)->first();
         $validator = Validator::make($request->all(), [
             'name' => [
                 'sometimes',
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('api_keys')->where(function ($query) use ($apiKey) {
-                    return $query->where('user_id', Auth::id())
-                        ->where('id', '!=', $apiKey->id);
+                Rule::unique('api_keys')->where(function ($query) {
+                    return $query->where('user_id', Auth::id());
                 })
             ],
             'is_active' => 'sometimes|required|boolean',
@@ -139,10 +145,17 @@ class ApiKeyController extends BaseController
         ], 200);
     }
 
-    public function destroy(ApiKey $apiKey): JsonResponse
+    public function destroy(Request $request): JsonResponse
     {
-        $this->authorize('delete', $apiKey);
+        $apiKey = Auth::user()->apiKeys()->where('id', $request->id)->first();
 
+        if (!$apiKey) {
+            return response()->json([
+                'success' => false,
+                'message' => 'API key không tồn tại',
+                'type' => 'api_key_not_found',
+            ], 404);
+        }
         $apiKey->delete();
 
         return response()->json([
@@ -152,9 +165,9 @@ class ApiKeyController extends BaseController
         ], 200);
     }
 
-    public function regenerate(ApiKey $apiKey): JsonResponse
+    public function regenerate(Request $request): JsonResponse
     {
-        $this->authorize('update', $apiKey);
+        $apiKey = Auth::user()->apiKeys()->where('id', $request->id)->first();
 
         $keyData = ApiKey::generateKey();
 
