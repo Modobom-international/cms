@@ -24,7 +24,12 @@ class ApiKeyController extends BaseController
             ->select(['id', 'name', 'key_prefix', 'last_used_at', 'expires_at', 'is_active', 'created_at'])
             ->get();
 
-        return response()->json($keys);
+        return response()->json([
+            'success' => true,
+            'data' => $keys,
+            'message' => 'Lấy danh sách API key thành công',
+            'type' => 'list_api_key_success',
+        ], 200);
     }
 
     public function store(Request $request): JsonResponse
@@ -43,7 +48,9 @@ class ApiKeyController extends BaseController
 
         if ($validator->fails()) {
             return response()->json([
+                'success' => false,
                 'message' => 'Validation failed',
+                'type' => 'validation_error',
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -60,15 +67,17 @@ class ApiKeyController extends BaseController
 
         // Return the API key only once during creation
         return response()->json([
-            'message' => 'API key created successfully',
-            'api_key' => [
+            'success' => true,
+            'data' => [
                 'id' => $apiKey->id,
                 'name' => $apiKey->name,
                 'key' => $keyData['key'], // Only shown once
                 'key_prefix' => $keyData['key_prefix'],
                 'expires_at' => $apiKey->expires_at,
                 'created_at' => $apiKey->created_at,
-            ]
+            ],
+            'message' => 'Tạo API key thành công',
+            'type' => 'create_api_key_success',
         ], 201);
     }
 
@@ -77,14 +86,19 @@ class ApiKeyController extends BaseController
         $this->authorize('view', $apiKey);
 
         return response()->json([
-            'id' => $apiKey->id,
-            'name' => $apiKey->name,
-            'key_prefix' => $apiKey->key_prefix,
-            'last_used_at' => $apiKey->last_used_at,
-            'expires_at' => $apiKey->expires_at,
-            'is_active' => $apiKey->is_active,
-            'created_at' => $apiKey->created_at,
-        ]);
+            'success' => true,
+            'data' => [
+                'id' => $apiKey->id,
+                'name' => $apiKey->name,
+                'key_prefix' => $apiKey->key_prefix,
+                'last_used_at' => $apiKey->last_used_at,
+                'expires_at' => $apiKey->expires_at,
+                'is_active' => $apiKey->is_active,
+                'created_at' => $apiKey->created_at,
+            ],
+            'message' => 'Lấy thông tin API key thành công',
+            'type' => 'get_api_key_success',
+        ], 200);
     }
 
     public function update(Request $request, ApiKey $apiKey): JsonResponse
@@ -108,7 +122,9 @@ class ApiKeyController extends BaseController
 
         if ($validator->fails()) {
             return response()->json([
+                'success' => false,
                 'message' => 'Validation failed',
+                'type' => 'validation_error',
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -116,9 +132,11 @@ class ApiKeyController extends BaseController
         $apiKey->update($request->only(['name', 'is_active', 'expires_at']));
 
         return response()->json([
-            'message' => 'API key updated successfully',
-            'api_key' => $apiKey->fresh()
-        ]);
+            'success' => true,
+            'data' => $apiKey->fresh(),
+            'message' => 'Cập nhật API key thành công',
+            'type' => 'update_api_key_success',
+        ], 200);
     }
 
     public function destroy(ApiKey $apiKey): JsonResponse
@@ -127,7 +145,11 @@ class ApiKeyController extends BaseController
 
         $apiKey->delete();
 
-        return response()->json(['message' => 'API key deleted successfully']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Xóa API key thành công',
+            'type' => 'delete_api_key_success',
+        ], 200);
     }
 
     public function regenerate(ApiKey $apiKey): JsonResponse
@@ -142,15 +164,17 @@ class ApiKeyController extends BaseController
         ]);
 
         return response()->json([
-            'message' => 'API key regenerated successfully',
-            'api_key' => [
+            'success' => true,
+            'data' => [
                 'id' => $apiKey->id,
                 'name' => $apiKey->name,
                 'key' => $keyData['key'], // Only shown once
                 'key_prefix' => $keyData['key_prefix'],
                 'expires_at' => $apiKey->expires_at,
                 'created_at' => $apiKey->created_at,
-            ]
-        ]);
+            ],
+            'message' => 'Tạo lại API key thành công',
+            'type' => 'regenerate_api_key_success',
+        ], 200);
     }
 }
