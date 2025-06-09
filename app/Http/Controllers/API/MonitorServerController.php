@@ -67,7 +67,6 @@ class MonitorServerController extends Controller
     public function store(Request $request)
     {
         try {
-            $input = $request->all();
             $ip = $request->get('ip');
 
             $server = $this->serverRepository->getByIp($ip);
@@ -91,8 +90,6 @@ class MonitorServerController extends Controller
             ];
 
             $this->monitorServerRepository->create($data);
-
-            $this->logActivity(ActivityAction::CREATE_RECORD, ['filters' => $input], 'Thêm mới thông số server');
 
             return response()->json([
                 'success' => true,
