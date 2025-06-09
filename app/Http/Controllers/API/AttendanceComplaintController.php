@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceComplaint;
 use App\Models\Attendance;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -16,12 +17,35 @@ class AttendanceComplaintController extends Controller
      */
     public function store(Request $request)
     {
+        // Basic validation
         $request->validate([
             'attendance_id' => 'required_unless:complaint_type,missing_record|exists:attendances,id',
             'complaint_type' => 'required|in:incorrect_time,missing_record,technical_issue,other',
             'description' => 'required|string|min:10',
             'proposed_changes' => 'nullable|array'
         ]);
+
+        // Additional validation for missing_record complaints
+        if ($request->complaint_type === 'missing_record') {
+            $request->validate([
+                'proposed_changes' => 'required|array',
+                'proposed_changes.date' => 'required|date',
+                'proposed_changes.checkin_time' => 'nullable|string',
+                'proposed_changes.checkout_time' => 'nullable|string',
+                'proposed_changes.type' => 'nullable|in:full_day,half_day'
+            ]);
+
+            // Check if there's already an attendance record for this date
+            $existingAttendance = Attendance::where('employee_id', Auth::id())
+                ->where('date', $request->proposed_changes['date'])
+                ->first();
+
+            if ($existingAttendance) {
+                return response()->json([
+                    'message' => 'Attendance record already exists for this date'
+                ], 400);
+            }
+        }
 
         // For non-missing_record complaints, check if attendance belongs to the authenticated user
         if ($request->attendance_id) {
@@ -220,34 +244,35 @@ class AttendanceComplaintController extends Controller
     {
         $complaint = AttendanceComplaint::with('attendance')->findOrFail($id);
 
-        // Validate request based on complaint type
-        $validationRules = [
+        // Basic validation first
+        $request->validate([
             'response_type' => 'required|in:approve,reject',
             'admin_response' => 'required|string|min:10',
-        ];
+        ]);
 
-        // For missing_record complaints, we need to create attendance record when approving
-        if ($complaint->complaint_type === 'missing_record' && $request->response_type === 'approve') {
-            $validationRules = array_merge($validationRules, [
-                'attendance_data' => 'required|array',
-                'attendance_data.date' => 'required|date',
-                'attendance_data.checkin_time' => 'required|date',
-                'attendance_data.checkout_time' => 'nullable|date',
-                'attendance_data.type' => 'required|in:full_day,half_day',
-                'attendance_data.description' => 'nullable|string'
-            ]);
-        } else {
-            // For existing attendance complaints
-            $validationRules = array_merge($validationRules, [
-                'attendance_updates' => 'required_if:response_type,approve|array',
-                'attendance_updates.checkin_time' => 'nullable|date',
-                'attendance_updates.checkout_time' => 'nullable|date',
-                'attendance_updates.type' => 'nullable|in:full_day,half_day',
-                'attendance_updates.description' => 'nullable|string'
-            ]);
+        // Additional validation based on complaint type and response type
+        if ($request->response_type === 'approve') {
+            if ($complaint->complaint_type === 'missing_record') {
+                // For missing_record complaints, we need attendance_data to create new record
+                $request->validate([
+                    'attendance_data' => 'required|array',
+                    'attendance_data.date' => 'required|date',
+                    'attendance_data.checkin_time' => 'required|date',
+                    'attendance_data.checkout_time' => 'nullable|date|after:attendance_data.checkin_time',
+                    'attendance_data.type' => 'required|in:full_day,half_day',
+                    'attendance_data.description' => 'nullable|string'
+                ]);
+            } else {
+                // For existing attendance complaints, we need attendance_updates
+                $request->validate([
+                    'attendance_updates' => 'required|array',
+                    'attendance_updates.checkin_time' => 'nullable|date',
+                    'attendance_updates.checkout_time' => 'nullable|date',
+                    'attendance_updates.type' => 'nullable|in:full_day,half_day',
+                    'attendance_updates.description' => 'nullable|string'
+                ]);
+            }
         }
-
-        $request->validate($validationRules);
 
         // Start transaction to ensure both complaint and attendance are updated atomically
         \DB::beginTransaction();
@@ -256,37 +281,79 @@ class AttendanceComplaintController extends Controller
             if ($request->response_type === 'approve') {
                 if ($complaint->complaint_type === 'missing_record') {
                     // Create new attendance record for missing_record complaints
-                    $attendanceData = array_filter($request->attendance_data);
+                    $attendanceData = $request->attendance_data;
                     $attendanceData['employee_id'] = $complaint->employee_id;
+
+                    // Convert ISO date strings to proper format
+                    if (isset($attendanceData['checkin_time'])) {
+                        $attendanceData['checkin_time'] = Carbon::parse($attendanceData['checkin_time'])->format('Y-m-d H:i:s');
+                    }
+                    if (isset($attendanceData['checkout_time'])) {
+                        $attendanceData['checkout_time'] = Carbon::parse($attendanceData['checkout_time'])->format('Y-m-d H:i:s');
+                    }
+                    if (isset($attendanceData['date'])) {
+                        $attendanceData['date'] = Carbon::parse($attendanceData['date'])->format('Y-m-d');
+                    }
+
+                    // Check if attendance record already exists for this date
+                    $existingAttendance = Attendance::where('employee_id', $complaint->employee_id)
+                        ->where('date', $attendanceData['date'])
+                        ->first();
+
+                    if ($existingAttendance) {
+                        \DB::rollBack();
+                        return response()->json([
+                            'message' => 'Attendance record already exists for this date'
+                        ], 400);
+                    }
 
                     $attendance = Attendance::create($attendanceData);
 
-                    // Calculate work hours
+                    // Calculate work hours if both times are provided
                     if ($attendance->checkin_time && $attendance->checkout_time) {
                         $attendance->total_work_hours = $attendance->calculateWorkHours();
+                        $attendance->save();
                     }
 
                     // Update attendance status
                     $attendance->updateStatus();
-                    $attendance->save();
 
                     // Link the attendance record to the complaint
                     $complaint->update(['attendance_id' => $attendance->id]);
                 } else {
                     // Update existing attendance record
-                    $attendance = $complaint->attendance;
-                    $updates = array_filter($request->attendance_updates);
-
-                    $attendance->update($updates);
-
-                    // Recalculate work hours if time was updated
-                    if (isset($updates['checkin_time']) || isset($updates['checkout_time'])) {
-                        $attendance->total_work_hours = $attendance->calculateWorkHours();
+                    if (!$complaint->attendance) {
+                        \DB::rollBack();
+                        return response()->json([
+                            'message' => 'No attendance record found to update'
+                        ], 400);
                     }
 
-                    // Update attendance status
-                    $attendance->updateStatus();
-                    $attendance->save();
+                    $attendance = $complaint->attendance;
+                    $updates = array_filter($request->attendance_updates, function ($value) {
+                        return $value !== null && $value !== '';
+                    });
+
+                    // Convert ISO date strings to proper format
+                    if (isset($updates['checkin_time'])) {
+                        $updates['checkin_time'] = Carbon::parse($updates['checkin_time'])->format('Y-m-d H:i:s');
+                    }
+                    if (isset($updates['checkout_time'])) {
+                        $updates['checkout_time'] = Carbon::parse($updates['checkout_time'])->format('Y-m-d H:i:s');
+                    }
+
+                    if (!empty($updates)) {
+                        $attendance->update($updates);
+
+                        // Recalculate work hours if time was updated
+                        if (isset($updates['checkin_time']) || isset($updates['checkout_time'])) {
+                            $attendance->total_work_hours = $attendance->calculateWorkHours();
+                            $attendance->save();
+                        }
+
+                        // Update attendance status
+                        $attendance->updateStatus();
+                    }
                 }
 
                 // Mark complaint as resolved
