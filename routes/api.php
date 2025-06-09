@@ -346,7 +346,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('monitor-server')->group(function () {
         Route::get('/detail', [MonitorServerController::class, 'detail'])->name('monitor.server.detail');
-        Route::get('/store', [MonitorServerController::class, 'store'])->name('monitor.server.store');
+        Route::post('/store', [MonitorServerController::class, 'store'])->name('monitor.server.store');
+        Route::get('/metrics', [MonitorServerController::class, 'getMetrics'])->name('monitor.server.metrics');
+        Route::get('/service-status', [MonitorServerController::class, 'getServiceStatus'])->name('monitor.server.service.status');
+        Route::get('/test-influxdb', [MonitorServerController::class, 'testInfluxDB'])->name('monitor.server.test.influxdb');
     });
 
     // Company IP Management routes
