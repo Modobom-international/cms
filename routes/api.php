@@ -67,8 +67,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('api-keys')->group(function () {
         Route::get('/', [ApiKeyController::class, 'index'])->name('api-keys.index');
         Route::post('/', [ApiKeyController::class, 'store'])->name('api-keys.create');
-        Route::put('/{apiKey}', [ApiKeyController::class, 'update'])->name('api-keys.update');
-        Route::delete('/{apiKey}', [ApiKeyController::class, 'destroy'])->name('api-keys.delete');
+        Route::put('/{id}', [ApiKeyController::class, 'update'])->name('api-keys.update');
+        Route::delete('/{id}', [ApiKeyController::class, 'destroy'])->name('api-keys.delete');
+        Route::post('/{id}/regenerate', [ApiKeyController::class, 'regenerate'])->name('api-keys.regenerate');
+        Route::get('/{id}', [ApiKeyController::class, 'show'])->name('api-keys.show');
     });
 
     Route::get('/notifications', [NotificationController::class, 'getNotifications']);
