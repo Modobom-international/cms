@@ -18,7 +18,9 @@ class RefreshDomainInPlatform implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
     public function handle(GoDaddyService $goDaddyService, CloudFlareService $cloudFlareService, DomainRepository $domainRepository)
     {
@@ -42,8 +44,15 @@ class RefreshDomainInPlatform implements ShouldQueue
             if (count($listNonExist) > 0) {
                 $this->messageEventHandler('Đã tìm thấy ' . count($listNonExist) . ' domain mới!');
                 $this->messageEventHandler('Bắt đầu đồng bộ dữ liệu ...');
-                foreach ($listNonExist as $index => $domain) {
-                    $infoDomain = $result['data'][$index];
+
+                // Create a mapping of domain names to their info for easier lookup
+                $domainInfoMap = [];
+                foreach ($result['data'] as $domainInfo) {
+                    $domainInfoMap[$domainInfo['domain']] = $domainInfo;
+                }
+
+                foreach ($listNonExist as $domain) {
+                    $infoDomain = $domainInfoMap[$domain];
                     $nameServer = [
                         'ben.ns.cloudflare.com',
                         'jean.ns.cloudflare.com',
@@ -59,6 +68,7 @@ class RefreshDomainInPlatform implements ShouldQueue
                         'domain' => $domain,
                         'time_expired' => Carbon::parse($infoDomain['expires'])->format('Y-m-d H:i:s'),
                         'registrar' => 'Godaddy',
+                        'source' => $infoDomain['source'] ?? null,
                         'is_locked' => false,
                         'renewable' => $infoDomain['renewable'] ?? false,
                         'status' => $infoDomain['status'] ?? 'active',
@@ -69,7 +79,7 @@ class RefreshDomainInPlatform implements ShouldQueue
 
                     $domainRepository->create($data);
 
-                    $this->messageEventHandler('Thêm domain ' . $domain . ' vào hệ thống thành công ...');
+                    $this->messageEventHandler('Thêm domain ' . $domain . ' (source: ' . ($infoDomain['source'] ?? 'unknown') . ') vào hệ thống thành công ...');
 
                     $resultWithoutData = $cloudFlareService->addDomain(
                         $domain

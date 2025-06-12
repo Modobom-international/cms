@@ -42,7 +42,7 @@ class DomainController extends Controller
                 'is_locked' => $request->get('is_locked'),
                 'renewable' => $request->get('renewable'),
                 'registrar' => $request->get('registrar'),
-                'has_sites' => $request->get('has_sites'),
+                'has_sites' => $request->get('has_sites') == 'true',
                 'time_expired' => $request->get('time_expired'),
                 'renew_deadline' => $request->get('renew_deadline'),
                 'registrar_created_at' => $request->get('registrar_created_at')
