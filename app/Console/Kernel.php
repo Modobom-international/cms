@@ -3,6 +3,7 @@
 namespace App\Console;
 
 use App\Jobs\UpdateDueDateReminderStatusBatch;
+use App\Jobs\SyncDnsRecords;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -17,7 +18,24 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->job(new UpdateDueDateReminderStatusBatch)->everyMinute();
-        $schedule->command('domain:sync-domain-for-account')->everyFiveMinutes();
+        $schedule->command('domain:sync-domain-for-account')->everyFourHours();
+        $schedule->command('dns:sync --all')->everySixHours();
+
+        // Alternative schedules (uncomment as needed):
+
+        // Daily sync at 2 AM
+        // $schedule->command('dns:sync --all')->dailyAt('02:00')
+        //     ->name('sync-dns-records-daily')
+        //     ->withoutOverlapping(240)
+        //     ->onOneServer()
+        //     ->runInBackground();
+
+        // Hourly sync (for high-traffic environments)
+        // $schedule->command('dns:sync --all')->hourly()
+        //     ->name('sync-dns-records-hourly')
+        //     ->withoutOverlapping(30)
+        //     ->onOneServer()
+        //     ->runInBackground();
     }
 
     /**
