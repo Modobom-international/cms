@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Domain;
+use Illuminate\Support\Facades\Log;
 
 class DomainRepository extends BaseRepository
 {
@@ -101,11 +102,14 @@ class DomainRepository extends BaseRepository
 
     public function getDnsRecords($domain)
     {
+        Log::debug("Starting DNS record retrieval for domain: {$domain}");
         $dnsRecords = [];
 
         try {
             // Get A records
+            Log::debug("Retrieving A records for domain: {$domain}");
             $aRecords = dns_get_record($domain, DNS_A);
+            Log::debug("Found " . (is_array($aRecords) ? count($aRecords) : 0) . " A records for domain: {$domain}");
             if ($aRecords) {
                 foreach ($aRecords as $record) {
                     $dnsRecords[] = [
@@ -118,7 +122,9 @@ class DomainRepository extends BaseRepository
             }
 
             // Get AAAA records (IPv6)
+            Log::debug("Retrieving AAAA records for domain: {$domain}");
             $aaaaRecords = dns_get_record($domain, DNS_AAAA);
+            Log::debug("Found " . (is_array($aaaaRecords) ? count($aaaaRecords) : 0) . " AAAA records for domain: {$domain}");
             if ($aaaaRecords) {
                 foreach ($aaaaRecords as $record) {
                     $dnsRecords[] = [
@@ -131,7 +137,9 @@ class DomainRepository extends BaseRepository
             }
 
             // Get CNAME records
+            Log::debug("Retrieving CNAME records for domain: {$domain}");
             $cnameRecords = dns_get_record($domain, DNS_CNAME);
+            Log::debug("Found " . (is_array($cnameRecords) ? count($cnameRecords) : 0) . " CNAME records for domain: {$domain}");
             if ($cnameRecords) {
                 foreach ($cnameRecords as $record) {
                     $dnsRecords[] = [
@@ -144,7 +152,9 @@ class DomainRepository extends BaseRepository
             }
 
             // Get MX records
+            Log::debug("Retrieving MX records for domain: {$domain}");
             $mxRecords = dns_get_record($domain, DNS_MX);
+            Log::debug("Found " . (is_array($mxRecords) ? count($mxRecords) : 0) . " MX records for domain: {$domain}");
             if ($mxRecords) {
                 foreach ($mxRecords as $record) {
                     $dnsRecords[] = [
@@ -158,7 +168,9 @@ class DomainRepository extends BaseRepository
             }
 
             // Get TXT records
+            Log::debug("Retrieving TXT records for domain: {$domain}");
             $txtRecords = dns_get_record($domain, DNS_TXT);
+            Log::debug("Found " . (is_array($txtRecords) ? count($txtRecords) : 0) . " TXT records for domain: {$domain}");
             if ($txtRecords) {
                 foreach ($txtRecords as $record) {
                     $dnsRecords[] = [
@@ -171,7 +183,9 @@ class DomainRepository extends BaseRepository
             }
 
             // Get NS records
+            Log::debug("Retrieving NS records for domain: {$domain}");
             $nsRecords = dns_get_record($domain, DNS_NS);
+            Log::debug("Found " . (is_array($nsRecords) ? count($nsRecords) : 0) . " NS records for domain: {$domain}");
             if ($nsRecords) {
                 foreach ($nsRecords as $record) {
                     $dnsRecords[] = [
@@ -183,10 +197,13 @@ class DomainRepository extends BaseRepository
                 }
             }
 
+
         } catch (\Exception $e) {
+            Log::error("Failed to retrieve DNS records for domain {$domain}: " . $e->getMessage());
             throw new \Exception('Failed to retrieve DNS records: ' . $e->getMessage());
         }
 
+        Log::debug("Successfully retrieved " . count($dnsRecords) . " total DNS records for domain: {$domain}");
         return $dnsRecords;
     }
 }

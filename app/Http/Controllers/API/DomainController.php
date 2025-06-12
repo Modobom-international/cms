@@ -36,7 +36,6 @@ class DomainController extends Controller
             $pageSize = $request->get('pageSize') ?? 10;
             $page = $request->get('page') ?? 1;
             $includeDns = $request->get('include_dns') == 'true';
-
             // Get filter parameters
             $filters = [
                 'status' => $request->get('status'),
@@ -51,9 +50,11 @@ class DomainController extends Controller
 
             $domains = $this->domainRepository->getDomainBySearch($search, $filters);
 
-            // Add DNS records if requested
-            if ($includeDns) {
-                $domains = $domains->map(function ($domain) {
+            // Paginate first for better performance
+            $data = $this->utility->paginate($domains, $pageSize, $page);
+            // Add DNS records only for the current page domains if requested
+            if ($includeDns && isset($data['data'])) {
+                $data['data'] = collect($data['data'])->map(function ($domain) {
                     try {
                         $domain->dns_records = $this->domainRepository->getDnsRecords($domain->domain);
                     } catch (Exception $e) {
@@ -61,10 +62,10 @@ class DomainController extends Controller
                         $domain->dns_error = 'Failed to fetch DNS records: ' . $e->getMessage();
                     }
                     return $domain;
-                });
+                })->toArray();
             }
 
-            $data = $this->utility->paginate($domains, $pageSize, $page);
+
 
             $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input, 'include_dns' => $includeDns], 'Xem danh sách domain');
 
