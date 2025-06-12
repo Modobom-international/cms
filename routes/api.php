@@ -35,6 +35,7 @@ use App\Http\Controllers\API\AttendanceComplaintController;
 use App\Http\Controllers\API\LeaveRequestController;
 use App\Http\Controllers\API\SalaryCalculationController;
 use App\Http\Controllers\API\PublicHolidayController;
+use App\Http\Controllers\API\FileController;
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
@@ -428,13 +429,16 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Admin routes
-    Route::middleware(['role:admin'])->group(function () {
-        // Holiday management (Admin only)
-        Route::prefix('admin/holidays')->group(function () {
-            Route::post('/', [PublicHolidayController::class, 'store']);
-            Route::put('/{id}', [PublicHolidayController::class, 'update']);
-            Route::delete('/{id}', [PublicHolidayController::class, 'destroy']);
-            Route::post('/generate-yearly', [PublicHolidayController::class, 'generateYearlyHolidays']);
-        });
+    Route::prefix('admin/holidays')->middleware(['role:admin'])->group(function () {
+        Route::post('/', [PublicHolidayController::class, 'store']);
+        Route::put('/{id}', [PublicHolidayController::class, 'update']);
+        Route::delete('/{id}', [PublicHolidayController::class, 'destroy']);
+        Route::post('/generate-yearly', [PublicHolidayController::class, 'generateYearlyHolidays']);
+    });
+
+    Route::prefix('files')->group(function () {
+        Route::post('/upload', [FileController::class, 'upload'])->name('files.upload');
+        Route::get('/download/{id}', [FileController::class, 'download'])->name('files.download');
+        Route::get('/', [FileController::class, 'list'])->name('files.list');
     });
 });
