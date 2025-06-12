@@ -18,7 +18,7 @@ class DomainRepository extends BaseRepository
 
     public function getAllDomain()
     {
-        return $this->model->where('is_locked', false)->get();
+        return $this->model->get(); // Include all domains, regardless of is_locked status
     }
 
     public function findByDomain($domain)
@@ -97,5 +97,96 @@ class DomainRepository extends BaseRepository
     public function deleteByIsLocked($isLocked)
     {
         return $this->model->where('is_locked', $isLocked)->delete();
+    }
+
+    public function getDnsRecords($domain)
+    {
+        $dnsRecords = [];
+
+        try {
+            // Get A records
+            $aRecords = dns_get_record($domain, DNS_A);
+            if ($aRecords) {
+                foreach ($aRecords as $record) {
+                    $dnsRecords[] = [
+                        'type' => 'A',
+                        'host' => $record['host'] ?? '',
+                        'ip' => $record['ip'] ?? '',
+                        'ttl' => $record['ttl'] ?? 0
+                    ];
+                }
+            }
+
+            // Get AAAA records (IPv6)
+            $aaaaRecords = dns_get_record($domain, DNS_AAAA);
+            if ($aaaaRecords) {
+                foreach ($aaaaRecords as $record) {
+                    $dnsRecords[] = [
+                        'type' => 'AAAA',
+                        'host' => $record['host'] ?? '',
+                        'ipv6' => $record['ipv6'] ?? '',
+                        'ttl' => $record['ttl'] ?? 0
+                    ];
+                }
+            }
+
+            // Get CNAME records
+            $cnameRecords = dns_get_record($domain, DNS_CNAME);
+            if ($cnameRecords) {
+                foreach ($cnameRecords as $record) {
+                    $dnsRecords[] = [
+                        'type' => 'CNAME',
+                        'host' => $record['host'] ?? '',
+                        'target' => $record['target'] ?? '',
+                        'ttl' => $record['ttl'] ?? 0
+                    ];
+                }
+            }
+
+            // Get MX records
+            $mxRecords = dns_get_record($domain, DNS_MX);
+            if ($mxRecords) {
+                foreach ($mxRecords as $record) {
+                    $dnsRecords[] = [
+                        'type' => 'MX',
+                        'host' => $record['host'] ?? '',
+                        'target' => $record['target'] ?? '',
+                        'priority' => $record['pri'] ?? 0,
+                        'ttl' => $record['ttl'] ?? 0
+                    ];
+                }
+            }
+
+            // Get TXT records
+            $txtRecords = dns_get_record($domain, DNS_TXT);
+            if ($txtRecords) {
+                foreach ($txtRecords as $record) {
+                    $dnsRecords[] = [
+                        'type' => 'TXT',
+                        'host' => $record['host'] ?? '',
+                        'txt' => $record['txt'] ?? '',
+                        'ttl' => $record['ttl'] ?? 0
+                    ];
+                }
+            }
+
+            // Get NS records
+            $nsRecords = dns_get_record($domain, DNS_NS);
+            if ($nsRecords) {
+                foreach ($nsRecords as $record) {
+                    $dnsRecords[] = [
+                        'type' => 'NS',
+                        'host' => $record['host'] ?? '',
+                        'target' => $record['target'] ?? '',
+                        'ttl' => $record['ttl'] ?? 0
+                    ];
+                }
+            }
+
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to retrieve DNS records: ' . $e->getMessage());
+        }
+
+        return $dnsRecords;
     }
 }

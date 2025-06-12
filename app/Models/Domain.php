@@ -22,4 +22,12 @@ class Domain extends Model
     {
         return $this->belongsTo(Site::class, 'domain', 'domain');
     }
+
+    /**
+     * Get the DNS records for this domain
+     */
+    public function dnsRecords()
+    {
+        return $this->hasMany(DnsRecord::class, 'domain', 'domain');
+    }
 }

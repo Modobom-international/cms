@@ -92,7 +92,14 @@ class GoDaddyService
                 $this->setClient($configKey);
                 $response = $this->client->get('/v1/domains?limit=1000&includes=nameServers&statusGroups=VISIBLE');
                 $result = json_decode($response->getBody(), true);
-                $listDomain = array_merge($listDomain, $result ?? []);
+
+                // Add source to each domain
+                if ($result) {
+                    foreach ($result as &$domain) {
+                        $domain['source'] = $configKey;
+                    }
+                    $listDomain = array_merge($listDomain, $result);
+                }
             }
 
             $data = [

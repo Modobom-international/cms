@@ -35,6 +35,7 @@ class DomainController extends Controller
             $search = $request->get('search');
             $pageSize = $request->get('pageSize') ?? 10;
             $page = $request->get('page') ?? 1;
+            $includeDns = $request->get('include_dns') == 'true';
 
             // Get filter parameters
             $filters = [
@@ -42,16 +43,30 @@ class DomainController extends Controller
                 'is_locked' => $request->get('is_locked'),
                 'renewable' => $request->get('renewable'),
                 'registrar' => $request->get('registrar'),
-                'has_sites' => $request->get('has_sites'),
+                'has_sites' => $request->get('has_sites') == 'true',
                 'time_expired' => $request->get('time_expired'),
                 'renew_deadline' => $request->get('renew_deadline'),
                 'registrar_created_at' => $request->get('registrar_created_at')
             ];
 
             $domains = $this->domainRepository->getDomainBySearch($search, $filters);
+
+            // Add DNS records if requested
+            if ($includeDns) {
+                $domains = $domains->map(function ($domain) {
+                    try {
+                        $domain->dns_records = $this->domainRepository->getDnsRecords($domain->domain);
+                    } catch (Exception $e) {
+                        $domain->dns_records = [];
+                        $domain->dns_error = 'Failed to fetch DNS records: ' . $e->getMessage();
+                    }
+                    return $domain;
+                });
+            }
+
             $data = $this->utility->paginate($domains, $pageSize, $page);
 
-            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách domain');
+            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input, 'include_dns' => $includeDns], 'Xem danh sách domain');
 
             return response()->json([
                 'success' => true,
@@ -201,6 +216,40 @@ class DomainController extends Controller
                 'success' => false,
                 'message' => 'Lấy danh sách domain không thành công',
                 'type' => 'list_domain_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function showDnsRecords(Request $request)
+    {
+        try {
+            $domain = $request->get('domain');
+
+            if (!$domain) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Domain parameter is required',
+                    'type' => 'show_dns_records_fail',
+                ], 400);
+            }
+
+            // Get DNS records for the domain
+            $dnsRecords = $this->domainRepository->getDnsRecords($domain);
+
+            $this->logActivity(ActivityAction::ACCESS_VIEW, ['domain' => $domain], 'Xem DNS records của domain');
+
+            return response()->json([
+                'success' => true,
+                'data' => $dnsRecords,
+                'message' => 'Lấy DNS records thành công',
+                'type' => 'show_dns_records_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy DNS records không thành công',
+                'type' => 'show_dns_records_fail',
                 'error' => $e->getMessage()
             ], 500);
         }
