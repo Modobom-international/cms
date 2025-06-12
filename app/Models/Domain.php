@@ -10,6 +10,7 @@ class Domain extends Model
         'domain',
         'time_expired',
         'registrar',
+        'source',
         'is_locked',
         'renewable',
         'status',
