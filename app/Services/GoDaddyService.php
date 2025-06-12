@@ -15,7 +15,7 @@ class GoDaddyService
     protected $logger;
     protected $apiConfigs = [];
 
-    public function __construct(SiteManagementLogger $logger)
+    public function __construct(ApplicationLogger $logger)
     {
         $this->logger = $logger;
         $this->apiUrl = config('services.godaddy.api_url');

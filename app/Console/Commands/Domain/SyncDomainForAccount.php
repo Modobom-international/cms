@@ -3,7 +3,7 @@
 namespace App\Console\Commands\Domain;
 
 use App\Services\GoDaddyService;
-use App\Services\SiteManagementLogger;
+use App\Services\ApplicationLogger;
 use Illuminate\Console\Command;
 use App\Repositories\DomainRepository;
 use App\Repositories\ConfigPoolRepository;
@@ -29,9 +29,15 @@ class SyncDomainForAccount extends Command
     /**
      * Execute the console command.
      */
-    public function handle(DomainRepository $domainRepository, ConfigPoolRepository $configPoolRepository, GoDaddyService $goDaddyService, SiteManagementLogger $logger)
+    public function handle(DomainRepository $domainRepository, ConfigPoolRepository $configPoolRepository, GoDaddyService $goDaddyService, ApplicationLogger $logger)
     {
         $key = 'status_sync_domains_cms';
+
+        $logger->logDomain('info', [
+            'message' => 'Domain sync process started',
+            'command' => $this->signature
+        ]);
+
         $getConfig = $configPoolRepository->getByKey($key);
 
         if (!$getConfig) {
@@ -43,6 +49,10 @@ class SyncDomainForAccount extends Command
                 ]
             ];
             $configPoolRepository->create($dataCreate);
+            $logger->logDomain('info', [
+                'message' => 'Created sync status config',
+                'config_key' => $key
+            ]);
         } else {
             $dataUpdate = [
                 'data' => [
@@ -52,11 +62,22 @@ class SyncDomainForAccount extends Command
             ];
 
             $configPoolRepository->updateByKey($key, $dataUpdate);
+            $logger->logDomain('info', [
+                'message' => 'Updated sync status config to active',
+                'config_key' => $key
+            ]);
         }
+
+        $logger->logDomain('info', [
+            'message' => 'Fetching domain list from GoDaddy API'
+        ]);
 
         $getListDomain = $goDaddyService->getListDomain();
         if (array_key_exists('error', $getListDomain)) {
-            $logger->logDomain('error', ['message' => $getListDomain['error']]);
+            $logger->logDomain('error', [
+                'message' => 'Failed to fetch domains from GoDaddy API',
+                'error' => $getListDomain['error']
+            ]);
             dump($getListDomain['error']);
             return;
         }
@@ -69,11 +90,19 @@ class SyncDomainForAccount extends Command
 
         $logger->logDomain('info', [
             'message' => 'Bắt đầu đồng bộ domain',
-            'total_domains' => count($listDomain)
+            'total_domains' => count($listDomain),
+            'source' => 'GoDaddy API'
         ]);
 
         foreach ($listDomain as $domain) {
             try {
+                $logger->logDomain('info', [
+                    'message' => 'Processing domain',
+                    'domain' => $domain['domain'],
+                    'expires' => $domain['expires'] ?? null,
+                    'status' => $domain['status'] ?? null
+                ]);
+
                 $domainsData = [
                     'domain' => $domain['domain'],
                     'time_expired' => Carbon::parse($domain['expires'])->format('Y-m-d H:i:s'),
@@ -93,23 +122,55 @@ class SyncDomainForAccount extends Command
                     $result = $domainRepository->update($existingDomain->id, $domainsData);
                     if ($result) {
                         $updateCount++;
+                        $logger->logDomain('info', [
+                            'message' => 'Domain updated successfully',
+                            'domain' => $domain['domain'],
+                            'domain_id' => $existingDomain->id,
+                            'action' => 'update'
+                        ]);
                     } else {
                         $errorCount++;
-                        $errors[] = "Failed to update domain: {$domain['domain']}";
+                        $error = "Failed to update domain: {$domain['domain']}";
+                        $errors[] = $error;
+                        $logger->logDomain('error', [
+                            'message' => $error,
+                            'domain' => $domain['domain'],
+                            'domain_id' => $existingDomain->id,
+                            'action' => 'update'
+                        ]);
                     }
                 } else {
                     $domainsData['created_at'] = Carbon::now()->format('Y-m-d H:i:s');
                     $result = $domainRepository->create($domainsData);
                     if ($result) {
                         $count++;
+                        $logger->logDomain('info', [
+                            'message' => 'New domain created successfully',
+                            'domain' => $domain['domain'],
+                            'domain_id' => $result->id ?? null,
+                            'action' => 'create'
+                        ]);
                     } else {
                         $errorCount++;
-                        $errors[] = "Failed to create domain: {$domain['domain']}";
+                        $error = "Failed to create domain: {$domain['domain']}";
+                        $errors[] = $error;
+                        $logger->logDomain('error', [
+                            'message' => $error,
+                            'domain' => $domain['domain'],
+                            'action' => 'create'
+                        ]);
                     }
                 }
             } catch (\Exception $e) {
                 $errorCount++;
-                $errors[] = "Error processing domain {$domain['domain']}: " . $e->getMessage();
+                $error = "Error processing domain {$domain['domain']}: " . $e->getMessage();
+                $errors[] = $error;
+                $logger->logDomain('error', [
+                    'message' => 'Exception occurred while processing domain',
+                    'domain' => $domain['domain'],
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
             }
         }
 
@@ -121,6 +182,10 @@ class SyncDomainForAccount extends Command
         ];
 
         $configPoolRepository->updateByKey($key, $dataUpdate);
+        $logger->logDomain('info', [
+            'message' => 'Updated sync status config to inactive',
+            'config_key' => $key
+        ]);
 
         $logger->logDomain('info', [
             'message' => "Kết thúc đồng bộ domain",
@@ -128,8 +193,16 @@ class SyncDomainForAccount extends Command
             'new_domains' => $count,
             'updated_domains' => $updateCount,
             'error_count' => $errorCount,
-            'errors' => $errors
+            'success_rate' => $errorCount > 0 ? round((count($listDomain) - $errorCount) / count($listDomain) * 100, 2) . '%' : '100%',
+            'duration' => 'completed'
         ]);
+
+        if (!empty($errors)) {
+            $logger->logDomain('warning', [
+                'message' => 'Domain sync completed with errors',
+                'error_details' => $errors
+            ]);
+        }
 
         dump("Thêm mới {$count} domain và cập nhật {$updateCount} domain thành công!");
         if ($errorCount > 0) {

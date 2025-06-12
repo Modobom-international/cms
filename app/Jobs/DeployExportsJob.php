@@ -8,7 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Services\CloudFlareService;
-use App\Services\SiteManagementLogger;
+use App\Services\ApplicationLogger;
 
 class DeployExportsJob implements ShouldQueue
 {
@@ -45,10 +45,10 @@ class DeployExportsJob implements ShouldQueue
      * Execute the job.
      *
      * @param CloudFlareService $cloudflareService
-     * @param SiteManagementLogger $logger
+     * @param ApplicationLogger $logger
      * @return void
      */
-    public function handle(CloudFlareService $cloudflareService, SiteManagementLogger $logger)
+    public function handle(CloudFlareService $cloudflareService, ApplicationLogger $logger)
     {
         try {
             $result = $cloudflareService->deployExportDirectory(

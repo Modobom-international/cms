@@ -5,7 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Site;
 use App\Services\CloudFlareService;
-use App\Services\SiteManagementLogger;
+use App\Services\ApplicationLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -16,7 +16,7 @@ class SiteController extends Controller
     protected $cloudflareService;
     protected $logger;
 
-    public function __construct(CloudFlareService $cloudflareService, SiteManagementLogger $logger)
+    public function __construct(CloudFlareService $cloudflareService, ApplicationLogger $logger)
     {
         $this->cloudflareService = $cloudflareService;
         $this->logger = $logger;

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PageRequest;
 use App\Services\CloudFlareService;
-use App\Services\SiteManagementLogger;
+use App\Services\ApplicationLogger;
 use Auth;
 use Illuminate\Http\Request;
 use App\Traits\LogsActivity;
@@ -32,7 +32,7 @@ class PageController extends Controller
         PageExportRepository $pageExportRepository,
         SiteRepository $siteRepository,
         CloudFlareService $cloudflareService,
-        SiteManagementLogger $logger
+        ApplicationLogger $logger
     ) {
         $this->pageRepository = $pageRepository;
         $this->pageExportRepository = $pageExportRepository;
