@@ -18,7 +18,7 @@ class DomainRepository extends BaseRepository
 
     public function getAllDomain()
     {
-        return $this->model->where('is_locked', false)->get();
+        return $this->model->get(); // Include all domains, regardless of is_locked status
     }
 
     public function findByDomain($domain)
