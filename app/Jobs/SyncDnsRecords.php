@@ -119,6 +119,9 @@ class SyncDnsRecords implements ShouldQueue
         // Process each DNS record
         foreach ($response['result'] as $record) {
             try {
+                // Add zone_id to the record data (CloudFlare doesn't include it in record response)
+                $record['zone_id'] = $zoneId;
+
                 // Fix domain extraction for root domain records
                 $recordDomain = $this->resolveDomainFromRecord($record, $domain);
 
