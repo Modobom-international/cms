@@ -96,12 +96,12 @@ class SyncDomainForAccount extends Command
 
         foreach ($listDomain as $domain) {
             try {
-                $logger->logDomain('info', [
-                    'message' => 'Processing domain',
-                    'domain' => $domain['domain'],
-                    'expires' => $domain['expires'] ?? null,
-                    'status' => $domain['status'] ?? null
-                ]);
+                // $logger->logDomain('info', [
+                //     'message' => 'Processing domain',
+                //     'domain' => $domain['domain'],
+                //     'expires' => $domain['expires'] ?? null,
+                //     'status' => $domain['status'] ?? null
+                // ]);
 
                 $domainsData = [
                     'domain' => $domain['domain'],
@@ -122,12 +122,12 @@ class SyncDomainForAccount extends Command
                     $result = $domainRepository->update($existingDomain->id, $domainsData);
                     if ($result) {
                         $updateCount++;
-                        $logger->logDomain('info', [
-                            'message' => 'Domain updated successfully',
-                            'domain' => $domain['domain'],
-                            'domain_id' => $existingDomain->id,
-                            'action' => 'update'
-                        ]);
+                        // $logger->logDomain('info', [
+                        //     'message' => 'Domain updated successfully',
+                        //     'domain' => $domain['domain'],
+                        //     'domain_id' => $existingDomain->id,
+                        //     'action' => 'update'
+                        // ]);
                     } else {
                         $errorCount++;
                         $error = "Failed to update domain: {$domain['domain']}";
