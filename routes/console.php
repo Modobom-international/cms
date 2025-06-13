@@ -6,8 +6,8 @@ use App\Jobs\UpdateDueDateReminderStatusBatch;
 
 // All scheduled tasks defined here
 Schedule::job(new UpdateDueDateReminderStatusBatch)->everyMinute();
-Schedule::command('domain:sync-domain-for-account')->everyFiveMinutes();
-Schedule::command('dns:sync --all')->everyFiveMinutes();
+Schedule::command('domain:sync-domain-for-account')->everySixHours();
+Schedule::command('dns:sync --all')->everySixHours()->withoutOverlapping();
 Schedule::command(MonitorServer::class)->everyFiveMinutes()->withoutOverlapping();
 
 // Alternative schedules (uncomment as needed):
