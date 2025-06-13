@@ -18,8 +18,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->job(new UpdateDueDateReminderStatusBatch)->everyMinute();
-        $schedule->command('domain:sync-domain-for-account')->everyFourHours();
-        $schedule->command('dns:sync --all')->everySixHours();
+        $schedule->command('domain:sync-domain-for-account')->everyFiveMinutes();
+        $schedule->command('dns:sync --all')->everyFiveMinutes();
 
         // Alternative schedules (uncomment as needed):
 
