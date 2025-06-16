@@ -10,4 +10,9 @@ class FileRepository extends BaseRepository
     {
         return File::class;
     }
+
+    public function getByPath($path)
+    {
+        return $this->model->where('path', $path)->first();
+    }
 }

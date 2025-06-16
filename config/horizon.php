@@ -248,7 +248,7 @@ return [
 
             'supervisor-cms-6' => [
                 'connection' => 'redis',
-                'queue' => ['store_html_source'],
+                'queue' => ['store_heartbeat'],
                 'balance' => 'auto',
                 'minProcesses' => 1,
                 'maxProcesses' => 5,
@@ -257,7 +257,7 @@ return [
 
             'supervisor-cms-7' => [
                 'connection' => 'redis',
-                'queue' => ['store_push_system'],
+                'queue' => ['store_notification_system'],
                 'balance' => 'auto',
                 'minProcesses' => 1,
                 'maxProcesses' => 5,
@@ -266,7 +266,7 @@ return [
 
             'supervisor-cms-8' => [
                 'connection' => 'redis',
-                'queue' => ['store_push_system_setting'],
+                'queue' => ['refresh_domain'],
                 'balance' => 'auto',
                 'minProcesses' => 1,
                 'maxProcesses' => 5,
@@ -275,7 +275,7 @@ return [
 
             'supervisor-cms-9' => [
                 'connection' => 'redis',
-                'queue' => ['store_push_system_user_active'],
+                'queue' => ['notify_refresh_domain'],
                 'balance' => 'auto',
                 'minProcesses' => 1,
                 'maxProcesses' => 5,
@@ -284,34 +284,7 @@ return [
 
             'supervisor-cms-10' => [
                 'connection' => 'redis',
-                'queue' => ['store_heartbeat'],
-                'balance' => 'auto',
-                'minProcesses' => 1,
-                'maxProcesses' => 5,
-                'tries' => 0,
-            ],
-
-            'supervisor-cms-11' => [
-                'connection' => 'redis',
-                'queue' => ['store_notification_system'],
-                'balance' => 'auto',
-                'minProcesses' => 1,
-                'maxProcesses' => 5,
-                'tries' => 0,
-            ],
-
-            'supervisor-cms-12' => [
-                'connection' => 'redis',
-                'queue' => ['refresh_domain'],
-                'balance' => 'auto',
-                'minProcesses' => 1,
-                'maxProcesses' => 5,
-                'tries' => 0,
-            ],
-
-            'supervisor-cms-13' => [
-                'connection' => 'redis',
-                'queue' => ['notify_refresh_domain'],
+                'queue' => ['store_app_information'],
                 'balance' => 'auto',
                 'minProcesses' => 1,
                 'maxProcesses' => 5,

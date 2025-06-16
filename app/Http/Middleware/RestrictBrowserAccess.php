@@ -21,6 +21,7 @@ class RestrictBrowserAccess
         'api/push-system/save-config-links',
         'api/me',
         'api/refresh-token',
+        'api/store-app-info',
         'horizon/*'
     ];
 

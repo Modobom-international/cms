@@ -36,6 +36,7 @@ use App\Http\Controllers\API\LeaveRequestController;
 use App\Http\Controllers\API\SalaryCalculationController;
 use App\Http\Controllers\API\PublicHolidayController;
 use App\Http\Controllers\API\FileController;
+use App\Http\Controllers\AppInformationController;
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
@@ -51,13 +52,9 @@ Route::middleware(ExcludeDomainTracking::class)->group(function () {
     Route::post('/tracking-event', [UsersTrackingController::class, 'storeTrackingEvent']);
     Route::post('/check-device', [UsersTrackingController::class, 'checkDevice']);
 
-    Route::post('/save-html-source', [HtmlSourceController::class, 'storeHtmlSource']);
-    Route::post('/push-system', [PushSystemController::class, 'storePushSystem']);
-    Route::post('/get-push-system-config', [PushSystemController::class, 'storePushSystemSetting']);
-    Route::post('/add-user-active-push-system', [PushSystemController::class, 'storePushSystemUserActive']);
-    Route::post('/push-system/save-config-links', [PushSystemController::class, 'storePushSystemConfig']);
-    Route::post('/save-status-link', [PushSystemController::class, 'storeStatusLink']);
     Route::post('/optimize', [ImageOptimizeController::class, 'optimize']);
+
+    Route::post('/store-app-info', [AppInformationController::class, 'store']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -300,11 +297,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/get-list-domain-for-tracking', [DomainController::class, 'getListDomainForTracking'])->name('domain.get.list.for.tracking');
     });
 
-    Route::prefix('html-source')->group(function () {
-        Route::get('/', [HtmlSourceController::class, 'listHtmlSource'])->name('html.source.list');
-        Route::get('/{id}', [HtmlSourceController::class, 'showHtmlSource'])->name('html.source.show');
-    });
-
     Route::prefix('users-tracking')->group(function () {
         Route::get('/', [UsersTrackingController::class, 'listTrackingEvent'])->name('users.tracking.list');
         Route::get('/get-current-users-active', [UsersTrackingController::class, 'getCurrentUsersActive'])->name('users.tracking.get.current.users.active');
@@ -325,14 +317,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [UserController::class, 'show'])->name('user.edit');
         Route::post('/update/{id}', [UserController::class, 'update'])->name('user.update');
         Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('user.destroy');
-    });
-
-    Route::prefix('push-system')->group(function () {
-        Route::get('/', [PushSystemController::class, 'listPushSystem'])->name('push.system.list');
-        Route::get('/config/store', [PushSystemController::class, 'storePushSystemConfigByAdmin'])->name('push.system.config.store');
-        Route::get('/user-active/list', [PushSystemController::class, 'listPushSystemUserActive'])->name('push.system.user.active.list');
-        Route::post('/config/update/{id}', [PushSystemController::class, 'updatePushSystemConfig'])->name('push.system.config.update');
-        Route::get('/count-current-push', [PushSystemController::class, 'getCountCurrentPush'])->name('push.system.count.current.push');
     });
 
     Route::prefix('server')->group(function () {
@@ -440,5 +424,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/upload', [FileController::class, 'upload'])->name('files.upload');
         Route::get('/download/{id}', [FileController::class, 'download'])->name('files.download');
         Route::get('/', [FileController::class, 'list'])->name('files.list');
+    });
+
+    Route::prefix('app-information')->group(function () {
+        Route::get('/', [AppInformationController::class, 'list'])->name('app.information.list');
     });
 });
