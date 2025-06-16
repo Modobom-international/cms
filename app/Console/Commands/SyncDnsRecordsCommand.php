@@ -8,6 +8,7 @@ use App\Repositories\DomainRepository;
 use App\Repositories\DnsRecordRepository;
 use App\Services\CloudFlareService;
 use App\Services\ApplicationLogger;
+use App\Services\ActivityLogger;
 
 class SyncDnsRecordsCommand extends Command
 {
@@ -37,7 +38,8 @@ class SyncDnsRecordsCommand extends Command
         DomainRepository $domainRepository,
         DnsRecordRepository $dnsRecordRepository,
         CloudFlareService $cloudFlareService,
-        ApplicationLogger $logger
+        ApplicationLogger $logger,
+        ActivityLogger $activityLogger
     ) {
         $domain = $this->argument('domain');
         $syncAll = $this->option('all');
@@ -111,7 +113,7 @@ class SyncDnsRecordsCommand extends Command
                 ]);
 
                 $job = new SyncDnsRecords($domain, $forceSync);
-                $job->handle($cloudFlareService, $domainRepository, $dnsRecordRepository);
+                $job->handle($cloudFlareService, $domainRepository, $dnsRecordRepository, $activityLogger);
 
                 $logger->logDomain('info', [
                     'message' => 'DNS records sync completed successfully',

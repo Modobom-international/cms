@@ -11,7 +11,6 @@ use App\Services\CloudFlareService;
 use App\Services\ActivityLogger;
 use App\Repositories\DomainRepository;
 use App\Repositories\DnsRecordRepository;
-use Carbon\Carbon;
 
 class SyncDnsRecords implements ShouldQueue
 {
