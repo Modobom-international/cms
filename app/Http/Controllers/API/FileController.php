@@ -72,7 +72,7 @@ class FileController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Lấy danh sách team không thành công',
+                'message' => 'Lấy file không thành công',
                 'type' => 'download_file_success',
                 'error' => $e->getMessage()
             ], 500);

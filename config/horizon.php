@@ -290,6 +290,15 @@ return [
                 'maxProcesses' => 5,
                 'tries' => 0,
             ],
+
+            'supervisor-cms-10' => [
+                'connection' => 'redis',
+                'queue' => ['store_monitor_server'],
+                'balance' => 'auto',
+                'minProcesses' => 1,
+                'maxProcesses' => 5,
+                'tries' => 0,
+            ],
         ],
     ],
 ];

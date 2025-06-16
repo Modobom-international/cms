@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Repositories\MonitorServerRepository;
 use App\Repositories\ServerRepository;
 use App\Enums\ActivityAction;
+use App\Jobs\StoreMonitorServer;
 use App\Traits\LogsActivity;
 
 class MonitorServerController extends Controller
@@ -68,7 +69,6 @@ class MonitorServerController extends Controller
     {
         try {
             $ip = $request->get('ip');
-
             $server = $this->serverRepository->getByIp($ip);
 
             if (empty($server)) {
@@ -89,7 +89,7 @@ class MonitorServerController extends Controller
                 'timestamp' => $request->get('timestamp'),
             ];
 
-            $this->monitorServerRepository->create($data);
+            StoreMonitorServer::dispatch($data)->onQueue('store_monitor_server');
 
             return response()->json([
                 'success' => true,

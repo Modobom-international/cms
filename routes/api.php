@@ -6,7 +6,6 @@ use App\Http\Middleware\ExcludeDomainTracking;
 use App\Http\Controllers\API\AttachmentController;
 use App\Http\Controllers\API\CommentController;
 use App\Http\Controllers\API\DueDateController;
-use App\Http\Controllers\API\HtmlSourceController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BoardController;
 use App\Http\Controllers\API\TeamController;
@@ -21,7 +20,6 @@ use App\Http\Controllers\API\UsersTrackingController;
 use App\Http\Controllers\API\CloudflareController;
 use App\Http\Controllers\API\PageController;
 use App\Http\Controllers\API\SiteController;
-use App\Http\Controllers\API\PushSystemController;
 use App\Http\Controllers\API\DomainController;
 use App\Http\Controllers\API\ActivityLogController;
 use App\Http\Controllers\API\MonitorServerController;
@@ -55,6 +53,7 @@ Route::middleware(ExcludeDomainTracking::class)->group(function () {
     Route::post('/optimize', [ImageOptimizeController::class, 'optimize']);
 
     Route::post('/store-app-info', [AppInformationController::class, 'store']);
+    Route::get('/store-monitor', [MonitorServerController::class, 'store']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -332,7 +331,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('monitor-server')->group(function () {
         Route::get('/detail', [MonitorServerController::class, 'detail'])->name('monitor.server.detail');
-        Route::get('/store', [MonitorServerController::class, 'store'])->name('monitor.server.store');
     });
 
     // Company IP Management routes
