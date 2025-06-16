@@ -14,8 +14,6 @@ class RestrictBrowserAccess
         'api/heartbeat',
         'api/collect-ai-training-data',
         'api/create-video-timeline',
-        'api/save-html-source',
-        'api/push-system',
         'api/get-push-system-config',
         'api/add-user-active-push-system',
         'api/push-system/save-config-links',

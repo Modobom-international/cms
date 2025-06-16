@@ -36,7 +36,7 @@ use App\Http\Controllers\API\LeaveRequestController;
 use App\Http\Controllers\API\SalaryCalculationController;
 use App\Http\Controllers\API\PublicHolidayController;
 use App\Http\Controllers\API\FileController;
-use App\Http\Controllers\AppInformationController;
+use App\Http\Controllers\API\AppInformationController;
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\API;
 
 use App\Enums\Utility;
 use App\Jobs\StoreAppInformation;
@@ -8,6 +8,7 @@ use App\Repositories\AppInformationRepository;
 use Illuminate\Http\Request;
 use App\Traits\LogsActivity;
 use App\Enums\ActivityAction;
+use App\Http\Controllers\Controller;
 
 class AppInformationController extends Controller
 {
