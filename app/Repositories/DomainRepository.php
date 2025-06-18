@@ -19,12 +19,12 @@ class DomainRepository extends BaseRepository
 
     public function getAllDomain()
     {
-        return $this->model->get(); // Include all domains, regardless of is_locked status
+        return $this->model->where('is_locked', false)->get();
     }
 
     public function findByDomain($domain)
     {
-        return $this->model->where('domain', $domain)->first();
+        return $this->model->where('domain', $domain)->where('is_locked', false)->first();
     }
 
     public function update($id, array $data)
@@ -44,7 +44,7 @@ class DomainRepository extends BaseRepository
 
     public function getDomainBySearch($search, $filters = [])
     {
-        $query = $this->model->with('sites.user');
+        $query = $this->model->with('sites.user')->where('is_locked', false);
 
         if ($search != null) {
             $query = $query->where('domain', 'LIKE', '%' . $search . '%');
@@ -53,10 +53,6 @@ class DomainRepository extends BaseRepository
         // Apply filters
         if (!empty($filters['status'])) {
             $query = $query->where('status', $filters['status']);
-        }
-
-        if (isset($filters['is_locked'])) {
-            $query = $query->where('is_locked', $filters['is_locked']);
         }
 
         if (isset($filters['renewable'])) {
@@ -92,7 +88,7 @@ class DomainRepository extends BaseRepository
 
     public function getDomainByList($listDomain)
     {
-        return $this->model->whereIn('domain', $listDomain)->pluck('domain')->toArray();
+        return $this->model->whereIn('domain', $listDomain)->where('is_locked', false)->pluck('domain')->toArray();
     }
 
     public function deleteByIsLocked($isLocked)
@@ -196,8 +192,6 @@ class DomainRepository extends BaseRepository
                     ];
                 }
             }
-
-
         } catch (\Exception $e) {
             Log::error("Failed to retrieve DNS records for domain {$domain}: " . $e->getMessage());
             throw new \Exception('Failed to retrieve DNS records: ' . $e->getMessage());
