@@ -21,7 +21,7 @@ class Domain extends Model
 
     public function sites()
     {
-        return $this->belongsTo(Site::class, 'domain', 'domain');
+        return $this->hasMany(Site::class, 'domain', 'domain');
     }
 
     /**

@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Repositories\DomainRepository;
+use App\Repositories\DnsRecordRepository;
 use App\Traits\LogsActivity;
 use App\Enums\Utility;
 use App\Enums\ActivityAction;
@@ -19,12 +20,14 @@ class DomainController extends Controller
 
     protected $domainRepository;
     protected $siteRepository;
+    protected $dnsRecordRepository;
     protected $utility;
 
-    public function __construct(DomainRepository $domainRepository, SiteRepository $siteRepository, Utility $utility)
+    public function __construct(DomainRepository $domainRepository, SiteRepository $siteRepository, DnsRecordRepository $dnsRecordRepository, Utility $utility)
     {
         $this->domainRepository = $domainRepository;
         $this->siteRepository = $siteRepository;
+        $this->dnsRecordRepository = $dnsRecordRepository;
         $this->utility = $utility;
     }
 
@@ -51,21 +54,48 @@ class DomainController extends Controller
             $domains = $this->domainRepository->getDomainBySearch($search, $filters);
 
             // Paginate first for better performance
-            $data = $this->utility->paginate($domains, $pageSize, $page);
+            $paginator = $this->utility->paginate($domains, $pageSize, $page);
+
+            // Convert paginator to array and add DNS records if requested
+            $data = $paginator->toArray();
+
             // Add DNS records only for the current page domains if requested
-            if ($includeDns && isset($data['data'])) {
+            if ($includeDns && isset($data['data']) && is_array($data['data'])) {
                 $data['data'] = collect($data['data'])->map(function ($domain) {
+                    // Convert array back to object for easier property access
+                    $domain = (object) $domain;
+
                     try {
-                        $domain->dns_records = $this->domainRepository->getDnsRecords($domain->domain);
+                        // First try to get DNS records from database (faster and more reliable)
+                        $storedDnsRecords = $this->dnsRecordRepository->getByDomain($domain->domain);
+
+                        if ($storedDnsRecords->isNotEmpty()) {
+                            // Format stored DNS records to match the expected structure
+                            $domain->dns_records = $storedDnsRecords->map(function ($record) {
+                                return [
+                                    'type' => $record->type,
+                                    'name' => $record->name,
+                                    'content' => $record->content,
+                                    'ttl' => $record->ttl,
+                                    'proxied' => $record->proxied ?? false,
+                                    'comment' => $record->comment ?? '',
+                                ];
+                            })->toArray();
+                            $domain->dns_source = 'database';
+                        } else {
+                            // Fallback to real-time DNS lookup if no stored records found
+                            $domain->dns_records = $this->domainRepository->getDnsRecords($domain->domain);
+                            $domain->dns_source = 'realtime';
+                            $domain->dns_warning = 'DNS records not synced. Consider running DNS sync job for better performance.';
+                        }
                     } catch (Exception $e) {
                         $domain->dns_records = [];
                         $domain->dns_error = 'Failed to fetch DNS records: ' . $e->getMessage();
+                        $domain->dns_source = 'error';
                     }
                     return $domain;
                 })->toArray();
             }
-
-
 
             $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input, 'include_dns' => $includeDns], 'Xem danh sách domain');
 
@@ -74,6 +104,14 @@ class DomainController extends Controller
                 'data' => $data,
                 'message' => 'Lấy danh sách domain thành công',
                 'type' => 'list_domain_success',
+                'debug_info' => [
+                    'include_dns_requested' => $includeDns,
+                    'include_dns_param' => $request->get('include_dns'),
+                    'has_data' => isset($data['data']),
+                    'data_count' => isset($data['data']) ? count($data['data']) : 0,
+                    'data_structure' => array_keys($data),
+                    'sample_domain_keys' => isset($data['data'][0]) ? array_keys((array) $data['data'][0]) : [],
+                ],
             ], 200);
         } catch (Exception $e) {
             return response()->json([
@@ -93,8 +131,24 @@ class DomainController extends Controller
             $pageSize = $request->get('pageSize') ?? 10;
             $page = $request->get('page') ?? 1;
 
-            $allDomains = $this->domainRepository->getDomainBySearch($search);
+            // Get filter parameters similar to listDomain method
+            $filters = [
+                'status' => $request->get('status'),
+                'is_locked' => $request->get('is_locked'),
+                'renewable' => $request->get('renewable'),
+                'registrar' => $request->get('registrar'),
+                'time_expired' => $request->get('time_expired'),
+                'renew_deadline' => $request->get('renew_deadline'),
+                'registrar_created_at' => $request->get('registrar_created_at')
+            ];
+
+            // Apply has_sites filter to only get domains without sites
+            $filters['has_sites'] = false;
+
+            $allDomains = $this->domainRepository->getDomainBySearch($search, $filters);
             $usedDomains = $this->siteRepository->getAllSiteDomains();
+
+            // Additional filtering in PHP for any edge cases not caught by the database query
             $availableDomains = $allDomains->filter(function ($domain) use ($usedDomains) {
                 return !in_array($domain->domain, $usedDomains);
             });
@@ -108,13 +162,29 @@ class DomainController extends Controller
                 'data' => $data,
                 'message' => 'Lấy danh sách domain khả dụng thành công',
                 'type' => 'list_available_domain_success',
+                'debug_info' => [
+                    'total_domains_found' => $allDomains->count(),
+                    'used_domains_count' => count($usedDomains),
+                    'used_domains' => $usedDomains,
+                    'available_domains_count' => $availableDomains->count(),
+                    'search_term' => $search,
+                    'page_size' => $pageSize,
+                    'current_page' => $page,
+                    'filters_applied' => array_filter($filters), // Only show non-null filters
+                    'sample_all_domains' => $allDomains->take(3)->pluck('domain')->toArray(),
+                    'sample_available_domains' => $availableDomains->take(3)->pluck('domain')->toArray(),
+                ],
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Lấy danh sách domain khả dụng không thành công',
                 'type' => 'list_available_domain_fail',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'debug_info' => [
+                    'line' => $e->getLine(),
+                    'file' => $e->getFile(),
+                ]
             ], 500);
         }
     }
@@ -235,14 +305,47 @@ class DomainController extends Controller
                 ], 400);
             }
 
-            // Get DNS records for the domain
-            $dnsRecords = $this->domainRepository->getDnsRecords($domain);
+            // First try to get DNS records from database (faster and more reliable)
+            $storedDnsRecords = $this->dnsRecordRepository->getByDomain($domain);
+
+            if ($storedDnsRecords->isNotEmpty()) {
+                // Format stored DNS records
+                $dnsRecords = $storedDnsRecords->map(function ($record) {
+                    return [
+                        'type' => $record->type,
+                        'name' => $record->name,
+                        'content' => $record->content,
+                        'ttl' => $record->ttl,
+                        'proxied' => $record->proxied ?? false,
+                        'comment' => $record->comment ?? '',
+                        'cloudflare_id' => $record->cloudflare_id ?? '',
+                        'created_at' => $record->created_at,
+                        'updated_at' => $record->updated_at,
+                    ];
+                })->toArray();
+
+                $responseData = [
+                    'dns_records' => $dnsRecords,
+                    'source' => 'database',
+                    'total_records' => count($dnsRecords),
+                    'last_synced' => $storedDnsRecords->max('updated_at'),
+                ];
+            } else {
+                // Fallback to real-time DNS lookup if no stored records found
+                $dnsRecords = $this->domainRepository->getDnsRecords($domain);
+                $responseData = [
+                    'dns_records' => $dnsRecords,
+                    'source' => 'realtime',
+                    'total_records' => count($dnsRecords),
+                    'warning' => 'DNS records not synced. Consider running DNS sync job for better performance.',
+                ];
+            }
 
             $this->logActivity(ActivityAction::ACCESS_VIEW, ['domain' => $domain], 'Xem DNS records của domain');
 
             return response()->json([
                 'success' => true,
-                'data' => $dnsRecords,
+                'data' => $responseData,
                 'message' => 'Lấy DNS records thành công',
                 'type' => 'show_dns_records_success',
             ], 200);

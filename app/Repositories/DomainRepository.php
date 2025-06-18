@@ -3,10 +3,18 @@
 namespace App\Repositories;
 
 use App\Models\Domain;
-use Illuminate\Support\Facades\Log;
+use App\Services\ApplicationLogger;
 
 class DomainRepository extends BaseRepository
 {
+    protected $applicationLogger;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->applicationLogger = app(ApplicationLogger::class);
+    }
+
     public function model()
     {
         return Domain::class;
@@ -102,108 +110,131 @@ class DomainRepository extends BaseRepository
 
     public function getDnsRecords($domain)
     {
-        Log::debug("Starting DNS record retrieval for domain: {$domain}");
+        $this->applicationLogger->logDomain('dns_lookup_started', [
+            'domain' => $domain,
+            'method' => 'realtime_fallback',
+            'record_types' => ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS']
+        ]);
+
         $dnsRecords = [];
 
-        try {
-            // Get A records
-            Log::debug("Retrieving A records for domain: {$domain}");
-            $aRecords = dns_get_record($domain, DNS_A);
-            Log::debug("Found " . (is_array($aRecords) ? count($aRecords) : 0) . " A records for domain: {$domain}");
-            if ($aRecords) {
-                foreach ($aRecords as $record) {
-                    $dnsRecords[] = [
-                        'type' => 'A',
-                        'host' => $record['host'] ?? '',
-                        'ip' => $record['ip'] ?? '',
-                        'ttl' => $record['ttl'] ?? 0
-                    ];
+        // Define DNS record types to query
+        $recordTypes = [
+            'A' => DNS_A,
+            'AAAA' => DNS_AAAA,
+            'CNAME' => DNS_CNAME,
+            'MX' => DNS_MX,
+            'TXT' => DNS_TXT,
+            'NS' => DNS_NS
+        ];
+
+        foreach ($recordTypes as $type => $dnsConstant) {
+            try {
+                $this->applicationLogger->logDomain("dns_{$type}_records_query", [
+                    'domain' => $domain,
+                    'record_type' => $type,
+                    'timeout' => 2
+                ]);
+
+                // Set very short timeout to prevent hanging
+                $originalTimeout = ini_get('default_socket_timeout');
+                ini_set('default_socket_timeout', 2); // 2 second timeout per record type
+
+                // Use error suppression for each record type
+                $records = @dns_get_record($domain, $dnsConstant);
+
+                // Restore timeout immediately
+                ini_set('default_socket_timeout', $originalTimeout);
+
+                if ($records && is_array($records)) {
+                    foreach ($records as $record) {
+                        $formattedRecord = $this->formatDnsRecord($type, $record);
+                        if ($formattedRecord) {
+                            $dnsRecords[] = $formattedRecord;
+                        }
+                    }
+
+                    $this->applicationLogger->logDomain('dns_lookup_success', [
+                        'domain' => $domain,
+                        'records_found' => count($records),
+                        'record_type' => $type
+                    ]);
+                } else {
+                    $this->applicationLogger->logDomain('dns_lookup_no_records', [
+                        'domain' => $domain,
+                        'record_type' => $type
+                    ]);
                 }
+
+            } catch (\Exception $e) {
+                $this->applicationLogger->logDomain('dns_lookup_failed', [
+                    'domain' => $domain,
+                    'error' => $e->getMessage(),
+                    'record_type' => $type
+                ], 'error');
+                // Continue with other record types even if one fails
+                continue;
             }
-
-            // Get AAAA records (IPv6)
-            Log::debug("Retrieving AAAA records for domain: {$domain}");
-            $aaaaRecords = dns_get_record($domain, DNS_AAAA);
-            Log::debug("Found " . (is_array($aaaaRecords) ? count($aaaaRecords) : 0) . " AAAA records for domain: {$domain}");
-            if ($aaaaRecords) {
-                foreach ($aaaaRecords as $record) {
-                    $dnsRecords[] = [
-                        'type' => 'AAAA',
-                        'host' => $record['host'] ?? '',
-                        'ipv6' => $record['ipv6'] ?? '',
-                        'ttl' => $record['ttl'] ?? 0
-                    ];
-                }
-            }
-
-            // Get CNAME records
-            Log::debug("Retrieving CNAME records for domain: {$domain}");
-            $cnameRecords = dns_get_record($domain, DNS_CNAME);
-            Log::debug("Found " . (is_array($cnameRecords) ? count($cnameRecords) : 0) . " CNAME records for domain: {$domain}");
-            if ($cnameRecords) {
-                foreach ($cnameRecords as $record) {
-                    $dnsRecords[] = [
-                        'type' => 'CNAME',
-                        'host' => $record['host'] ?? '',
-                        'target' => $record['target'] ?? '',
-                        'ttl' => $record['ttl'] ?? 0
-                    ];
-                }
-            }
-
-            // Get MX records
-            Log::debug("Retrieving MX records for domain: {$domain}");
-            $mxRecords = dns_get_record($domain, DNS_MX);
-            Log::debug("Found " . (is_array($mxRecords) ? count($mxRecords) : 0) . " MX records for domain: {$domain}");
-            if ($mxRecords) {
-                foreach ($mxRecords as $record) {
-                    $dnsRecords[] = [
-                        'type' => 'MX',
-                        'host' => $record['host'] ?? '',
-                        'target' => $record['target'] ?? '',
-                        'priority' => $record['pri'] ?? 0,
-                        'ttl' => $record['ttl'] ?? 0
-                    ];
-                }
-            }
-
-            // Get TXT records
-            Log::debug("Retrieving TXT records for domain: {$domain}");
-            $txtRecords = dns_get_record($domain, DNS_TXT);
-            Log::debug("Found " . (is_array($txtRecords) ? count($txtRecords) : 0) . " TXT records for domain: {$domain}");
-            if ($txtRecords) {
-                foreach ($txtRecords as $record) {
-                    $dnsRecords[] = [
-                        'type' => 'TXT',
-                        'host' => $record['host'] ?? '',
-                        'txt' => $record['txt'] ?? '',
-                        'ttl' => $record['ttl'] ?? 0
-                    ];
-                }
-            }
-
-            // Get NS records
-            Log::debug("Retrieving NS records for domain: {$domain}");
-            $nsRecords = dns_get_record($domain, DNS_NS);
-            Log::debug("Found " . (is_array($nsRecords) ? count($nsRecords) : 0) . " NS records for domain: {$domain}");
-            if ($nsRecords) {
-                foreach ($nsRecords as $record) {
-                    $dnsRecords[] = [
-                        'type' => 'NS',
-                        'host' => $record['host'] ?? '',
-                        'target' => $record['target'] ?? '',
-                        'ttl' => $record['ttl'] ?? 0
-                    ];
-                }
-            }
-
-
-        } catch (\Exception $e) {
-            Log::error("Failed to retrieve DNS records for domain {$domain}: " . $e->getMessage());
-            throw new \Exception('Failed to retrieve DNS records: ' . $e->getMessage());
         }
 
-        Log::debug("Successfully retrieved " . count($dnsRecords) . " total DNS records for domain: {$domain}");
+        $this->applicationLogger->logDomain('dns_lookup_completed', [
+            'domain' => $domain,
+            'total_records' => count($dnsRecords),
+            'record_types_found' => array_unique(array_column($dnsRecords, 'type'))
+        ]);
+
         return $dnsRecords;
+    }
+
+    /**
+     * Format DNS record based on type
+     */
+    private function formatDnsRecord($type, $record)
+    {
+        if (!is_array($record)) {
+            return null;
+        }
+
+        $baseRecord = [
+            'type' => $type,
+            'name' => $record['host'] ?? '',
+            'ttl' => $record['ttl'] ?? 0
+        ];
+
+        switch ($type) {
+            case 'A':
+                return array_merge($baseRecord, [
+                    'content' => $record['ip'] ?? '',
+                ]);
+
+            case 'AAAA':
+                return array_merge($baseRecord, [
+                    'content' => $record['ipv6'] ?? '',
+                ]);
+
+            case 'CNAME':
+                return array_merge($baseRecord, [
+                    'content' => $record['target'] ?? '',
+                ]);
+
+            case 'MX':
+                return array_merge($baseRecord, [
+                    'content' => $record['target'] ?? '',
+                    'priority' => $record['pri'] ?? 0,
+                ]);
+
+            case 'TXT':
+                return array_merge($baseRecord, [
+                    'content' => $record['txt'] ?? '',
+                ]);
+
+            case 'NS':
+                return array_merge($baseRecord, [
+                    'content' => $record['target'] ?? '',
+                ]);
+
+            default:
+                return $baseRecord;
+        }
     }
 }
