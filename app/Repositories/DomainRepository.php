@@ -37,7 +37,7 @@ class DomainRepository extends BaseRepository
 
     public function findByDomain($domain)
     {
-        return $this->model->where('domain', $domain)->where('is_locked', false)->first();
+        return $this->model->where('domain', $domain)->first();
     }
 
     public function update($id, array $data)
@@ -57,7 +57,7 @@ class DomainRepository extends BaseRepository
 
     public function getDomainBySearch($search, $filters = [])
     {
-        $query = $this->model->with('sites.user')->where('is_locked', false);
+        $query = $this->model->with('sites.user');
 
         if ($search != null) {
             $query = $query->where('domain', 'LIKE', '%' . $search . '%');
@@ -101,7 +101,7 @@ class DomainRepository extends BaseRepository
 
     public function getDomainByList($listDomain)
     {
-        return $this->model->whereIn('domain', $listDomain)->where('is_locked', false)->pluck('domain')->toArray();
+        return $this->model->whereIn('domain', $listDomain)->pluck('domain')->toArray();
     }
 
     public function deleteByIsLocked($isLocked)
