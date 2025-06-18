@@ -86,8 +86,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/export-pages/{pageId}', [PageController::class, 'exportPage']);
     Route::delete('/pages/{pageId}', [PageController::class, 'destroy']);
 
-    //Sau comment này tất cả các route sẽ được tính vào phân quyền của hệ thống.
-
     // Cloudflare Projects API
     Route::prefix('cloudflare/projects')->group(function () {
         Route::get('/', [CloudflareController::class, 'getProjects'])->name('cloudflare.projects.index');
