@@ -113,32 +113,40 @@ class DomainRepository extends BaseRepository
         $this->applicationLogger->logDomain('dns_lookup_started', [
             'domain' => $domain,
             'method' => 'realtime_fallback',
-            'record_types' => ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS']
+            'record_types' => ['A', 'CNAME'] // Reduced to essential records only
         ]);
 
         $dnsRecords = [];
+        $startTime = time();
+        $maxExecutionTime = 5; // Maximum 5 seconds per domain
 
-        // Define DNS record types to query
+        // Only query essential DNS record types to reduce timeout risk
         $recordTypes = [
             'A' => DNS_A,
-            'AAAA' => DNS_AAAA,
             'CNAME' => DNS_CNAME,
-            'MX' => DNS_MX,
-            'TXT' => DNS_TXT,
-            'NS' => DNS_NS
         ];
 
         foreach ($recordTypes as $type => $dnsConstant) {
+            // Check if we've exceeded our time limit
+            if ((time() - $startTime) >= $maxExecutionTime) {
+                $this->applicationLogger->logDomain('dns_lookup_timeout', [
+                    'domain' => $domain,
+                    'elapsed_time' => time() - $startTime,
+                    'max_time' => $maxExecutionTime
+                ], 'warning');
+                break;
+            }
+
             try {
                 $this->applicationLogger->logDomain("dns_{$type}_records_query", [
                     'domain' => $domain,
                     'record_type' => $type,
-                    'timeout' => 2
+                    'timeout' => 1
                 ]);
 
                 // Set very short timeout to prevent hanging
                 $originalTimeout = ini_get('default_socket_timeout');
-                ini_set('default_socket_timeout', 2); // 2 second timeout per record type
+                ini_set('default_socket_timeout', 1); // 1 second timeout per record type
 
                 // Use error suppression for each record type
                 $records = @dns_get_record($domain, $dnsConstant);
@@ -177,10 +185,12 @@ class DomainRepository extends BaseRepository
             }
         }
 
+        $totalTime = time() - $startTime;
         $this->applicationLogger->logDomain('dns_lookup_completed', [
             'domain' => $domain,
             'total_records' => count($dnsRecords),
-            'record_types_found' => array_unique(array_column($dnsRecords, 'type'))
+            'record_types_found' => array_unique(array_column($dnsRecords, 'type')),
+            'execution_time' => $totalTime
         ]);
 
         return $dnsRecords;

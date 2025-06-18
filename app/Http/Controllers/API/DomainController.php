@@ -39,6 +39,12 @@ class DomainController extends Controller
             $pageSize = $request->get('pageSize') ?? 10;
             $page = $request->get('page') ?? 1;
             $includeDns = $request->get('include_dns') == 'true';
+
+            // Limit DNS requests to prevent timeouts
+            // if ($includeDns && $pageSize > 5) {
+            //     $pageSize = 10; // Maximum 5 domains when DNS is requested
+            // }
+
             // Get filter parameters
             $filters = [
                 'status' => $request->get('status'),
@@ -61,7 +67,19 @@ class DomainController extends Controller
 
             // Add DNS records only for the current page domains if requested
             if ($includeDns && isset($data['data']) && is_array($data['data'])) {
-                $data['data'] = collect($data['data'])->map(function ($domain) {
+                $startTime = time();
+                $maxTotalTime = 25; // Maximum 25 seconds for all DNS lookups
+
+                $data['data'] = collect($data['data'])->map(function ($domain) use (&$startTime, $maxTotalTime) {
+                    // Check if we've exceeded our total time limit
+                    if ((time() - $startTime) >= $maxTotalTime) {
+                        $domain = (object) $domain;
+                        $domain->dns_records = [];
+                        $domain->dns_error = 'DNS lookup skipped due to timeout protection';
+                        $domain->dns_source = 'timeout_skip';
+                        return $domain;
+                    }
+
                     // Convert array back to object for easier property access
                     $domain = (object) $domain;
 
@@ -84,9 +102,10 @@ class DomainController extends Controller
                             $domain->dns_source = 'database';
                         } else {
                             // Fallback to real-time DNS lookup if no stored records found
+                            // Only for essential records to prevent timeout
                             $domain->dns_records = $this->domainRepository->getDnsRecords($domain->domain);
                             $domain->dns_source = 'realtime';
-                            $domain->dns_warning = 'DNS records not synced. Consider running DNS sync job for better performance.';
+                            $domain->dns_warning = 'DNS records not synced. Consider running DNS sync job for better performance. Only A and CNAME records shown.';
                         }
                     } catch (Exception $e) {
                         $domain->dns_records = [];
@@ -99,7 +118,7 @@ class DomainController extends Controller
 
             $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input, 'include_dns' => $includeDns], 'Xem danh sách domain');
 
-            return response()->json([
+            $responseData = [
                 'success' => true,
                 'data' => $data,
                 'message' => 'Lấy danh sách domain thành công',
@@ -112,7 +131,17 @@ class DomainController extends Controller
                     'data_structure' => array_keys($data),
                     'sample_domain_keys' => isset($data['data'][0]) ? array_keys((array) $data['data'][0]) : [],
                 ],
-            ], 200);
+            ];
+
+            // Add warning if page size was reduced due to DNS request
+            if ($includeDns && $request->get('pageSize') > 5) {
+                $responseData['warning'] = 'Page size was limited to 5 domains when DNS records are requested to prevent timeouts.';
+                $responseData['debug_info']['page_size_limited'] = true;
+                $responseData['debug_info']['original_page_size'] = $request->get('pageSize');
+                $responseData['debug_info']['limited_page_size'] = $pageSize;
+            }
+
+            return response()->json($responseData, 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
@@ -332,13 +361,25 @@ class DomainController extends Controller
                 ];
             } else {
                 // Fallback to real-time DNS lookup if no stored records found
-                $dnsRecords = $this->domainRepository->getDnsRecords($domain);
-                $responseData = [
-                    'dns_records' => $dnsRecords,
-                    'source' => 'realtime',
-                    'total_records' => count($dnsRecords),
-                    'warning' => 'DNS records not synced. Consider running DNS sync job for better performance.',
-                ];
+                $startTime = time();
+                try {
+                    $dnsRecords = $this->domainRepository->getDnsRecords($domain);
+                    $responseData = [
+                        'dns_records' => $dnsRecords,
+                        'source' => 'realtime',
+                        'total_records' => count($dnsRecords),
+                        'warning' => 'DNS records not synced. Consider running DNS sync job for better performance. Only A and CNAME records shown for timeout prevention.',
+                        'execution_time' => time() - $startTime,
+                    ];
+                } catch (Exception $e) {
+                    $responseData = [
+                        'dns_records' => [],
+                        'source' => 'error',
+                        'total_records' => 0,
+                        'error' => 'Failed to fetch real-time DNS records: ' . $e->getMessage(),
+                        'execution_time' => time() - $startTime,
+                    ];
+                }
             }
 
             $this->logActivity(ActivityAction::ACCESS_VIEW, ['domain' => $domain], 'Xem DNS records của domain');
