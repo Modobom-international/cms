@@ -306,7 +306,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [TeamController::class, 'edit'])->name('team.edit');
         Route::delete('/delete', [TeamController::class, 'destroy'])->name('team.destroy');
         Route::get('/get-permission-by-team', [TeamController::class, 'getPermissionByTeam'])->name('team.get.permission');
-        Route::get('/list-with-permission', [TeamController::class, 'listTeamWithPermission'])->name('team.list.with.permission');
+        Route::get('/list/list-with-permission', [TeamController::class, 'listTeamWithPermission'])->name('team.list.with.permission');
     });
 
     Route::prefix('users')->group(function () {

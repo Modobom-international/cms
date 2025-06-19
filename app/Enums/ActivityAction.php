@@ -18,4 +18,6 @@ class ActivityAction
     const APPLY_PAGE_DOMAIN_CLOUDFLARE_PAGE = 'apply_page_domain_cloudflare_page';
     const DEPLOY_EXPORT_CLOUDFLARE_PAGE = 'deploy_export_cloudflare_page';
     const DETAIL_MONITOR_SERVER = 'detail_monitor_server';
+    const CREATE_PAGE_EXPORTS = 'create_page_exports';
+    const UPDATE_PAGES = 'update_pages';
 }
