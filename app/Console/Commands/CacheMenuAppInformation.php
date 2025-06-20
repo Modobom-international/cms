@@ -47,6 +47,7 @@ class CacheMenuAppInformation extends Command
             'category' => [],
             'platform' => [],
             'country' => [],
+            'event_name' => []
         ];
 
         foreach ($data as $record) {
@@ -76,6 +77,10 @@ class CacheMenuAppInformation extends Command
 
             if (!empty($record->country) && !in_array($record->country, $listMenu['country'])) {
                 $listMenu['country'][] = $record->country;
+            }
+
+            if (!empty($record->event_name) && !in_array($record->event_name, $listMenu['event_name'])) {
+                $listMenu['event_name'][] = $record->event_name;
             }
         }
 

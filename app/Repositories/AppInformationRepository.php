@@ -43,6 +43,10 @@ class AppInformationRepository extends BaseRepository
             $query = $query->whereIn('country', $filters['country']);
         }
 
+        if (!empty($filters['event_name'])) {
+            $query = $query->whereIn('event_name', $filters['event_name']);
+        }
+
         return $query->get();
     }
 }
