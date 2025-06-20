@@ -54,14 +54,14 @@ class EventController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $data,
-                'message' => 'Lưu app information thành công!',
-                'type' => 'store_app_information_success',
+                'message' => 'Lưu sự kiện thành công!',
+                'type' => 'store_event_success',
             ], 200);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Lưu app information không thành công!',
-                'type' => 'store_app_information_fail',
+                'message' => 'Lưu sự kiện không thành công!',
+                'type' => 'store_event_fail',
                 'error' => $e->getMessage()
             ], 500);
         }
