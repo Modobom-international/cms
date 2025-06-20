@@ -33,41 +33,42 @@ class StoreAppInformation implements ShouldQueue
         try {
             $key = 'menu_filter_app_information';
             $cacheMenu = $cachePoolRepository->getCacheByKey($key);
+            $menuUpdate = $cacheMenu->data;
 
-            if ($this->data['app_name'] && !in_array($this->data['app_name'], $cacheMenu['app_name'])) {
-                $cacheMenu['app_name'][] = $this->data['app_name'];
+            if ($this->data['app_name'] && !in_array($this->data['app_name'], $menuUpdate['app_name'])) {
+                $menuUpdate['app_name'][] = $this->data['app_name'];
             }
 
-            if ($this->data['os_name'] && !in_array($this->data['os_name'], $cacheMenu['os_name'])) {
-                $cacheMenu['os_name'][] = $this->data['os_name'];
+            if ($this->data['os_name'] && !in_array($this->data['os_name'], $menuUpdate['os_name'])) {
+                $menuUpdate['os_name'][] = $this->data['os_name'];
             }
 
-            if ($this->data['os_version'] && !in_array($this->data['os_version'], $cacheMenu['os_version'])) {
-                $cacheMenu['os_version'][] = $this->data['os_version'];
+            if ($this->data['os_version'] && !in_array($this->data['os_version'], $menuUpdate['os_version'])) {
+                $menuUpdate['os_version'][] = $this->data['os_version'];
             }
 
-            if ($this->data['app_version'] && !in_array($this->data['app_version'], $cacheMenu['app_version'])) {
-                $cacheMenu['app_version'][] = $this->data['app_version'];
+            if ($this->data['app_version'] && !in_array($this->data['app_version'], $menuUpdate['app_version'])) {
+                $menuUpdate['app_version'][] = $this->data['app_version'];
             }
 
-            if ($this->data['category'] && !in_array($this->data['category'], $cacheMenu['category'])) {
-                $cacheMenu['category'][] = $this->data['category'];
+            if ($this->data['category'] && !in_array($this->data['category'], $menuUpdate['category'])) {
+                $menuUpdate['category'][] = $this->data['category'];
             }
 
-            if ($this->data['platform'] && !in_array($this->data['platform'], $cacheMenu['platform'])) {
-                $cacheMenu['platform'][] = $this->data['platform'];
+            if ($this->data['platform'] && !in_array($this->data['platform'], $menuUpdate['platform'])) {
+                $menuUpdate['platform'][] = $this->data['platform'];
             }
 
-            if ($this->data['country'] && !in_array($this->data['country'], $cacheMenu['country'])) {
-                $cacheMenu['country'][] = $this->data['country'];
+            if ($this->data['country'] && !in_array($this->data['country'], $menuUpdate['country'])) {
+                $menuUpdate['country'][] = $this->data['country'];
             }
 
-            if ($this->data['network'] && !in_array($this->data['network'], $cacheMenu['network'])) {
-                $cacheMenu['network'][] = $this->data['network'];
+            if ($this->data['network'] && !in_array($this->data['network'], $menuUpdate['network'])) {
+                $menuUpdate['network'][] = $this->data['network'];
             }
 
             $dataUpdate = [
-                'data' => $cacheMenu,
+                'data' => $menuUpdate,
             ];
 
             $cachePoolRepository->updateCacheByKey($key, $dataUpdate);
