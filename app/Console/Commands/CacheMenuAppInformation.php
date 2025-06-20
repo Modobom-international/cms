@@ -47,7 +47,8 @@ class CacheMenuAppInformation extends Command
             'category' => [],
             'platform' => [],
             'country' => [],
-            'event_name' => []
+            'event_name' => [],
+            'network' => []
         ];
 
         foreach ($data as $record) {

@@ -34,34 +34,36 @@ class StoreAppInformation implements ShouldQueue
             $key = 'menu_filter_app_information';
             $cacheMenu = $cachePoolRepository->getCacheByKey($key);
 
-            foreach ($this->data as $record) {
-                if ($record['app_name'] && !in_array($record['app_name'], $cacheMenu['app_name'])) {
-                    $cacheMenu['app_name'][] = $record['app_name'];
-                }
+            if ($this->data['app_name'] && !in_array($this->data['app_name'], $cacheMenu['app_name'])) {
+                $cacheMenu['app_name'][] = $this->data['app_name'];
+            }
 
-                if ($record['os_name'] && !in_array($record['os_name'], $cacheMenu['os_name'])) {
-                    $cacheMenu['os_name'][] = $record['os_name'];
-                }
+            if ($this->data['os_name'] && !in_array($this->data['os_name'], $cacheMenu['os_name'])) {
+                $cacheMenu['os_name'][] = $this->data['os_name'];
+            }
 
-                if ($record['os_version'] && !in_array($record['os_version'], $cacheMenu['os_version'])) {
-                    $cacheMenu['os_version'][] = $record['os_version'];
-                }
+            if ($this->data['os_version'] && !in_array($this->data['os_version'], $cacheMenu['os_version'])) {
+                $cacheMenu['os_version'][] = $this->data['os_version'];
+            }
 
-                if ($record['app_version'] && !in_array($record['app_version'], $cacheMenu['app_version'])) {
-                    $cacheMenu['app_version'][] = $record['app_version'];
-                }
+            if ($this->data['app_version'] && !in_array($this->data['app_version'], $cacheMenu['app_version'])) {
+                $cacheMenu['app_version'][] = $this->data['app_version'];
+            }
 
-                if ($record['category'] && !in_array($record['category'], $cacheMenu['category'])) {
-                    $cacheMenu['category'][] = $record['category'];
-                }
+            if ($this->data['category'] && !in_array($this->data['category'], $cacheMenu['category'])) {
+                $cacheMenu['category'][] = $this->data['category'];
+            }
 
-                if ($record['platform'] && !in_array($record['platform'], $cacheMenu['platform'])) {
-                    $cacheMenu['platform'][] = $record['platform'];
-                }
+            if ($this->data['platform'] && !in_array($this->data['platform'], $cacheMenu['platform'])) {
+                $cacheMenu['platform'][] = $this->data['platform'];
+            }
 
-                if ($record['country'] && !in_array($record['country'], $cacheMenu['country'])) {
-                    $cacheMenu['country'][] = $record['country'];
-                }
+            if ($this->data['country'] && !in_array($this->data['country'], $cacheMenu['country'])) {
+                $cacheMenu['country'][] = $this->data['country'];
+            }
+
+            if ($this->data['network'] && !in_array($this->data['network'], $cacheMenu['network'])) {
+                $cacheMenu['network'][] = $this->data['network'];
             }
 
             $dataUpdate = [
