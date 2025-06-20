@@ -35,6 +35,7 @@ use App\Http\Controllers\API\SalaryCalculationController;
 use App\Http\Controllers\API\PublicHolidayController;
 use App\Http\Controllers\API\FileController;
 use App\Http\Controllers\API\AppInformationController;
+use App\Http\Controllers\API\EventController;
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
@@ -425,5 +426,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('app-information')->group(function () {
         Route::get('/', [AppInformationController::class, 'list'])->name('app.information.list');
         Route::get('/menu', [AppInformationController::class, 'menu'])->name('app.information.menu');
+    });
+
+    Route::prefix('events')->group(function () {
+        Route::get('/', [EventController::class, 'list'])->name('event.list');
+        Route::post('/store', [EventController::class, 'store'])->name('event.store');
     });
 });

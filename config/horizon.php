@@ -291,9 +291,18 @@ return [
                 'tries' => 0,
             ],
 
-            'supervisor-cms-10' => [
+            'supervisor-cms-11' => [
                 'connection' => 'redis',
                 'queue' => ['store_monitor_server'],
+                'balance' => 'auto',
+                'minProcesses' => 1,
+                'maxProcesses' => 5,
+                'tries' => 0,
+            ],
+
+            'supervisor-cms-12' => [
+                'connection' => 'redis',
+                'queue' => ['store_events'],
                 'balance' => 'auto',
                 'minProcesses' => 1,
                 'maxProcesses' => 5,

@@ -9,7 +9,6 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 
 class StoreAppInformation implements ShouldQueue
@@ -17,17 +16,13 @@ class StoreAppInformation implements ShouldQueue
     use Dispatchable, Queueable, InteractsWithQueue, SerializesModels;
 
     protected $data;
-    protected $appInformationRepository;
-    protected $cachePoolRepository;
 
     /**
      * Create a new job instance.
      */
-    public function __construct($data, AppInformationRepository $appInformationRepository, CachePoolRepository $cachePoolRepository)
+    public function __construct($data)
     {
         $this->data = $data;
-        $this->appInformationRepository = $appInformationRepository;
-        $this->cachePoolRepository = $cachePoolRepository;
     }
 
     /**
@@ -37,7 +32,6 @@ class StoreAppInformation implements ShouldQueue
     {
         try {
             $key = 'menu_filter_app_information';
-            $appInformationRepository->create($this->data);
             $cacheMenu = $cachePoolRepository->getCacheByKey($key);
 
             foreach ($this->data as $record) {
@@ -75,6 +69,7 @@ class StoreAppInformation implements ShouldQueue
             ];
 
             $cachePoolRepository->updateCacheByKey($key, $dataUpdate);
+            $appInformationRepository->create($this->data);
         } catch (\Throwable $e) {
             Log::error("Job failed: " . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
