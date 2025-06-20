@@ -83,6 +83,10 @@ class CacheMenuAppInformation extends Command
             if (!empty($record->event_name) && !in_array($record->event_name, $listMenu['event_name'])) {
                 $listMenu['event_name'][] = $record->event_name;
             }
+
+            if (!empty($record->network) && !in_array($record->network, $listMenu['network'])) {
+                $listMenu['network'][] = $record->network;
+            }
         }
 
         $key = 'menu_filter_app_information';
