@@ -9,17 +9,20 @@ use Illuminate\Http\Request;
 use App\Traits\LogsActivity;
 use App\Enums\ActivityAction;
 use App\Http\Controllers\Controller;
+use App\Repositories\CachePoolRepository;
 
 class AppInformationController extends Controller
 {
     use LogsActivity;
 
     protected $appInformationRepository;
+    protected $cachePoolRepository;
     protected $utility;
 
-    public function __construct(AppInformationRepository $appInformationRepository, Utility $utility)
+    public function __construct(AppInformationRepository $appInformationRepository, CachePoolRepository $cachePoolRepository, Utility $utility)
     {
         $this->appInformationRepository = $appInformationRepository;
+        $this->cachePoolRepository = $cachePoolRepository;
         $this->utility = $utility;
     }
 
@@ -46,7 +49,7 @@ class AppInformationController extends Controller
         }
     }
 
-    public function list()
+    public function list(Request $request)
     {
         try {
             $input = $request->all();
@@ -69,6 +72,28 @@ class AppInformationController extends Controller
                 'success' => false,
                 'message' => 'Lấy danh sách app information không thành công',
                 'type' => 'list_app_information_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function menu()
+    {
+        try {
+            $key = 'menu_filter_app_information';
+            $data = $this->cachePoolRepository->getCacheByKey($key);
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lấy danh sách menu app information thành công',
+                'type' => 'menu_app_information_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy danh sách menu app information không thành công',
+                'type' => 'menu_app_information_fail',
                 'error' => $e->getMessage()
             ], 500);
         }

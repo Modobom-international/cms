@@ -424,5 +424,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('app-information')->group(function () {
         Route::get('/', [AppInformationController::class, 'list'])->name('app.information.list');
+        Route::get('/menu', [AppInformationController::class, 'menu'])->name('app.information.menu');
     });
 });
