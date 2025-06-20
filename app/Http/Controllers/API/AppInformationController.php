@@ -64,6 +64,7 @@ class AppInformationController extends Controller
                 'platform' => $request->get('platform'),
                 'country' => $request->get('country'),
                 'event_name' => $request->get('event_name'),
+                'network' => $request->get('network'),
             ];
 
             $query = $this->appInformationRepository->getWithFilter($filters);
