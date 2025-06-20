@@ -54,10 +54,6 @@ class CacheMenuAppInformation extends Command
                 $listMenu['app_name'][] = $record->app_name;
             }
 
-            if (!empty($record->app_name) && !in_array($record->app_name, $listMenu['app_name'])) {
-                $listMenu['app_name'][] = $record->app_name;
-            }
-
             if (!empty($record->os_name) && !in_array($record->os_name, $listMenu['os_name'])) {
                 $listMenu['os_name'][] = $record->os_name;
             }

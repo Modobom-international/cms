@@ -55,8 +55,17 @@ class AppInformationController extends Controller
             $input = $request->all();
             $pageSize = $request->get('pageSize') ?? 10;
             $page = $request->get('page') ?? 1;
+            $filters = [
+                'app_name' => $request->get('app_name'),
+                'os_name' => $request->get('os_name'),
+                'os_version' => $request->get('os_version'),
+                'app_version' => $request->get('app_version'),
+                'category' => $request->get('category'),
+                'platform' => $request->get('platform'),
+                'country' => $request->get('country'),
+            ];
 
-            $query = $this->appInformationRepository->get();
+            $query = $this->appInformationRepository->getWithFilter($filters);
             $data = $this->utility->paginate($query, $pageSize, $page);
 
             $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách app information');

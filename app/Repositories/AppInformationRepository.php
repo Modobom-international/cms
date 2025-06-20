@@ -10,4 +10,39 @@ class AppInformationRepository extends BaseRepository
     {
         return AppInformation::class;
     }
+
+    public function getWithFilter($filters = [])
+    {
+        $query = $this->model;
+        
+        if (!empty($filters['app_name'])) {
+            $query = $query->where('app_name', $filters['app_name']);
+        }
+
+        if (!empty($filters['app_name'])) {
+            $query = $query->where('app_name', $filters['app_name']);
+        }
+
+        if (!empty($filters['app_name'])) {
+            $query = $query->where('app_name', $filters['app_name']);
+        }
+
+        if (!empty($filters['app_name'])) {
+            $query = $query->where('app_name', $filters['app_name']);
+        }
+
+        if (!empty($filters['app_name'])) {
+            $query = $query->where('app_name', $filters['app_name']);
+        }
+
+        if (!empty($filters['app_name'])) {
+            $query = $query->where('app_name', $filters['app_name']);
+        }
+
+        if (!empty($filters['app_name'])) {
+            $query = $query->where('app_name', $filters['app_name']);
+        }
+
+        return $query->get();
+    }
 }
