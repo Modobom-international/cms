@@ -286,46 +286,301 @@ class CloudFlareService
         $zoneId = $this->getZoneId($rootDomain);
 
         if (!$zoneId) {
+            $this->logger->logSite('cache_rules_zone_not_found', [
+                'domain' => $domain,
+                'root_domain' => $rootDomain,
+                'zone_id' => $zoneId
+            ], 'error');
+
             return [
                 'success' => false,
-                'error' => 'Zone ID not found for domain: ' . $rootDomain
+                'error' => 'Zone ID not found for domain: ' . $rootDomain,
+                'details' => [
+                    'domain' => $domain,
+                    'root_domain' => $rootDomain
+                ]
             ];
         }
 
         try {
-            // Create cache rule with 1 month TTL
-            $response = $this->client->post($this->apiUrl . "/zones/{$zoneId}/rulesets", [
-                'json' => [
-                    'name' => 'Cache Rules for ' . $domain,
-                    'description' => 'Cache settings for ' . $domain,
-                    'kind' => 'zone',
-                    'phase' => 'http_request_cache_settings',
-                    'rules' => [
-                        [
-                            'action' => 'set_cache_settings',
-                            'action_parameters' => [
-                                'cache' => true,
-                                'edge_ttl' => [
-                                    'mode' => 'override_origin',
-                                    'default' => 2592000 // 1 month in seconds
-                                ],
-                                'browser_ttl' => [
-                                    'mode' => 'override_origin',
-                                    'default' => 2592000 // 1 month in seconds
-                                ]
+            $requestData = [
+                'name' => 'Cache Rules for ' . $domain,
+                'description' => 'Cache settings for ' . $domain,
+                'kind' => 'zone',
+                'phase' => 'http_request_cache_settings',
+                'rules' => [
+                    [
+                        'action' => 'set_cache_settings',
+                        'action_parameters' => [
+                            'cache' => true,
+                            'edge_ttl' => [
+                                'mode' => 'override_origin',
+                                'default' => 2592000 // 1 month in seconds
                             ],
-                            'expression' => 'true', // Apply to all requests
-                            'description' => 'Cache all content for ' . $domain
-                        ]
+                            'browser_ttl' => [
+                                'mode' => 'override_origin',
+                                'default' => 2592000 // 1 month in seconds
+                            ]
+                        ],
+                        'expression' => 'true', // Apply to all requests
+                        'description' => 'Cache all content for ' . $domain
                     ]
                 ]
+            ];
+
+            $this->logger->logSite('cache_rules_api_request', [
+                'domain' => $domain,
+                'root_domain' => $rootDomain,
+                'zone_id' => $zoneId,
+                'request_url' => $this->apiUrl . "/zones/{$zoneId}/rulesets",
+                'request_data' => $requestData
             ]);
+
+            // Create cache rule with 1 month TTL
+            $response = $this->client->post($this->apiUrl . "/zones/{$zoneId}/rulesets", [
+                'json' => $requestData
+            ]);
+
+            $result = json_decode($response->getBody(), true);
+
+            $this->logger->logSite('cache_rules_api_response', [
+                'domain' => $domain,
+                'root_domain' => $rootDomain,
+                'zone_id' => $zoneId,
+                'http_status' => $response->getStatusCode(),
+                'response_data' => $result
+            ]);
+
+            // Check if Cloudflare API reported success
+            if (isset($result['success']) && $result['success'] === false) {
+                $errors = $result['errors'] ?? [];
+                $messages = $result['messages'] ?? [];
+
+                $this->logger->logSite('cache_rules_cloudflare_error', [
+                    'domain' => $domain,
+                    'root_domain' => $rootDomain,
+                    'zone_id' => $zoneId,
+                    'cloudflare_errors' => $errors,
+                    'cloudflare_messages' => $messages,
+                    'full_response' => $result
+                ], 'error');
+
+                return [
+                    'success' => false,
+                    'error' => 'Cloudflare API returned error',
+                    'cloudflare_errors' => $errors,
+                    'cloudflare_messages' => $messages,
+                    'details' => $result
+                ];
+            }
 
             return [
                 'success' => true,
-                'data' => json_decode($response->getBody(), true)
+                'data' => $result
             ];
         } catch (RequestException $e) {
+            $this->logger->logSite('cache_rules_request_exception', [
+                'domain' => $domain,
+                'root_domain' => $rootDomain,
+                'zone_id' => $zoneId,
+                'error' => $e->getMessage(),
+                'http_status' => $e->hasResponse() ? $e->getResponse()->getStatusCode() : null,
+                'response_body' => $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : null
+            ], 'error');
+
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * Remove cache rules for a domain
+     * 
+     * @param string $domain
+     * @return array
+     */
+    public function removeCacheRules($domain)
+    {
+        $rootDomain = $this->getRootDomain($domain);
+        $zoneId = $this->getZoneId($rootDomain);
+
+        if (!$zoneId) {
+            $this->logger->logSite('cache_rules_removal_zone_not_found', [
+                'domain' => $domain,
+                'root_domain' => $rootDomain,
+                'zone_id' => $zoneId
+            ], 'error');
+
+            return [
+                'success' => false,
+                'error' => 'Zone ID not found for domain: ' . $rootDomain,
+                'details' => [
+                    'domain' => $domain,
+                    'root_domain' => $rootDomain
+                ]
+            ];
+        }
+
+        try {
+            // First, get all existing rulesets for the zone
+            $this->logger->logSite('getting_existing_rulesets', [
+                'domain' => $domain,
+                'root_domain' => $rootDomain,
+                'zone_id' => $zoneId,
+                'request_url' => $this->apiUrl . "/zones/{$zoneId}/rulesets"
+            ]);
+
+            $response = $this->client->get($this->apiUrl . "/zones/{$zoneId}/rulesets");
+            $result = json_decode($response->getBody(), true);
+
+            $this->logger->logSite('existing_rulesets_response', [
+                'domain' => $domain,
+                'root_domain' => $rootDomain,
+                'zone_id' => $zoneId,
+                'http_status' => $response->getStatusCode(),
+                'response_data' => $result
+            ]);
+
+            if (!isset($result['success']) || $result['success'] === false) {
+                $this->logger->logSite('get_rulesets_failed', [
+                    'domain' => $domain,
+                    'root_domain' => $rootDomain,
+                    'zone_id' => $zoneId,
+                    'error' => 'Failed to get existing rulesets',
+                    'response' => $result
+                ], 'error');
+
+                return [
+                    'success' => false,
+                    'error' => 'Failed to get existing rulesets',
+                    'details' => $result
+                ];
+            }
+
+            $rulesets = $result['result'] ?? [];
+            $deletedCount = 0;
+            $errors = [];
+
+            // Look for rulesets that match our domain and phase
+            foreach ($rulesets as $ruleset) {
+                // Check if this ruleset is for http_request_cache_settings phase and matches our domain
+                if (
+                    isset($ruleset['phase']) &&
+                    $ruleset['phase'] === 'http_request_cache_settings' &&
+                    isset($ruleset['name']) &&
+                    (strpos($ruleset['name'], 'Cache Rules for ' . $domain) !== false ||
+                        strpos($ruleset['description'], 'Cache settings for ' . $domain) !== false)
+                ) {
+
+                    $this->logger->logSite('deleting_cache_ruleset', [
+                        'domain' => $domain,
+                        'root_domain' => $rootDomain,
+                        'zone_id' => $zoneId,
+                        'ruleset_id' => $ruleset['id'],
+                        'ruleset_name' => $ruleset['name'],
+                        'ruleset_description' => $ruleset['description'] ?? null
+                    ]);
+
+                    try {
+                        $deleteResponse = $this->client->delete(
+                            $this->apiUrl . "/zones/{$zoneId}/rulesets/{$ruleset['id']}"
+                        );
+
+                        $deleteResult = json_decode($deleteResponse->getBody(), true);
+
+                        $this->logger->logSite('cache_ruleset_delete_response', [
+                            'domain' => $domain,
+                            'root_domain' => $rootDomain,
+                            'zone_id' => $zoneId,
+                            'ruleset_id' => $ruleset['id'],
+                            'http_status' => $deleteResponse->getStatusCode(),
+                            'response_data' => $deleteResult
+                        ]);
+
+                        // HTTP 204 (No Content) is a successful delete response
+                        $isSuccessfulDelete = $deleteResponse->getStatusCode() === 204 ||
+                            (isset($deleteResult['success']) && $deleteResult['success'] === true);
+
+                        if ($isSuccessfulDelete) {
+                            $deletedCount++;
+                            $this->logger->logSite('cache_ruleset_deleted', [
+                                'domain' => $domain,
+                                'root_domain' => $rootDomain,
+                                'zone_id' => $zoneId,
+                                'ruleset_id' => $ruleset['id'],
+                                'ruleset_name' => $ruleset['name']
+                            ]);
+                        } else {
+                            $errorDetails = $deleteResult['errors'] ?? [];
+                            $errorMessages = $deleteResult['messages'] ?? [];
+                            $errorString = is_array($errorDetails) && !empty($errorDetails)
+                                ? json_encode($errorDetails)
+                                : ($errorDetails ?: 'Unknown delete error');
+
+                            $errors[] = [
+                                'ruleset_id' => $ruleset['id'],
+                                'error' => $errorString,
+                                'cloudflare_errors' => $errorDetails,
+                                'cloudflare_messages' => $errorMessages,
+                                'full_response' => $deleteResult
+                            ];
+                            $this->logger->logSite('cache_ruleset_delete_failed', [
+                                'domain' => $domain,
+                                'root_domain' => $rootDomain,
+                                'zone_id' => $zoneId,
+                                'ruleset_id' => $ruleset['id'],
+                                'error' => $errorString,
+                                'cloudflare_errors' => $errorDetails,
+                                'cloudflare_messages' => $errorMessages,
+                                'full_response' => $deleteResult,
+                                'http_status' => $deleteResponse->getStatusCode()
+                            ], 'warning');
+                        }
+                    } catch (RequestException $e) {
+                        $errors[] = [
+                            'ruleset_id' => $ruleset['id'],
+                            'error' => $e->getMessage(),
+                            'http_status' => $e->hasResponse() ? $e->getResponse()->getStatusCode() : null,
+                            'response_body' => $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : null
+                        ];
+                        $this->logger->logSite('cache_ruleset_delete_exception', [
+                            'domain' => $domain,
+                            'root_domain' => $rootDomain,
+                            'zone_id' => $zoneId,
+                            'ruleset_id' => $ruleset['id'],
+                            'error' => $e->getMessage(),
+                            'http_status' => $e->hasResponse() ? $e->getResponse()->getStatusCode() : null,
+                            'response_body' => $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : null
+                        ], 'error');
+                    }
+                }
+            }
+
+            $this->logger->logSite('cache_rules_removal_completed', [
+                'domain' => $domain,
+                'root_domain' => $rootDomain,
+                'zone_id' => $zoneId,
+                'deleted_count' => $deletedCount,
+                'errors_count' => count($errors),
+                'errors' => $errors
+            ]);
+
+            return [
+                'success' => count($errors) === 0,
+                'deleted_count' => $deletedCount,
+                'errors' => $errors,
+                'message' => $deletedCount > 0 ? "Removed {$deletedCount} cache ruleset(s) for {$domain}" : "No cache rulesets found for {$domain}"
+            ];
+
+        } catch (RequestException $e) {
+            $this->logger->logSite('cache_rules_removal_exception', [
+                'domain' => $domain,
+                'root_domain' => $rootDomain,
+                'zone_id' => $zoneId,
+                'error' => $e->getMessage(),
+                'http_status' => $e->hasResponse() ? $e->getResponse()->getStatusCode() : null,
+                'response_body' => $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : null
+            ], 'error');
+
             return $this->handleException($e);
         }
     }

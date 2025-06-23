@@ -113,6 +113,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}', [SiteController::class, 'update'])->name('sites.update');
         Route::delete('/{id}', [SiteController::class, 'destroy'])->name('sites.delete');
         Route::patch('/{id}/language', [SiteController::class, 'updateLanguage'])->name('sites.language.update');
+        Route::patch('/{id}/deactivate', [SiteController::class, 'deactivateSite'])->name('sites.deactivate');
+        Route::patch('/{id}/activate', [SiteController::class, 'activateSite'])->name('sites.activate');
 
         // Site Pages API
         Route::get('/{id}/pages', [PageController::class, 'getPagesBySite'])->name('sites.pages.index');
