@@ -277,7 +277,45 @@ class SiteController extends Controller
 
             // Delete from Cloudflare if project exists
             if ($site->cloudflare_project_name) {
-                $this->cloudflareService->deletePagesProject($site->cloudflare_project_name);
+                // Remove custom domain first if it exists
+                if ($site->domain) {
+                    $this->logger->logSite('removing_custom_domain', [
+                        'site_id' => $id,
+                        'domain' => $site->domain,
+                        'project_name' => $site->cloudflare_project_name
+                    ]);
+
+                    $domainRemovalResult = $this->cloudflareService->removePagesDomain(
+                        $site->cloudflare_project_name,
+                        $site->domain
+                    );
+
+                    if ($domainRemovalResult['success'] === false) {
+                        $this->logger->logSite('domain_removal_failed', [
+                            'site_id' => $id,
+                            'domain' => $site->domain,
+                            'project_name' => $site->cloudflare_project_name,
+                            'error' => $domainRemovalResult['errors'] ?? $domainRemovalResult
+                        ], 'warning');
+                    } else {
+                        $this->logger->logSite('domain_removed', [
+                            'site_id' => $id,
+                            'domain' => $site->domain,
+                            'project_name' => $site->cloudflare_project_name
+                        ]);
+                    }
+                }
+
+                // Now delete the Pages project
+                $deleteResult = $this->cloudflareService->deletePagesProject($site->cloudflare_project_name);
+
+                if ($deleteResult['success'] === false) {
+                    $this->logger->logSite('project_deletion_failed', [
+                        'site_id' => $id,
+                        'project_name' => $site->cloudflare_project_name,
+                        'error' => $deleteResult['errors'] ?? $deleteResult
+                    ], 'warning');
+                }
             }
 
             $site->delete();
@@ -559,8 +597,38 @@ class SiteController extends Controller
                 ], 404);
             }
 
-            // Step 1: Delete Cloudflare Pages Project
+            // Step 1: Remove custom domain and delete Cloudflare Pages Project
             if ($site->cloudflare_project_name) {
+                // Remove custom domain first if it exists
+                if ($site->domain) {
+                    $this->logger->logSite('removing_custom_domain', [
+                        'site_id' => $siteId,
+                        'domain' => $site->domain,
+                        'project_name' => $site->cloudflare_project_name
+                    ]);
+
+                    $domainRemovalResult = $this->cloudflareService->removePagesDomain(
+                        $site->cloudflare_project_name,
+                        $site->domain
+                    );
+
+                    if ($domainRemovalResult['success'] === false) {
+                        $this->logger->logSite('domain_removal_failed', [
+                            'site_id' => $siteId,
+                            'domain' => $site->domain,
+                            'project_name' => $site->cloudflare_project_name,
+                            'error' => $domainRemovalResult['errors'] ?? $domainRemovalResult
+                        ], 'warning');
+                    } else {
+                        $this->logger->logSite('domain_removed', [
+                            'site_id' => $siteId,
+                            'domain' => $site->domain,
+                            'project_name' => $site->cloudflare_project_name
+                        ]);
+                    }
+                }
+
+                // Now delete the Cloudflare Pages Project
                 $this->logger->logSite('deleting_cloudflare_project', [
                     'site_id' => $siteId,
                     'project_name' => $site->cloudflare_project_name
