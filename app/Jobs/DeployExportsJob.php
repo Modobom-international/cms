@@ -18,7 +18,7 @@ class DeployExportsJob implements ShouldQueue
     protected $directory;
     protected $options;
     protected $domain;
-    protected $pageSlug;
+    protected $pageSlugs;
     public $timeout = 600; // 10 minutes timeout
     public $tries = 1; // Only try once as retrying might cause duplicate deployments
 
@@ -28,15 +28,15 @@ class DeployExportsJob implements ShouldQueue
      * @param string $projectName
      * @param string $directory
      * @param string $domain
-     * @param string $pageSlug
+     * @param array $pageSlugs
      * @param array $options
      */
-    public function __construct(string $projectName, string $directory, string $domain, string $pageSlug, array $options = [])
+    public function __construct(string $projectName, string $directory, string $domain, array $pageSlugs, array $options = [])
     {
         $this->projectName = $projectName;
         $this->directory = $directory;
         $this->domain = $domain;
-        $this->pageSlug = $pageSlug;
+        $this->pageSlugs = $pageSlugs;
         $this->options = $options;
         $this->queue = 'deployments'; // Use a dedicated queue for deployments
     }
@@ -54,6 +54,7 @@ class DeployExportsJob implements ShouldQueue
             $result = $cloudflareService->deployExportDirectory(
                 $this->projectName,
                 $this->directory,
+                $this->domain,
                 $this->options
             );
 
@@ -65,39 +66,41 @@ class DeployExportsJob implements ShouldQueue
                 ]);
 
                 if (!empty($this->domain)) {
-                    $purgeResult = $cloudflareService->purgeCache($this->domain, $this->pageSlug);
-                    if ($purgeResult['success']) {
-                        $logger->logDeploy('cache_purged', [
-                            'domain' => $this->domain,
-                            'page_slug' => $this->pageSlug
-                        ]);
+                    foreach ($this->pageSlugs as $pageSlug) {
+                        $purgeResult = $cloudflareService->purgeCache($this->domain, $pageSlug);
+                        if ($purgeResult['success']) {
+                            $logger->logDeploy('cache_purged', [
+                                'domain' => $this->domain,
+                                'page_slug' => $pageSlug
+                            ]);
 
-                        $pathsToWarm = [
-                            '/',
-                            $this->pageSlug,
-                        ];
+                            $pathsToWarm = [
+                                '/',
+                                $pageSlug,
+                            ];
 
-                        $warmResults = $cloudflareService->warmCache($this->domain, $pathsToWarm);
+                            $warmResults = $cloudflareService->warmCache($this->domain, $pathsToWarm);
 
-                        foreach ($warmResults as $result) {
-                            if ($result['success']) {
-                                $logger->logDeploy('cache_warmed', [
-                                    'url' => $result['url'],
-                                    'status' => $result['status']
-                                ]);
-                            } else {
-                                $logger->logDeploy('cache_warm_failed', [
-                                    'url' => $result['url'],
-                                    'error' => $result['error'] ?? 'Unknown error'
-                                ], 'warning');
+                            foreach ($warmResults as $result) {
+                                if ($result['success']) {
+                                    $logger->logDeploy('cache_warmed', [
+                                        'url' => $result['url'],
+                                        'status' => $result['status']
+                                    ]);
+                                } else {
+                                    $logger->logDeploy('cache_warm_failed', [
+                                        'url' => $result['url'],
+                                        'error' => $result['error'] ?? 'Unknown error'
+                                    ], 'warning');
+                                }
                             }
+                        } else {
+                            $logger->logDeploy('cache_purge_failed', [
+                                'domain' => $this->domain,
+                                'message' => $purgeResult['message'] ?? 'Unknown error',
+                                'error' => $purgeResult['error'] ?? null
+                            ], 'warning');
                         }
-                    } else {
-                        $logger->logDeploy('cache_purge_failed', [
-                            'domain' => $this->domain,
-                            'message' => $purgeResult['message'] ?? 'Unknown error',
-                            'error' => $purgeResult['error'] ?? null
-                        ], 'warning');
                     }
                 }
             } else {

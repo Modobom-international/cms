@@ -4,6 +4,9 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Site;
+use App\Enums\Site as SiteStatus;
+use App\Repositories\PageRepository;
+use App\Repositories\SiteRepository;
 use App\Services\CloudFlareService;
 use App\Services\ApplicationLogger;
 use Illuminate\Http\Request;
@@ -15,11 +18,15 @@ class SiteController extends Controller
 {
     protected $cloudflareService;
     protected $logger;
+    protected $siteRepository;
+    protected $pageRepository;
 
-    public function __construct(CloudFlareService $cloudflareService, ApplicationLogger $logger)
+    public function __construct(CloudFlareService $cloudflareService, ApplicationLogger $logger, SiteRepository $siteRepository, PageRepository $pageRepository)
     {
         $this->cloudflareService = $cloudflareService;
         $this->logger = $logger;
+        $this->siteRepository = $siteRepository;
+        $this->pageRepository = $pageRepository;
     }
 
     /**
@@ -355,4 +362,259 @@ class SiteController extends Controller
             ], 500);
         }
     }
+
+    public function activateSite($siteId)
+    {
+        $this->logger->logSite('activation_started', [
+            'site_id' => $siteId
+        ]);
+
+        try {
+            $site = $this->siteRepository->findWithRelations($siteId);
+            if (!$site) {
+                $this->logger->logSite('activation_failed', [
+                    'site_id' => $siteId,
+                    'error' => 'Site not found'
+                ], 'error');
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Site not found'
+                ], 404);
+            }
+
+            // Step 1: Create Cloudflare Pages Project
+            $this->logger->logSite('creating_cloudflare_project', [
+                'site_id' => $siteId,
+                'project_name' => $site->cloudflare_project_name,
+                'branch' => $site->branch ?? 'main'
+            ]);
+
+            $cloudflareResult = $this->cloudflareService->createPagesProject(
+                $site->cloudflare_project_name,
+                $site->branch ?? 'main'
+            );
+
+            if ($cloudflareResult['success'] === false) {
+                $this->logger->logSite('cloudflare_project_creation_failed', [
+                    'site_id' => $siteId,
+                    'project_name' => $site->cloudflare_project_name,
+                    'error' => $cloudflareResult['errors'] ?? $cloudflareResult
+                ], 'error');
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create Cloudflare project',
+                    'error' => $cloudflareResult['errors'] ?? 'Unknown error'
+                ], 500);
+            }
+
+            $this->logger->logSite('cloudflare_project_created', [
+                'site_id' => $siteId,
+                'project_name' => $site->cloudflare_project_name
+            ]);
+
+            // Step 2: Apply Pages Domain
+            if ($site->domain) {
+                $this->logger->logSite('applying_pages_domain', [
+                    'site_id' => $siteId,
+                    'domain' => $site->domain,
+                    'project_name' => $site->cloudflare_project_name
+                ]);
+
+                $domainResult = $this->cloudflareService->applyPagesDomain(
+                    $site->cloudflare_project_name,
+                    $site->domain
+                );
+
+                if ($domainResult['success'] === false) {
+                    $this->logger->logSite('domain_application_failed', [
+                        'site_id' => $siteId,
+                        'domain' => $site->domain,
+                        'error' => $domainResult['error'] ?? $domainResult
+                    ], 'warning');
+                } else {
+                    $this->logger->logSite('domain_applied_successfully', [
+                        'site_id' => $siteId,
+                        'domain' => $site->domain
+                    ]);
+
+                    // Update site domain status
+                    $site->update(['cloudflare_domain_status' => SiteStatus::STATUS_ACTIVE]);
+                }
+
+                // Step 3: Setup DNS and Cache Rules
+                $projectDetails = $this->cloudflareService->getPagesProject($site->cloudflare_project_name);
+                if ($projectDetails['success'] && isset($projectDetails['result']['subdomain'])) {
+                    $this->logger->logSite('setting_up_dns', [
+                        'site_id' => $siteId,
+                        'domain' => $site->domain,
+                        'subdomain' => $projectDetails['result']['subdomain']
+                    ]);
+
+                    $dnsResult = $this->cloudflareService->setupDomainDNS(
+                        $site->domain,
+                        $projectDetails['result']['subdomain']
+                    );
+
+                    if ($dnsResult['success'] === false) {
+                        $this->logger->logSite('dns_setup_failed', [
+                            'site_id' => $siteId,
+                            'domain' => $site->domain,
+                            'error' => $dnsResult['error'] ?? 'Unknown error'
+                        ], 'warning');
+                    } else {
+                        $this->logger->logSite('dns_setup_successful', [
+                            'site_id' => $siteId,
+                            'domain' => $site->domain
+                        ]);
+                    }
+                }
+
+                // Setup Cache Rules
+                $this->logger->logSite('setting_up_cache_rules', [
+                    'site_id' => $siteId,
+                    'domain' => $site->domain
+                ]);
+
+                $cacheResult = $this->cloudflareService->setupCacheRules($site->domain);
+                if ($cacheResult['success'] === false) {
+                    $this->logger->logSite('cache_rules_setup_failed', [
+                        'site_id' => $siteId,
+                        'domain' => $site->domain,
+                        'error' => $cacheResult['error'] ?? 'Unknown error'
+                    ], 'warning');
+                } else {
+                    $this->logger->logSite('cache_rules_setup_successful', [
+                        'site_id' => $siteId,
+                        'domain' => $site->domain
+                    ]);
+                }
+            }
+
+            // Step 4: Deploy existing content
+            $pages = $this->pageRepository->getBySiteId($siteId);
+
+            $this->logger->logSite('deploying_content', [
+                'site_id' => $siteId,
+                'project_name' => $site->cloudflare_project_name,
+                'pages_count' => $pages->count()
+            ]);
+
+            dispatch(new \App\Jobs\DeployExportsJob(
+                $site->cloudflare_project_name,
+                $site->cloudflare_project_name,
+                $site->domain,
+                $pages->pluck('slug')->toArray()
+            ));
+
+            // Step 5: Update site status to active
+            $site->update(['status' => SiteStatus::STATUS_ACTIVE]);
+
+            $this->logger->logSite('activation_completed', [
+                'site_id' => $siteId,
+                'project_name' => $site->cloudflare_project_name,
+                'domain' => $site->domain,
+                'status' => SiteStatus::STATUS_ACTIVE
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Site activated and deployed successfully',
+                'data' => $site->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->logSite('activation_error', [
+                'site_id' => $siteId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 'error');
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to activate site',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deactivateSite($siteId)
+    {
+        $this->logger->logSite('deactivation_started', [
+            'site_id' => $siteId
+        ]);
+
+        try {
+            $site = $this->siteRepository->findWithRelations($siteId);
+            if (!$site) {
+                $this->logger->logSite('deactivation_failed', [
+                    'site_id' => $siteId,
+                    'error' => 'Site not found'
+                ], 'error');
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Site not found'
+                ], 404);
+            }
+
+            // Step 1: Delete Cloudflare Pages Project
+            if ($site->cloudflare_project_name) {
+                $this->logger->logSite('deleting_cloudflare_project', [
+                    'site_id' => $siteId,
+                    'project_name' => $site->cloudflare_project_name
+                ]);
+
+                $deleteResult = $this->cloudflareService->deletePagesProject($site->cloudflare_project_name);
+
+                if ($deleteResult['success'] === false) {
+                    $this->logger->logSite('cloudflare_project_deletion_failed', [
+                        'site_id' => $siteId,
+                        'project_name' => $site->cloudflare_project_name,
+                        'error' => $deleteResult['errors'] ?? $deleteResult
+                    ], 'warning');
+                } else {
+                    $this->logger->logSite('cloudflare_project_deleted', [
+                        'site_id' => $siteId,
+                        'project_name' => $site->cloudflare_project_name
+                    ]);
+                }
+            }
+
+            // Step 2: Update site status to inactive
+            $site->update([
+                'status' => SiteStatus::STATUS_INACTIVE,
+                'cloudflare_domain_status' => SiteStatus::STATUS_INACTIVE
+            ]);
+
+            $this->logger->logSite('deactivation_completed', [
+                'site_id' => $siteId,
+                'project_name' => $site->cloudflare_project_name,
+                'domain' => $site->domain,
+                'status' => SiteStatus::STATUS_INACTIVE
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Site deactivated successfully',
+                'data' => $site->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->logSite('deactivation_error', [
+                'site_id' => $siteId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 'error');
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to deactivate site',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
 }
