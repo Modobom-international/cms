@@ -17,15 +17,16 @@ class CloudFlareService
     protected $apiUrl;
     protected $accountId;
     protected $wranglerPath;
+    protected $logger;
 
-    public function __construct()
+    public function __construct(ApplicationLogger $logger)
     {
         $this->apiUrl = config('services.cloudflare.api_url');
         $this->apiToken = config('services.cloudflare.api_token');
         $this->apiTokenDNS = config('services.cloudflare.api_token_edit_zone_dns');
         $this->accountId = config('services.cloudflare.account_id');
         $this->wranglerPath = config('services.cloudflare.wrangler_path');
-
+        $this->logger = $logger;
         $this->client = new Client([
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->apiToken,
@@ -363,20 +364,117 @@ class CloudFlareService
     }
 
     /**
-     * Get all Cloudflare Pages projects
+     * Get all Cloudflare Pages projects (handles pagination)
      * 
      * @return array
      */
     public function getProjects()
     {
         try {
-            $response = $this->client->get(
-                $this->apiUrl . "/accounts/{$this->accountId}/pages/projects"
-            );
+            $allProjects = [];
+            $page = 1;
 
-            return json_decode($response->getBody(), true);
+            do {
+                // Use correct Cloudflare API pagination parameters
+                $url = $this->apiUrl . "/accounts/{$this->accountId}/pages/projects";
+                $params = [];
+
+                if ($page > 1) {
+                    $params['page'] = $page;
+                }
+
+                if (!empty($params)) {
+                    $url .= '?' . http_build_query($params);
+                }
+
+                $this->logger->logSite("Fetching Cloudflare projects", [
+                    'url' => $url,
+                    'page' => $page,
+                    'attempt' => 'pagination_test'
+                ]);
+
+                $response = $this->client->get($url);
+                $result = json_decode($response->getBody(), true);
+
+                $this->logger->logSite("Cloudflare API response", [
+                    'page' => $page,
+                    'success' => $result['success'] ?? false,
+                    'result_count' => isset($result['result']) ? count($result['result']) : 0,
+                    'result_info' => $result['result_info'] ?? null
+                ]);
+
+                if (!isset($result['success']) || !$result['success']) {
+                    $this->logger->logSite("Cloudflare API returned error", [
+                        'page' => $page,
+                        'result' => $result
+                    ]);
+                    return [
+                        'success' => false,
+                        'error' => 'API returned error',
+                        'details' => $result
+                    ];
+                }
+
+                // Add projects from current page
+                if (isset($result['result']) && is_array($result['result'])) {
+                    $allProjects = array_merge($allProjects, $result['result']);
+                }
+
+                // Check if we have more pages using Cloudflare's pagination info
+                $resultInfo = $result['result_info'] ?? [];
+                $totalPages = $resultInfo['total_pages'] ?? 1;
+                $currentPage = $resultInfo['page'] ?? $page;
+
+                $this->logger->logSite("Pagination info", [
+                    'current_page' => $currentPage,
+                    'total_pages' => $totalPages,
+                    'projects_so_far' => count($allProjects),
+                    'per_page' => $resultInfo['per_page'] ?? 'unknown',
+                    'total_count' => $resultInfo['total_count'] ?? 'unknown'
+                ]);
+
+                // If there are no more pages or we've reached the end
+                if ($currentPage >= $totalPages) {
+                    break;
+                }
+
+                $page++;
+
+            } while ($page <= 100); // Safety limit to prevent infinite loops
+
+            $this->logger->logSite("Successfully fetched all Cloudflare projects", [
+                'total_projects' => count($allProjects),
+                'pages_fetched' => $page
+            ]);
+
+            // Return in the same format as original API response
+            return [
+                'success' => true,
+                'result' => $allProjects,
+                'result_info' => [
+                    'total_count' => count($allProjects),
+                    'pages_fetched' => $page
+                ]
+            ];
+
         } catch (RequestException $e) {
+            $this->logger->logSite("Cloudflare API request failed", [
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'response' => $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : null
+            ]);
+
             return $this->handleException($e);
+        } catch (\Exception $e) {
+            $this->logger->logSite("Unexpected error in getProjects", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Unexpected error: ' . $e->getMessage()
+            ];
         }
     }
 
@@ -421,7 +519,10 @@ class CloudFlareService
             $result = $this->processDeploymentResult($output, $deployDir, $startTime);
             $result['domain'] = $domain; // Add domain to result for cache purging
         } catch (\Exception $e) {
-            Log::error('Deployment failed: ' . $e->getMessage());
+            $this->logger->logSite('Deployment failed: ' . $e->getMessage(), [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             $result = [
                 'success' => false,
                 'message' => 'Deployment failed: ' . $e->getMessage(),
@@ -498,11 +599,31 @@ class CloudFlareService
 
     private function handleException(RequestException $e)
     {
+        $error = [
+            'success' => false,
+            'error' => 'Request failed: ' . $e->getMessage()
+        ];
+
         if ($e->hasResponse()) {
-            return json_decode($e->getResponse()->getBody()->getContents(), true);
+            $response = $e->getResponse();
+            $statusCode = $response->getStatusCode();
+            $responseBody = $response->getBody()->getContents();
+
+            $error['http_status'] = $statusCode;
+            $error['response_body'] = $responseBody;
+
+            // Try to decode JSON response for better error details
+            $jsonResponse = json_decode($responseBody, true);
+            if ($jsonResponse) {
+                $error['cloudflare_errors'] = $jsonResponse['errors'] ?? null;
+                $error['cloudflare_messages'] = $jsonResponse['messages'] ?? null;
+                return $jsonResponse;
+            }
+
+            return $error;
         }
 
-        return ['error' => 'Something went wrong'];
+        return $error;
     }
 
     /**
@@ -523,7 +644,10 @@ class CloudFlareService
 
             return true;
         } catch (\Exception $e) {
-            \Log::error('Failed to delete page files: ' . $e->getMessage());
+            $this->logger->logSite('Failed to delete page files: ' . $e->getMessage(), [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             throw $e;
         }
     }

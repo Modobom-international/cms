@@ -60,10 +60,27 @@ class SyncSiteStatusWithCloudflare extends Command
             $cloudflareProjects = $this->cloudflareService->getProjects();
 
             if (!$cloudflareProjects['success']) {
-                $this->error('Failed to fetch Cloudflare projects: ' . ($cloudflareProjects['error'] ?? 'Unknown error'));
+                $errorMessage = $cloudflareProjects['error'] ?? 'Unknown error';
+                $httpStatus = $cloudflareProjects['http_status'] ?? 'N/A';
+                $cloudflareErrors = $cloudflareProjects['cloudflare_errors'] ?? [];
+
+                $this->error("Failed to fetch Cloudflare projects: {$errorMessage}");
+                $this->error("HTTP Status: {$httpStatus}");
+
+                if (!empty($cloudflareErrors)) {
+                    $this->error("Cloudflare API Errors:");
+                    foreach ($cloudflareErrors as $error) {
+                        $this->error("  - Code {$error['code']}: {$error['message']}");
+                    }
+                }
+
+                if (isset($cloudflareProjects['response_body'])) {
+                    $this->error("Response Body: " . substr($cloudflareProjects['response_body'], 0, 500));
+                }
+
                 $this->logger->logSite('sync_failed', [
                     'error' => 'Failed to fetch Cloudflare projects',
-                    'cloudflare_error' => $cloudflareProjects['error'] ?? 'Unknown error'
+                    'cloudflare_error' => $cloudflareProjects
                 ], 'error');
                 return 1;
             }
@@ -72,7 +89,17 @@ class SyncSiteStatusWithCloudflare extends Command
                 ->pluck('name')
                 ->toArray();
 
-            $this->info('Found ' . count($activeProjects) . ' active Cloudflare Pages projects');
+            $resultInfo = $cloudflareProjects['result_info'] ?? [];
+            $totalFetched = $resultInfo['total_count'] ?? count($activeProjects);
+            $pagesFetched = $resultInfo['pages_fetched'] ?? 1;
+
+            $this->info("Found {$totalFetched} active Cloudflare Pages projects (fetched from {$pagesFetched} pages)");
+
+            $this->logger->logSite('cloudflare_projects_fetched', [
+                'total_projects' => $totalFetched,
+                'pages_fetched' => $pagesFetched,
+                'project_names' => $activeProjects
+            ]);
 
             // Get all sites from database
             $sites = Site::whereNotNull('cloudflare_project_name')->get();
