@@ -135,7 +135,7 @@ class CloudflareController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'site_id' => 'required|exists:sites,id',
-            'page_slug' => 'nullable|string|max:50',
+            'page_slugs' => 'nullable|array',
             'branch' => 'nullable|string|max:50',
             'commit_message' => 'nullable|string|max:200',
         ]);
@@ -174,7 +174,7 @@ class CloudflareController extends Controller
                 $projectName,
                 $directory,
                 $site->domain,
-                $request->page_slug,
+                $request->page_slugs,
                 $deploymentOptions
             );
 
@@ -184,7 +184,7 @@ class CloudflareController extends Controller
                 'site_id' => $site->id,
                 'project_name' => $projectName,
                 'directory' => $directory,
-                'page_slug' => $request->page_slug,
+                'page_slugs' => $request->page_slugs,
                 'options' => $deploymentOptions
             ]);
 
