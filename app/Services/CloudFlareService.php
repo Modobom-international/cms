@@ -479,6 +479,26 @@ class CloudFlareService
     }
 
     /**
+     * Remove a custom domain from a Cloudflare Pages project
+     * 
+     * @param string $projectName
+     * @param string $domain
+     * @return array
+     */
+    public function removePagesDomain($projectName, $domain)
+    {
+        try {
+            $response = $this->client->delete(
+                $this->apiUrl . "/accounts/{$this->accountId}/pages/projects/{$projectName}/domains/{$domain}"
+            );
+
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
      * Delete a Cloudflare Pages project
      * 
      * @param string $projectName
