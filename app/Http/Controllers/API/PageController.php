@@ -508,7 +508,7 @@ EOT;
                         $site->cloudflare_project_name,
                         $site->cloudflare_project_name,
                         $site->domain,
-                        $page->slug
+                        [$page->slug]
                     ));
 
                     $this->logger->logPage('deleted', [
@@ -721,7 +721,7 @@ EOT;
                         $site->cloudflare_project_name,
                         $site->cloudflare_project_name,
                         $site->domain,
-                        $page->slug
+                        [$page->slug]
                     ));
 
                     $this->logger->logPage('deployment_queued', [
@@ -866,7 +866,7 @@ EOT;
                         $site->cloudflare_project_name,
                         $site->cloudflare_project_name,
                         $site->domain,
-                        $page->slug
+                        [$page->slug]
                     ));
 
                     $this->logger->logPage('deployment_queued', [
@@ -921,4 +921,5 @@ EOT;
             ], 500);
         }
     }
+
 }
