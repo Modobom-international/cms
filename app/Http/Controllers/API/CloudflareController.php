@@ -165,6 +165,20 @@ class CloudflareController extends Controller
             ], 404);
         }
 
+        // Check if site status is active
+        if ($site->status !== \App\Enums\Site::STATUS_ACTIVE) {
+            $this->logger->logDeploy('site_not_active', [
+                'site_id' => $site->id,
+                'site_status' => $site->status
+            ], 'error');
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Site is not active. Deployment not allowed.',
+                'site_status' => $site->status
+            ], 403);
+        }
+
         $projectName = $site->cloudflare_project_name;
         $directory = $site->cloudflare_project_name;
         $deploymentOptions = $this->collectDeploymentOptions($request);

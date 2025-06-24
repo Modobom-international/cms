@@ -470,6 +470,13 @@ class SiteController extends Controller
                 ], 404);
             }
 
+            if ($site->status === SiteStatus::STATUS_ACTIVE) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Site is already active'
+                ], 400);
+            }
+
             // Step 1: Create Cloudflare Pages Project
             $this->logger->logSite('creating_cloudflare_project', [
                 'site_id' => $id,
@@ -649,6 +656,13 @@ class SiteController extends Controller
                     'success' => false,
                     'message' => 'Site not found'
                 ], 404);
+            }
+
+            if ($site->status === SiteStatus::STATUS_INACTIVE) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Site is already inactive'
+                ], 400);
             }
 
             // Step 1: Remove cache rules, custom domain and delete Cloudflare Pages Project
