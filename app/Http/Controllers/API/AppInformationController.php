@@ -56,6 +56,8 @@ class AppInformationController extends Controller
             $pageSize = $request->get('pageSize') ?? 10;
             $page = $request->get('page') ?? 1;
             $filters = [
+                'from' => $request->get('from'),
+                'to' => $request->get('to'),
                 'app_name' => $request->get('app_name'),
                 'os_name' => $request->get('os_name'),
                 'os_version' => $request->get('os_version'),
@@ -68,7 +70,12 @@ class AppInformationController extends Controller
             ];
 
             $query = $this->appInformationRepository->getWithFilter($filters);
-            $data = $this->utility->paginate($query, $pageSize, $page);
+            $groupUser = $query->groupBy('user_id');
+            $total_user = count($groupUser);
+            $data = [
+                'list' => $this->utility->paginate($query, $pageSize, $page),
+                'total_user' => $total_user
+            ];
 
             $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách app information');
 
@@ -105,6 +112,30 @@ class AppInformationController extends Controller
                 'success' => false,
                 'message' => 'Lấy danh sách menu app information không thành công',
                 'type' => 'menu_app_information_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function detail(Request $request)
+    {
+        try {
+            $user_id = $request->get('user_id');
+
+            $query = $this->appInformationRepository->getByUserID($user_id);
+            $data = $query->groupBy('app_name');
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Lấy danh sách app_name theo user_id thành công',
+                'type' => 'detail_app_information_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy danh sách app_name theo user_id không thành công',
+                'type' => 'detail_app_information_fail',
                 'error' => $e->getMessage()
             ], 500);
         }

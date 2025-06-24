@@ -13,7 +13,7 @@ class AppInformationRepository extends BaseRepository
 
     public function getWithFilter($filters = [])
     {
-        $query = $this->model;
+        $query = $this->model->whereBetween('created_at', [$filters['from'], $filters['to']]);
 
         if (!empty($filters['app_name'])) {
             $query = $query->whereIn('app_name', $filters['app_name']);
@@ -52,5 +52,10 @@ class AppInformationRepository extends BaseRepository
         }
 
         return $query->get();
+    }
+
+    public function getByUserID($userID)
+    {
+        return $this->model->where('user_id', $userID)->get();
     }
 }
