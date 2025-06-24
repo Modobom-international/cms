@@ -10,19 +10,5 @@ class AppInformation extends Model
 
     protected $collection = 'app_information';
 
-    protected $fillable = [
-        'user_id',
-        'request_id',
-        'app_name',
-        'os_name',
-        'os_version',
-        'app_version',
-        'category',
-        'platform',
-        'country',
-        'event_name',
-        'event_value',
-        'created_at',
-        'network'
-    ];
+    protected $guarded = [];
 }
