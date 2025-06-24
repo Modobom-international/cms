@@ -176,7 +176,7 @@ class CloudflareController extends Controller
                 'success' => false,
                 'message' => 'Site is not active. Deployment not allowed.',
                 'site_status' => $site->status
-            ], 403);
+            ], 200);
         }
 
         $projectName = $site->cloudflare_project_name;
