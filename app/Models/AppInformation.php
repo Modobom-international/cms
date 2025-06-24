@@ -22,6 +22,7 @@ class AppInformation extends Model
         'country',
         'event_name',
         'event_value',
-        'created_at'
+        'created_at',
+        'network'
     ];
 }
