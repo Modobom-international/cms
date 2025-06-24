@@ -123,8 +123,17 @@ class SiteController extends Controller
                         if ($cacheResult['success'] === false) {
                             $this->logger->logSite('cache_rules_setup_failed', [
                                 'domain' => $request->domain,
-                                'error' => $cacheResult['error'] ?? 'Unknown error'
+                                'error' => $cacheResult['error'] ?? 'Unknown error',
+                                'cloudflare_errors' => $cacheResult['cloudflare_errors'] ?? null,
+                                'cloudflare_messages' => $cacheResult['cloudflare_messages'] ?? null,
+                                'details' => $cacheResult['details'] ?? null,
+                                'full_response' => $cacheResult
                             ], 'warning');
+                        } else {
+                            $this->logger->logSite('cache_rules_setup_successful', [
+                                'domain' => $request->domain,
+                                'response_data' => $cacheResult['data'] ?? null
+                            ]);
                         }
                     }
                 }
@@ -237,7 +246,19 @@ class SiteController extends Controller
                 // Update cache rules for new domain
                 $cacheResult = $this->cloudflareService->setupCacheRules($request->domain);
                 if ($cacheResult['success'] === false) {
-                    Log::warning('Failed to set cache rules for domain: ' . $request->domain, $cacheResult);
+                    $this->logger->logSite('cache_rules_setup_failed', [
+                        'domain' => $request->domain,
+                        'error' => $cacheResult['error'] ?? 'Unknown error',
+                        'cloudflare_errors' => $cacheResult['cloudflare_errors'] ?? null,
+                        'cloudflare_messages' => $cacheResult['cloudflare_messages'] ?? null,
+                        'details' => $cacheResult['details'] ?? null,
+                        'full_response' => $cacheResult
+                    ], 'warning');
+                } else {
+                    $this->logger->logSite('cache_rules_setup_successful', [
+                        'domain' => $request->domain,
+                        'response_data' => $cacheResult['data'] ?? null
+                    ]);
                 }
             }
 
@@ -277,8 +298,36 @@ class SiteController extends Controller
 
             // Delete from Cloudflare if project exists
             if ($site->cloudflare_project_name) {
-                // Remove custom domain first if it exists
+                // Remove cache rules and custom domain first if it exists
                 if ($site->domain) {
+                    // Remove cache rules first
+                    $this->logger->logSite('removing_cache_rules', [
+                        'site_id' => $id,
+                        'domain' => $site->domain,
+                        'project_name' => $site->cloudflare_project_name
+                    ]);
+
+                    $cacheRemovalResult = $this->cloudflareService->removeCacheRules($site->domain);
+                    if ($cacheRemovalResult['success'] === false) {
+                        $this->logger->logSite('cache_rules_removal_failed', [
+                            'site_id' => $id,
+                            'domain' => $site->domain,
+                            'project_name' => $site->cloudflare_project_name,
+                            'error' => $cacheRemovalResult['error'] ?? 'Unknown error',
+                            'details' => $cacheRemovalResult['details'] ?? null,
+                            'full_response' => $cacheRemovalResult
+                        ], 'warning');
+                    } else {
+                        $this->logger->logSite('cache_rules_removed', [
+                            'site_id' => $id,
+                            'domain' => $site->domain,
+                            'project_name' => $site->cloudflare_project_name,
+                            'deleted_count' => $cacheRemovalResult['deleted_count'] ?? 0,
+                            'message' => $cacheRemovalResult['message'] ?? 'Cache rules removed'
+                        ]);
+                    }
+
+                    // Remove custom domain
                     $this->logger->logSite('removing_custom_domain', [
                         'site_id' => $id,
                         'domain' => $site->domain,
@@ -401,17 +450,17 @@ class SiteController extends Controller
         }
     }
 
-    public function activateSite($siteId)
+    public function activateSite($id)
     {
         $this->logger->logSite('activation_started', [
-            'site_id' => $siteId
+            'site_id' => $id
         ]);
 
         try {
-            $site = $this->siteRepository->findWithRelations($siteId);
+            $site = $this->siteRepository->findWithRelations($id);
             if (!$site) {
                 $this->logger->logSite('activation_failed', [
-                    'site_id' => $siteId,
+                    'site_id' => $id,
                     'error' => 'Site not found'
                 ], 'error');
 
@@ -423,7 +472,7 @@ class SiteController extends Controller
 
             // Step 1: Create Cloudflare Pages Project
             $this->logger->logSite('creating_cloudflare_project', [
-                'site_id' => $siteId,
+                'site_id' => $id,
                 'project_name' => $site->cloudflare_project_name,
                 'branch' => $site->branch ?? 'main'
             ]);
@@ -435,7 +484,7 @@ class SiteController extends Controller
 
             if ($cloudflareResult['success'] === false) {
                 $this->logger->logSite('cloudflare_project_creation_failed', [
-                    'site_id' => $siteId,
+                    'site_id' => $id,
                     'project_name' => $site->cloudflare_project_name,
                     'error' => $cloudflareResult['errors'] ?? $cloudflareResult
                 ], 'error');
@@ -448,14 +497,14 @@ class SiteController extends Controller
             }
 
             $this->logger->logSite('cloudflare_project_created', [
-                'site_id' => $siteId,
+                'site_id' => $id,
                 'project_name' => $site->cloudflare_project_name
             ]);
 
             // Step 2: Apply Pages Domain
             if ($site->domain) {
                 $this->logger->logSite('applying_pages_domain', [
-                    'site_id' => $siteId,
+                    'site_id' => $id,
                     'domain' => $site->domain,
                     'project_name' => $site->cloudflare_project_name
                 ]);
@@ -467,13 +516,13 @@ class SiteController extends Controller
 
                 if ($domainResult['success'] === false) {
                     $this->logger->logSite('domain_application_failed', [
-                        'site_id' => $siteId,
+                        'site_id' => $id,
                         'domain' => $site->domain,
                         'error' => $domainResult['error'] ?? $domainResult
                     ], 'warning');
                 } else {
                     $this->logger->logSite('domain_applied_successfully', [
-                        'site_id' => $siteId,
+                        'site_id' => $id,
                         'domain' => $site->domain
                     ]);
 
@@ -485,7 +534,7 @@ class SiteController extends Controller
                 $projectDetails = $this->cloudflareService->getPagesProject($site->cloudflare_project_name);
                 if ($projectDetails['success'] && isset($projectDetails['result']['subdomain'])) {
                     $this->logger->logSite('setting_up_dns', [
-                        'site_id' => $siteId,
+                        'site_id' => $id,
                         'domain' => $site->domain,
                         'subdomain' => $projectDetails['result']['subdomain']
                     ]);
@@ -497,13 +546,13 @@ class SiteController extends Controller
 
                     if ($dnsResult['success'] === false) {
                         $this->logger->logSite('dns_setup_failed', [
-                            'site_id' => $siteId,
+                            'site_id' => $id,
                             'domain' => $site->domain,
                             'error' => $dnsResult['error'] ?? 'Unknown error'
                         ], 'warning');
                     } else {
                         $this->logger->logSite('dns_setup_successful', [
-                            'site_id' => $siteId,
+                            'site_id' => $id,
                             'domain' => $site->domain
                         ]);
                     }
@@ -511,30 +560,35 @@ class SiteController extends Controller
 
                 // Setup Cache Rules
                 $this->logger->logSite('setting_up_cache_rules', [
-                    'site_id' => $siteId,
+                    'site_id' => $id,
                     'domain' => $site->domain
                 ]);
 
                 $cacheResult = $this->cloudflareService->setupCacheRules($site->domain);
                 if ($cacheResult['success'] === false) {
                     $this->logger->logSite('cache_rules_setup_failed', [
-                        'site_id' => $siteId,
+                        'site_id' => $id,
                         'domain' => $site->domain,
-                        'error' => $cacheResult['error'] ?? 'Unknown error'
+                        'error' => $cacheResult['error'] ?? 'Unknown error',
+                        'cloudflare_errors' => $cacheResult['cloudflare_errors'] ?? null,
+                        'cloudflare_messages' => $cacheResult['cloudflare_messages'] ?? null,
+                        'details' => $cacheResult['details'] ?? null,
+                        'full_response' => $cacheResult
                     ], 'warning');
                 } else {
                     $this->logger->logSite('cache_rules_setup_successful', [
-                        'site_id' => $siteId,
-                        'domain' => $site->domain
+                        'site_id' => $id,
+                        'domain' => $site->domain,
+                        'response_data' => $cacheResult['data'] ?? null
                     ]);
                 }
             }
 
             // Step 4: Deploy existing content
-            $pages = $this->pageRepository->getBySiteId($siteId);
+            $pages = $this->pageRepository->getBySiteId($id);
 
             $this->logger->logSite('deploying_content', [
-                'site_id' => $siteId,
+                'site_id' => $id,
                 'project_name' => $site->cloudflare_project_name,
                 'pages_count' => $pages->count()
             ]);
@@ -550,7 +604,7 @@ class SiteController extends Controller
             $site->update(['status' => SiteStatus::STATUS_ACTIVE]);
 
             $this->logger->logSite('activation_completed', [
-                'site_id' => $siteId,
+                'site_id' => $id,
                 'project_name' => $site->cloudflare_project_name,
                 'domain' => $site->domain,
                 'status' => SiteStatus::STATUS_ACTIVE
@@ -564,7 +618,7 @@ class SiteController extends Controller
 
         } catch (\Exception $e) {
             $this->logger->logSite('activation_error', [
-                'site_id' => $siteId,
+                'site_id' => $id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ], 'error');
@@ -577,17 +631,17 @@ class SiteController extends Controller
         }
     }
 
-    public function deactivateSite($siteId)
+    public function deactivateSite($id)
     {
         $this->logger->logSite('deactivation_started', [
-            'site_id' => $siteId
+            'site_id' => $id
         ]);
 
         try {
-            $site = $this->siteRepository->findWithRelations($siteId);
+            $site = $this->siteRepository->findWithRelations($id);
             if (!$site) {
                 $this->logger->logSite('deactivation_failed', [
-                    'site_id' => $siteId,
+                    'site_id' => $id,
                     'error' => 'Site not found'
                 ], 'error');
 
@@ -597,12 +651,40 @@ class SiteController extends Controller
                 ], 404);
             }
 
-            // Step 1: Remove custom domain and delete Cloudflare Pages Project
+            // Step 1: Remove cache rules, custom domain and delete Cloudflare Pages Project
             if ($site->cloudflare_project_name) {
-                // Remove custom domain first if it exists
+                // Remove cache rules and custom domain first if it exists
                 if ($site->domain) {
+                    // Remove cache rules first
+                    $this->logger->logSite('removing_cache_rules', [
+                        'site_id' => $id,
+                        'domain' => $site->domain,
+                        'project_name' => $site->cloudflare_project_name
+                    ]);
+
+                    $cacheRemovalResult = $this->cloudflareService->removeCacheRules($site->domain);
+                    if ($cacheRemovalResult['success'] === false) {
+                        $this->logger->logSite('cache_rules_removal_failed', [
+                            'site_id' => $id,
+                            'domain' => $site->domain,
+                            'project_name' => $site->cloudflare_project_name,
+                            'error' => $cacheRemovalResult['error'] ?? 'Unknown error',
+                            'details' => $cacheRemovalResult['details'] ?? null,
+                            'full_response' => $cacheRemovalResult
+                        ], 'warning');
+                    } else {
+                        $this->logger->logSite('cache_rules_removed', [
+                            'site_id' => $id,
+                            'domain' => $site->domain,
+                            'project_name' => $site->cloudflare_project_name,
+                            'deleted_count' => $cacheRemovalResult['deleted_count'] ?? 0,
+                            'message' => $cacheRemovalResult['message'] ?? 'Cache rules removed'
+                        ]);
+                    }
+
+                    // Remove custom domain
                     $this->logger->logSite('removing_custom_domain', [
-                        'site_id' => $siteId,
+                        'site_id' => $id,
                         'domain' => $site->domain,
                         'project_name' => $site->cloudflare_project_name
                     ]);
@@ -614,14 +696,14 @@ class SiteController extends Controller
 
                     if ($domainRemovalResult['success'] === false) {
                         $this->logger->logSite('domain_removal_failed', [
-                            'site_id' => $siteId,
+                            'site_id' => $id,
                             'domain' => $site->domain,
                             'project_name' => $site->cloudflare_project_name,
                             'error' => $domainRemovalResult['errors'] ?? $domainRemovalResult
                         ], 'warning');
                     } else {
                         $this->logger->logSite('domain_removed', [
-                            'site_id' => $siteId,
+                            'site_id' => $id,
                             'domain' => $site->domain,
                             'project_name' => $site->cloudflare_project_name
                         ]);
@@ -630,7 +712,7 @@ class SiteController extends Controller
 
                 // Now delete the Cloudflare Pages Project
                 $this->logger->logSite('deleting_cloudflare_project', [
-                    'site_id' => $siteId,
+                    'site_id' => $id,
                     'project_name' => $site->cloudflare_project_name
                 ]);
 
@@ -638,13 +720,13 @@ class SiteController extends Controller
 
                 if ($deleteResult['success'] === false) {
                     $this->logger->logSite('cloudflare_project_deletion_failed', [
-                        'site_id' => $siteId,
+                        'site_id' => $id,
                         'project_name' => $site->cloudflare_project_name,
                         'error' => $deleteResult['errors'] ?? $deleteResult
                     ], 'warning');
                 } else {
                     $this->logger->logSite('cloudflare_project_deleted', [
-                        'site_id' => $siteId,
+                        'site_id' => $id,
                         'project_name' => $site->cloudflare_project_name
                     ]);
                 }
@@ -657,7 +739,7 @@ class SiteController extends Controller
             ]);
 
             $this->logger->logSite('deactivation_completed', [
-                'site_id' => $siteId,
+                'site_id' => $id,
                 'project_name' => $site->cloudflare_project_name,
                 'domain' => $site->domain,
                 'status' => SiteStatus::STATUS_INACTIVE
@@ -671,7 +753,7 @@ class SiteController extends Controller
 
         } catch (\Exception $e) {
             $this->logger->logSite('deactivation_error', [
-                'site_id' => $siteId,
+                'site_id' => $id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ], 'error');
