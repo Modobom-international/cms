@@ -72,7 +72,7 @@ class AppInformationController extends Controller
 
             $query = $this->appInformationRepository->getWithFilter($filters);
             if (!empty($filters['event_name']) && is_array($filters['event_name'])) {
-                $grouped = $results->groupBy('event_name')->map(function ($group) {
+                $grouped = $query->groupBy('event_name')->map(function ($group) {
                     return $group
                         ->groupBy('event_value')
                         ->map(function ($items) {
