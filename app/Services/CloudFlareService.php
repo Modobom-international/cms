@@ -317,10 +317,7 @@ class CloudFlareService
                                 'mode' => 'override_origin',
                                 'default' => 2592000 // 1 month in seconds
                             ],
-                            'browser_ttl' => [
-                                'mode' => 'override_origin',
-                                'default' => 2592000 // 1 month in seconds
-                            ]
+
                         ],
                         'expression' => 'true', // Apply to all requests
                         'description' => 'Cache all content for ' . $domain
