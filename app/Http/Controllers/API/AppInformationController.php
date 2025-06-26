@@ -55,6 +55,7 @@ class AppInformationController extends Controller
             $input = $request->all();
             $pageSize = $request->get('pageSize') ?? 10;
             $page = $request->get('page') ?? 1;
+            $count_event = [];
             $filters = [
                 'from' => $request->get('from'),
                 'to' => $request->get('to'),
@@ -70,11 +71,32 @@ class AppInformationController extends Controller
             ];
 
             $query = $this->appInformationRepository->getWithFilter($filters);
+            if (!empty($filters['event_name']) && is_array($filters['event_name'])) {
+                $grouped = $results->groupBy('event_name')->map(function ($group) {
+                    return $group
+                        ->groupBy('event_value')
+                        ->map(function ($items) {
+                            return $items->count();
+                        })
+                        ->map(function ($count, $value) {
+                            return ['event_value' => $value, 'count' => $count];
+                        })
+                        ->values();
+                });
+
+                $count_event = $grouped->map(function ($values, $eventName) {
+                    return [
+                        'event_name' => $eventName,
+                        'values' => $values
+                    ];
+                })->values()->toArray();
+            }
             $groupUser = $query->groupBy('user_id');
             $total_user = count($groupUser);
             $data = [
                 'list' => $this->utility->paginate($query, $pageSize, $page),
-                'total_user' => $total_user
+                'total_user' => $total_user,
+                'count_event' => $count_event,
             ];
 
             $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách app information');
