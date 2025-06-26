@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\AppInformation;
+use Carbon\Carbon;
 
 class AppInformationRepository extends BaseRepository
 {
@@ -13,7 +14,9 @@ class AppInformationRepository extends BaseRepository
 
     public function getWithFilter($filters = [])
     {
-        $query = $this->model->whereBetween('created_at', [$filters['from'], $filters['to']]);
+        $from = Carbon::parse($filters['from']);
+        $to = Carbon::parse($filters['to']);
+        $query = $this->model->whereBetween('created_at', [$from, $to]);
 
         if (!empty($filters['app_name'])) {
             $query = $query->whereIn('app_name', $filters['app_name']);
