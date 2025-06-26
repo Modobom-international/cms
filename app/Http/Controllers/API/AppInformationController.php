@@ -139,7 +139,7 @@ class AppInformationController extends Controller
         }
     }
 
-    public function detail(Request $request)
+    public function detailUserID(Request $request)
     {
         try {
             $user_id = $request->get('user_id');
