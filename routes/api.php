@@ -429,6 +429,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [AppInformationController::class, 'list'])->name('app.information.list');
         Route::get('/detail-userid', [AppInformationController::class, 'detailUserID'])->name('app.information.detail.userid');
         Route::get('/menu', [AppInformationController::class, 'menu'])->name('app.information.menu');
+        Route::get('/data-chart', [AppInformationController::class, 'dataChart'])->name('app.information.data.chart');
     });
 
     Route::prefix('events')->group(function () {

@@ -162,4 +162,53 @@ class AppInformationController extends Controller
             ], 500);
         }
     }
+
+    public function dataChart(Request $request)
+    {
+        try {
+            $filters = [
+                'from' => $request->get('from'),
+                'to' => $request->get('to'),
+                'app_name' => $request->get('app_name'),
+                'os_name' => $request->get('os_name'),
+                'os_version' => $request->get('os_version'),
+                'app_version' => $request->get('app_version'),
+                'category' => $request->get('category'),
+                'platform' => $request->get('platform'),
+                'country' => $request->get('country'),
+                'event_name' => $request->get('event_name'),
+                'network' => $request->get('network'),
+            ];
+
+            $query = $this->appInformationRepository->getWithFilter($filters);
+
+            $grouped = $query->groupBy(function ($item) {
+                return Carbon::parse($item['created_at'])->format('Y-m-d');
+            });
+
+            $data = $grouped->map(function ($items, $date) {
+                return [
+                    'date' => $date,
+                    'total_events' => $items->count(),
+                    'unique_users' => $items->pluck('user_id')->unique()->count(),
+                    'unique_apps' => $items->pluck('app_name')->unique()->count(),
+                    'total_requests' => $items->pluck('request_id')->unique()->count(),
+                ];
+            })->values();
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'message' => 'Thống kê người dùng theo ngày app information thành công',
+                'type' => 'app_information_daily_stats_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Thống kê người dùng theo ngày app information không thành công',
+                'type' => 'app_information_daily_stats_success',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
