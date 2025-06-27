@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Repositories\AppInformationRepository;
 use App\Repositories\CachePoolRepository;
 use Illuminate\Console\Command;
-use Illuminate\Container\Attributes\Cache;
 
 class CacheMenuAppInformation extends Command
 {
