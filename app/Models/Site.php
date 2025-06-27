@@ -23,7 +23,8 @@ class Site extends Model
         'branch',
         'user_id',
         'status',
-        'language'
+        'language',
+        'platform'
     ];
 
     /**
@@ -42,7 +43,8 @@ class Site extends Model
      * @var array
      */
     protected $attributes = [
-        'language' => 'en'
+        'language' => 'en',
+        'platform' => 'google'
     ];
 
     /**
