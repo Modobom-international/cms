@@ -71,6 +71,10 @@ class StoreAppInformation implements ShouldQueue
                 $menuUpdate['network'][] = $this->data['network'];
             }
 
+            if (array_key_exits('event_value', $this->data) && !in_array($this->data['event_value'], $menuUpdate['event_value'])) {
+                $menuUpdate['event_value'][] = $this->data['event_value'];
+            }
+
             $dataUpdate = [
                 'data' => $menuUpdate,
             ];

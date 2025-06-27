@@ -10,6 +10,7 @@ use App\Traits\LogsActivity;
 use App\Enums\ActivityAction;
 use App\Http\Controllers\Controller;
 use App\Repositories\CachePoolRepository;
+use Carbon\Carbon;
 
 class AppInformationController extends Controller
 {
@@ -68,6 +69,7 @@ class AppInformationController extends Controller
                 'country' => $request->get('country'),
                 'event_name' => $request->get('event_name'),
                 'network' => $request->get('network'),
+                'event_value' => $request->get('event_value')
             ];
 
             $query = $this->appInformationRepository->getWithFilter($filters);

@@ -54,6 +54,10 @@ class AppInformationRepository extends BaseRepository
             $query = $query->whereIn('network', $filters['network']);
         }
 
+        if (!empty($filters['event_name'])) {
+            $query = $query->whereIn('event_name', $filters['event_name']);
+        }
+
         return $query->get();
     }
 
