@@ -57,6 +57,7 @@ class SiteController extends Controller
             'description' => 'nullable|string',
             'branch' => 'nullable|string|max:50',
             'language' => 'nullable|string|size:2',
+            'platform' => 'nullable|in:' . implode(',', SiteStatus::getPlatforms()),
         ]);
 
         if ($validator->fails()) {
@@ -97,6 +98,7 @@ class SiteController extends Controller
                 'user_id' => auth()->id(),
                 'status' => 'active',
                 'language' => $request->language ?? 'en',
+                'platform' => $request->platform ?? 'google',
             ];
 
             if ($request->domain) {
@@ -145,7 +147,8 @@ class SiteController extends Controller
                 'site_id' => $createdSite->id,
                 'name' => $createdSite->name,
                 'domain' => $createdSite->domain,
-                'project_name' => $createdSite->cloudflare_project_name
+                'project_name' => $createdSite->cloudflare_project_name,
+                'platform' => $createdSite->platform
             ]);
 
             return response()->json([
@@ -205,6 +208,7 @@ class SiteController extends Controller
             'description' => 'nullable|string',
             'status' => 'nullable|in:active,inactive',
             'language' => 'nullable|string|size:2',
+            'platform' => 'nullable|in:' . implode(',', SiteStatus::getPlatforms()),
         ]);
 
         if ($validator->fails()) {
@@ -267,7 +271,8 @@ class SiteController extends Controller
                 'domain' => $request->domain,
                 'description' => $request->description,
                 'status' => $request->status ?? $site->status,
-                'language' => $request->language ?? $site->language
+                'language' => $request->language ?? $site->language,
+                'platform' => $request->platform ?? $site->platform
             ]);
 
             return response()->json([
@@ -373,7 +378,8 @@ class SiteController extends Controller
                 'site_id' => $id,
                 'name' => $site->name,
                 'domain' => $site->domain,
-                'project_name' => $site->cloudflare_project_name
+                'project_name' => $site->cloudflare_project_name,
+                'platform' => $site->platform
             ]);
 
             return response()->json([
@@ -445,6 +451,60 @@ class SiteController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update site language',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update only the platform of the specified site.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updatePlatform(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'platform' => 'required|in:' . implode(',', SiteStatus::getPlatforms()),
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $site = Site::findOrFail($id);
+
+            $site->update([
+                'platform' => $request->platform
+            ]);
+
+            $this->logger->logSite('platform_updated', [
+                'site_id' => $id,
+                'old_platform' => $site->getOriginal('platform'),
+                'new_platform' => $request->platform
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Site platform updated successfully',
+                'data' => $site
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->logSite('platform_update_failed', [
+                'site_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 'error');
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update site platform',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -614,7 +674,8 @@ class SiteController extends Controller
                 'site_id' => $id,
                 'project_name' => $site->cloudflare_project_name,
                 'domain' => $site->domain,
-                'status' => SiteStatus::STATUS_ACTIVE
+                'status' => SiteStatus::STATUS_ACTIVE,
+                'platform' => $site->platform
             ]);
 
             return response()->json([
@@ -756,7 +817,8 @@ class SiteController extends Controller
                 'site_id' => $id,
                 'project_name' => $site->cloudflare_project_name,
                 'domain' => $site->domain,
-                'status' => SiteStatus::STATUS_INACTIVE
+                'status' => SiteStatus::STATUS_INACTIVE,
+                'platform' => $site->platform
             ]);
 
             return response()->json([
