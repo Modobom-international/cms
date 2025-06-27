@@ -35,40 +35,44 @@ class StoreAppInformation implements ShouldQueue
             $cacheMenu = $cachePoolRepository->getCacheByKey($key);
             $menuUpdate = $cacheMenu->data;
 
-            if (array_key_exits('app_name', $this->data) && !in_array($this->data['app_name'], $menuUpdate['app_name'])) {
+            if (array_key_exists('app_name', $this->data) && !in_array($this->data['app_name'], $menuUpdate['app_name'])) {
                 $menuUpdate['app_name'][] = $this->data['app_name'];
             }
 
-            if (array_key_exits('event_name', $this->data) && !in_array($this->data['event_name'], $menuUpdate['event_name'])) {
+            if (array_key_exists('event_name', $this->data) && !in_array($this->data['event_name'], $menuUpdate['event_name'])) {
                 $menuUpdate['event_name'][] = $this->data['event_name'];
             }
 
-            if (array_key_exits('os_name', $this->data) && !in_array($this->data['os_name'], $menuUpdate['os_name'])) {
+            if (array_key_exists('os_name', $this->data) && !in_array($this->data['os_name'], $menuUpdate['os_name'])) {
                 $menuUpdate['os_name'][] = $this->data['os_name'];
             }
 
-            if (array_key_exits('os_version', $this->data) && !in_array($this->data['os_version'], $menuUpdate['os_version'])) {
+            if (array_key_exists('os_version', $this->data) && !in_array($this->data['os_version'], $menuUpdate['os_version'])) {
                 $menuUpdate['os_version'][] = $this->data['os_version'];
             }
 
-            if (array_key_exits('app_version', $this->data) && !in_array($this->data['app_version'], $menuUpdate['app_version'])) {
+            if (array_key_exists('app_version', $this->data) && !in_array($this->data['app_version'], $menuUpdate['app_version'])) {
                 $menuUpdate['app_version'][] = $this->data['app_version'];
             }
 
-            if (array_key_exits('category', $this->data) && !in_array($this->data['category'], $menuUpdate['category'])) {
+            if (array_key_exists('category', $this->data) && !in_array($this->data['category'], $menuUpdate['category'])) {
                 $menuUpdate['category'][] = $this->data['category'];
             }
 
-            if (array_key_exits('platform', $this->data) && !in_array($this->data['platform'], $menuUpdate['platform'])) {
+            if (array_key_exists('platform', $this->data) && !in_array($this->data['platform'], $menuUpdate['platform'])) {
                 $menuUpdate['platform'][] = $this->data['platform'];
             }
 
-            if (array_key_exits('country', $this->data) && !in_array($this->data['country'], $menuUpdate['country'])) {
+            if (array_key_exists('country', $this->data) && !in_array($this->data['country'], $menuUpdate['country'])) {
                 $menuUpdate['country'][] = $this->data['country'];
             }
 
-            if (array_key_exits('network', $this->data) && !in_array($this->data['network'], $menuUpdate['network'])) {
+            if (array_key_exists('network', $this->data) && !in_array($this->data['network'], $menuUpdate['network'])) {
                 $menuUpdate['network'][] = $this->data['network'];
+            }
+
+            if (array_key_exists('event_value', $this->data) && !in_array($this->data['event_value'], $menuUpdate['event_value'])) {
+                $menuUpdate['event_value'][] = $this->data['event_value'];
             }
 
             $dataUpdate = [

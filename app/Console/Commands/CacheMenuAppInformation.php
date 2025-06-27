@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Repositories\AppInformationRepository;
 use App\Repositories\CachePoolRepository;
 use Illuminate\Console\Command;
-use Illuminate\Container\Attributes\Cache;
 
 class CacheMenuAppInformation extends Command
 {
@@ -48,7 +47,8 @@ class CacheMenuAppInformation extends Command
             'platform' => [],
             'country' => [],
             'event_name' => [],
-            'network' => []
+            'network' => [],
+            'event_value' => [],
         ];
 
         foreach ($data as $record) {
@@ -86,6 +86,10 @@ class CacheMenuAppInformation extends Command
 
             if (!empty($record->network) && !in_array($record->network, $listMenu['network'])) {
                 $listMenu['network'][] = $record->network;
+            }
+
+            if (!empty($record->event_value) && !in_array($record->event_value, $listMenu['event_value'])) {
+                $listMenu['event_value'][] = $record->event_value;
             }
         }
 
