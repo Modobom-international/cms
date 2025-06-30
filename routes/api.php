@@ -329,6 +329,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('activity-log')->group(function () {
         Route::get('/', [ActivityLogController::class, 'listActivityLog'])->name('activity.log.list');
+        Route::get('/stats', [ActivityLogController::class, 'getActivityStats'])->name('activity.log.stats');
+        Route::get('/filters', [ActivityLogController::class, 'getAvailableFilters'])->name('activity.log.filters');
+        Route::get('/export', [ActivityLogController::class, 'exportActivityLog'])->name('activity.log.export');
     });
 
     Route::prefix('monitor-server')->group(function () {
