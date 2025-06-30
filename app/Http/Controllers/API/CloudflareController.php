@@ -38,6 +38,8 @@ class CloudflareController extends Controller
      */
     public function getProjects()
     {
+        $this->logActivity(ActivityAction::ACCESS_VIEW, [], 'Viewed Cloudflare projects');
+
         $result = $this->cloudflareService->getProjects();
 
         return response()->json($result);
@@ -60,7 +62,12 @@ class CloudflareController extends Controller
         $branch = $request->branch ?? 'main';
         $result = $this->cloudflareService->createPagesProject($request->name, $branch);
 
-        $this->logActivity(ActivityAction::CREATE_PROJECT_CLOUDFLARE_PAGE, ['filters' => $input], 'Tạo mới trang Cloudflare Pages');
+        if ($result['success'] ?? false) {
+            $this->logActivity(ActivityAction::CREATE_PROJECT_CLOUDFLARE_PAGE, [
+                'project_name' => $request->name,
+                'branch' => $branch
+            ], 'Created Cloudflare project');
+        }
 
         return response()->json($result);
     }
@@ -80,7 +87,11 @@ class CloudflareController extends Controller
         $input = $request->all();
         $result = $this->cloudflareService->updatePagesProject($request->name, $request->except(['name']));
 
-        $this->logActivity(ActivityAction::UPDATE_PROJECT_CLOUDFLARE_PAGE, ['filters' => $input], 'Cập nhật trang Cloudflare Pages');
+        if ($result['success'] ?? false) {
+            $this->logActivity(ActivityAction::UPDATE_PROJECT_CLOUDFLARE_PAGE, [
+                'project_name' => $request->name
+            ], 'Updated Cloudflare project');
+        }
 
         return response()->json($result);
     }
@@ -100,7 +111,11 @@ class CloudflareController extends Controller
         $input = $request->all();
         $result = $this->cloudflareService->createDeployment($request->name);
 
-        $this->logActivity(ActivityAction::CREATE_DEPLOY_CLOUDFLARE_PAGE, ['filters' => $input], 'Đẩy trang lên Cloudflare Pages');
+        if ($result['success'] ?? false) {
+            $this->logActivity(ActivityAction::CREATE_DEPLOY_CLOUDFLARE_PAGE, [
+                'project_name' => $request->name
+            ], 'Created Cloudflare deployment');
+        }
 
         return response()->json($result);
     }
@@ -120,7 +135,13 @@ class CloudflareController extends Controller
 
         $input = $request->all();
         $result = $this->cloudflareService->applyPagesDomain($request->project_name, $request->domain);
-        $this->logActivity(ActivityAction::CREATE_DEPLOY_CLOUDFLARE_PAGE, ['filters' => $input], 'Cập nhật tên miền cho Cloudflare Pages');
+
+        if ($result['success'] ?? false) {
+            $this->logActivity(ActivityAction::APPLY_PAGE_DOMAIN_CLOUDFLARE_PAGE, [
+                'project_name' => $request->project_name,
+                'domain' => $request->domain
+            ], 'Applied domain to Cloudflare project');
+        }
 
         return response()->json($result);
     }
@@ -202,8 +223,10 @@ class CloudflareController extends Controller
                 'options' => $deploymentOptions
             ]);
 
-            $input = $request->all();
-            $this->logActivity(ActivityAction::DEPLOY_EXPORT_CLOUDFLARE_PAGE, ['filters' => $input], 'Chạy cho Cloudflare Pages');
+            $this->logActivity(ActivityAction::DEPLOY_EXPORT_CLOUDFLARE_PAGE, [
+                'site_id' => $site->id,
+                'project_name' => $projectName
+            ], 'Deployed to Cloudflare');
 
             return response()->json([
                 'success' => true,

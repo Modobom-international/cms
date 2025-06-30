@@ -9,6 +9,7 @@ use App\Services\ApplicationLogger;
 use Auth;
 use Illuminate\Http\Request;
 use App\Traits\LogsActivity;
+use App\Enums\ActivityAction;
 use App\Repositories\PageRepository;
 use App\Repositories\PageExportRepository;
 use App\Repositories\SiteRepository;
@@ -67,6 +68,13 @@ class PageController extends Controller
                 'name' => $request->name,
                 'slug' => $request->slug,
             ]);
+
+            $this->logActivity(ActivityAction::CREATE_PAGE, [
+                'page_id' => $page->id,
+                'name' => $page->name,
+                'slug' => $page->slug,
+                'site_id' => $site->id
+            ], 'Created page');
 
             $this->logger->logPage('created', [
                 'page_id' => $page->id,
@@ -132,6 +140,11 @@ class PageController extends Controller
             // Fetch the updated page through repository
             $updatedPage = $this->pageRepository->find($page->id);
 
+            $this->logActivity(ActivityAction::UPDATE_PAGE, [
+                'page_id' => $pageId,
+                'name' => $updatedPage->name
+            ], 'Updated page');
+
             return response()->json([
                 'success' => true,
                 'message' => 'Page updated successfully',
@@ -153,6 +166,8 @@ class PageController extends Controller
      */
     public function getPage($pageId)
     {
+        $this->logActivity(ActivityAction::SHOW_RECORD, ['page_id' => $pageId], 'Viewed page');
+
         $page = $this->pageRepository->find($pageId);
         $site = $this->siteRepository->findWithRelations($page->site_id);
         if ($page) {
@@ -163,6 +178,7 @@ class PageController extends Controller
                 'site' => $site
             ]);
         }
+
         return response()->json([
             'success' => false,
             'message' => 'Page not found'
@@ -176,7 +192,10 @@ class PageController extends Controller
      */
     public function getPages()
     {
+        $this->logActivity(ActivityAction::ACCESS_VIEW, [], 'Viewed pages listing');
+
         $pages = $this->pageRepository->getAllWithRelations();
+
         return response()->json([
             'success' => true,
             'message' => 'Pages found',
@@ -192,6 +211,8 @@ class PageController extends Controller
      */
     public function getPagesBySite($siteId)
     {
+        $this->logActivity(ActivityAction::ACCESS_VIEW, ['site_id' => $siteId], 'Viewed pages for site');
+
         try {
             // Verify site exists
             $site = $this->siteRepository->findWithRelations($siteId);
@@ -203,6 +224,7 @@ class PageController extends Controller
             }
 
             $pages = $this->pageRepository->getBySiteId($siteId);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Pages found for site',
@@ -332,6 +354,13 @@ class PageController extends Controller
             $redirectsContent = "/ /{$page->slug}/ 302\n";
             Storage::disk('public')->put($rootExportPath . '/_redirects', $redirectsContent);
 
+            $this->logActivity(ActivityAction::EXPORT_PAGE, [
+                'page_id' => $pageId,
+                'export_id' => $exportRequest->id,
+                'site_id' => $site->id,
+                'page_slug' => $page->slug
+            ], 'Exported page');
+
             return response()->json([
                 'success' => true,
                 'message' => 'Export process completed',
@@ -423,6 +452,8 @@ EOT;
      */
     public function getPendingExports()
     {
+        $this->logActivity(ActivityAction::ACCESS_VIEW, [], 'Viewed pending exports');
+
         $latestExport = $this->pageExportRepository->getLatestExport();
 
         return response()->json([
@@ -441,6 +472,8 @@ EOT;
     {
         // Clear any export records in the database
         $this->pageExportRepository->truncate();
+
+        $this->logActivity(ActivityAction::CANCEL_EXPORT, [], 'Cancelled exports');
 
         return response()->json([
             'success' => true,
@@ -511,6 +544,12 @@ EOT;
                         [$page->slug]
                     ));
 
+                    $this->logActivity(ActivityAction::DELETE_PAGE, [
+                        'page_id' => $pageId,
+                        'name' => $page->name,
+                        'site_id' => $site->id
+                    ], 'Deleted page');
+
                     $this->logger->logPage('deleted', [
                         'page_id' => $pageId,
                         'site_id' => $site->id,
@@ -544,6 +583,13 @@ EOT;
             }
 
             DB::commit();
+
+            $this->logActivity(ActivityAction::DELETE_PAGE, [
+                'page_id' => $pageId,
+                'name' => $page->name,
+                'site_id' => $site->id
+            ], 'Deleted page');
+
             $this->logger->logPage('deleted', [
                 'page_id' => $pageId,
                 'site_id' => $site->id,
@@ -557,6 +603,7 @@ EOT;
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             $this->logger->logPage('delete_failed', [
                 'page_id' => $pageId,
                 'error' => $e->getMessage(),
@@ -724,6 +771,12 @@ EOT;
                         [$page->slug]
                     ));
 
+                    $this->logActivity(ActivityAction::UPDATE_TRACKING_SCRIPT, [
+                        'page_id' => $pageId,
+                        'name' => $page->name,
+                        'site_id' => $site->id
+                    ], 'Updated tracking script');
+
                     $this->logger->logPage('deployment_queued', [
                         'page_id' => $pageId,
                         'site_id' => $site->id,
@@ -760,6 +813,13 @@ EOT;
             }
 
             DB::commit();
+
+            $this->logActivity(ActivityAction::UPDATE_TRACKING_SCRIPT, [
+                'page_id' => $pageId,
+                'name' => $page->name,
+                'site_id' => $page->site_id
+            ], 'Updated tracking script');
+
             return response()->json([
                 'success' => true,
                 'message' => 'Tracking script updated successfully',
@@ -767,6 +827,7 @@ EOT;
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             $this->logger->logPage('tracking_script_update_failed', [
                 'page_id' => $pageId,
                 'error' => $e->getMessage()
@@ -787,6 +848,8 @@ EOT;
      */
     public function getTrackingScript($pageId)
     {
+        $this->logActivity(ActivityAction::GET_TRACKING_SCRIPT, ['page_id' => $pageId], 'Viewed tracking script');
+
         try {
             $page = $this->pageRepository->find($pageId);
             if (!$page) {
@@ -869,6 +932,12 @@ EOT;
                         [$page->slug]
                     ));
 
+                    $this->logActivity(ActivityAction::REMOVE_TRACKING_SCRIPT, [
+                        'page_id' => $pageId,
+                        'name' => $page->name,
+                        'site_id' => $site->id
+                    ], 'Removed tracking script');
+
                     $this->logger->logPage('deployment_queued', [
                         'page_id' => $pageId,
                         'site_id' => $site->id,
@@ -904,12 +973,20 @@ EOT;
             }
 
             DB::commit();
+
+            $this->logActivity(ActivityAction::REMOVE_TRACKING_SCRIPT, [
+                'page_id' => $pageId,
+                'name' => $page->name,
+                'site_id' => $page->site_id
+            ], 'Removed tracking script');
+
             return response()->json([
                 'success' => true,
                 'message' => 'Tracking script removed successfully'
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             $this->logger->logPage('tracking_script_remove_failed', [
                 'page_id' => $pageId,
                 'error' => $e->getMessage()

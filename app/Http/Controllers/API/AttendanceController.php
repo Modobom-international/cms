@@ -5,12 +5,16 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\LeaveRequest;
+use App\Traits\LogsActivity;
+use App\Enums\ActivityAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
 {
+    use LogsActivity;
+
     public function checkin(Request $request)
     {
         $request->validate([
@@ -46,6 +50,11 @@ class AttendanceController extends Controller
                 'description' => 'On approved leave: ' . $activeAbsenceLeave->leave_type
             ]);
 
+            $this->logActivity(ActivityAction::CHECKIN_ATTENDANCE, [
+                'employee_id' => $request->employee_id,
+                'status' => 'on_leave'
+            ], 'Checked in - on leave');
+
             return response()->json([
                 'message' => 'Employee is on approved leave today',
                 'data' => $attendance,
@@ -72,6 +81,12 @@ class AttendanceController extends Controller
             'status' => $activeRemoteWork ? 'remote_work' : 'incomplete',
             'description' => $activeRemoteWork ? 'Remote work: ' . $activeRemoteWork->reason : null
         ]);
+
+        $this->logActivity(ActivityAction::CHECKIN_ATTENDANCE, [
+            'employee_id' => $request->employee_id,
+            'type' => $request->type,
+            'status' => $attendance->status
+        ], 'Checked in');
 
         $response = [
             'message' => 'Check-in successful',
@@ -123,6 +138,11 @@ class AttendanceController extends Controller
         $attendance->updateStatus();
         $attendance->save();
 
+        $this->logActivity(ActivityAction::CHECKOUT_ATTENDANCE, [
+            'employee_id' => $request->employee_id,
+            'total_work_hours' => $attendance->total_work_hours
+        ], 'Checked out');
+
         return response()->json([
             'message' => 'Check-out successful',
             'data' => $attendance
@@ -131,6 +151,10 @@ class AttendanceController extends Controller
 
     public function getTodayAttendance($employeeId)
     {
+        $this->logActivity(ActivityAction::GET_ATTENDANCE, [
+            'employee_id' => $employeeId
+        ], 'Viewed attendance');
+
         $attendance = Attendance::where('employee_id', $employeeId)
             ->where('date', Carbon::today())
             ->first();
@@ -316,6 +340,11 @@ class AttendanceController extends Controller
             }
         }
 
+        $this->logActivity(ActivityAction::GET_ATTENDANCE_REPORT, [
+            'date' => $request->date,
+            'type' => $request->type
+        ], 'Generated attendance report');
+
         return response()->json($attendances);
     }
 
@@ -366,6 +395,11 @@ class AttendanceController extends Controller
         $attendance->total_work_hours = $attendance->calculateWorkHours();
         $attendance->updateStatus();
         $attendance->save();
+
+        $this->logActivity(ActivityAction::ADD_CUSTOM_ATTENDANCE, [
+            'employee_id' => $request->employee_id,
+            'date' => $request->date
+        ], 'Added custom attendance');
 
         $response = [
             'message' => 'Custom attendance record added successfully',
@@ -420,6 +454,11 @@ class AttendanceController extends Controller
         $attendance->total_work_hours = $attendance->calculateWorkHours();
         $attendance->updateStatus();
         $attendance->save();
+
+        $this->logActivity(ActivityAction::UPDATE_CUSTOM_ATTENDANCE, [
+            'attendance_id' => $id,
+            'employee_id' => $attendance->employee_id
+        ], 'Updated custom attendance');
 
         return response()->json([
             'message' => 'Attendance record updated successfully',

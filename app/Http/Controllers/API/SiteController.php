@@ -9,6 +9,8 @@ use App\Repositories\PageRepository;
 use App\Repositories\SiteRepository;
 use App\Services\CloudFlareService;
 use App\Services\ApplicationLogger;
+use App\Traits\LogsActivity;
+use App\Enums\ActivityAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -16,6 +18,8 @@ use Illuminate\Support\Facades\Log;
 
 class SiteController extends Controller
 {
+    use LogsActivity;
+
     protected $cloudflareService;
     protected $logger;
     protected $siteRepository;
@@ -36,6 +40,8 @@ class SiteController extends Controller
      */
     public function index()
     {
+        $this->logActivity(ActivityAction::ACCESS_VIEW, [], 'Viewed sites listing');
+
         $sites = Site::with(['user'])->latest()->get();
         return response()->json([
             'success' => true,
@@ -143,6 +149,14 @@ class SiteController extends Controller
 
             $createdSite = Site::create($site);
 
+            $this->logActivity(ActivityAction::CREATE_SITE, [
+                'site_id' => $createdSite->id,
+                'name' => $createdSite->name,
+                'domain' => $createdSite->domain,
+                'project_name' => $createdSite->cloudflare_project_name,
+                'platform' => $createdSite->platform
+            ], 'Site created');
+
             $this->logger->logSite('created', [
                 'site_id' => $createdSite->id,
                 'name' => $createdSite->name,
@@ -179,8 +193,11 @@ class SiteController extends Controller
      */
     public function show($id)
     {
+        $this->logActivity(ActivityAction::SHOW_RECORD, ['site_id' => $id], 'Viewed site details');
+
         try {
             $site = Site::with(['user'])->findOrFail($id);
+
             return response()->json([
                 'success' => true,
                 'data' => $site
@@ -274,6 +291,13 @@ class SiteController extends Controller
                 'language' => $request->language ?? $site->language,
                 'platform' => $request->platform ?? $site->platform
             ]);
+
+            $this->logActivity(ActivityAction::UPDATE_SITE, [
+                'site_id' => $id,
+                'site_name' => $site->name,
+                'domain' => $site->domain,
+                'changes' => $request->all()
+            ], 'Site updated');
 
             return response()->json([
                 'success' => true,
@@ -374,6 +398,14 @@ class SiteController extends Controller
 
             $site->delete();
 
+            $this->logActivity(ActivityAction::DELETE_SITE, [
+                'site_id' => $id,
+                'name' => $site->name,
+                'domain' => $site->domain,
+                'project_name' => $site->cloudflare_project_name,
+                'platform' => $site->platform
+            ], 'Site deleted');
+
             $this->logger->logSite('deleted', [
                 'site_id' => $id,
                 'name' => $site->name,
@@ -429,6 +461,13 @@ class SiteController extends Controller
                 'language' => $request->language
             ]);
 
+            $this->logActivity(ActivityAction::UPDATE_SITE_LANGUAGE, [
+                'site_id' => $id,
+                'old_language' => $site->getOriginal('language'),
+                'new_language' => $request->language,
+                'site_name' => $site->name
+            ], 'Site language updated');
+
             $this->logger->logSite('language_updated', [
                 'site_id' => $id,
                 'old_language' => $site->getOriginal('language'),
@@ -482,6 +521,13 @@ class SiteController extends Controller
             $site->update([
                 'platform' => $request->platform
             ]);
+
+            $this->logActivity(ActivityAction::UPDATE_SITE_PLATFORM, [
+                'site_id' => $id,
+                'old_platform' => $site->getOriginal('platform'),
+                'new_platform' => $request->platform,
+                'site_name' => $site->name
+            ], 'Site platform updated');
 
             $this->logger->logSite('platform_updated', [
                 'site_id' => $id,
@@ -670,6 +716,15 @@ class SiteController extends Controller
             // Step 5: Update site status to active
             $site->update(['status' => SiteStatus::STATUS_ACTIVE]);
 
+            $this->logActivity(ActivityAction::ACTIVATE_SITE, [
+                'site_id' => $id,
+                'project_name' => $site->cloudflare_project_name,
+                'domain' => $site->domain,
+                'status' => SiteStatus::STATUS_ACTIVE,
+                'platform' => $site->platform,
+                'site_name' => $site->name
+            ], 'Site activated');
+
             $this->logger->logSite('activation_completed', [
                 'site_id' => $id,
                 'project_name' => $site->cloudflare_project_name,
@@ -813,6 +868,11 @@ class SiteController extends Controller
                 'cloudflare_domain_status' => SiteStatus::STATUS_INACTIVE
             ]);
 
+            $this->logActivity(ActivityAction::DEACTIVATE_SITE, [
+                'site_id' => $id,
+                'site_name' => $site->name
+            ], 'Deactivated site');
+
             $this->logger->logSite('deactivation_completed', [
                 'site_id' => $id,
                 'project_name' => $site->cloudflare_project_name,
@@ -841,6 +901,4 @@ class SiteController extends Controller
             ], 500);
         }
     }
-
-
 }

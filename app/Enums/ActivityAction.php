@@ -20,4 +20,49 @@ class ActivityAction
     const DETAIL_MONITOR_SERVER = 'detail_monitor_server';
     const CREATE_PAGE_EXPORTS = 'create_page_exports';
     const UPDATE_PAGES = 'update_pages';
+
+    // Site Management Actions
+    const CREATE_SITE = 'create_site';
+    const UPDATE_SITE = 'update_site';
+    const DELETE_SITE = 'delete_site';
+    const ACTIVATE_SITE = 'activate_site';
+    const DEACTIVATE_SITE = 'deactivate_site';
+    const UPDATE_SITE_LANGUAGE = 'update_site_language';
+    const UPDATE_SITE_PLATFORM = 'update_site_platform';
+
+    // Page Management Actions
+    const CREATE_PAGE = 'create_page';
+    const UPDATE_PAGE = 'update_page';
+    const DELETE_PAGE = 'delete_page';
+    const EXPORT_PAGE = 'export_page';
+    const UPDATE_TRACKING_SCRIPT = 'update_tracking_script';
+    const REMOVE_TRACKING_SCRIPT = 'remove_tracking_script';
+    const GET_TRACKING_SCRIPT = 'get_tracking_script';
+    const CANCEL_EXPORT = 'cancel_export';
+
+    // Attendance Management Actions
+    const CHECKIN_ATTENDANCE = 'checkin_attendance';
+    const CHECKOUT_ATTENDANCE = 'checkout_attendance';
+    const GET_ATTENDANCE = 'get_attendance';
+    const GET_ATTENDANCE_REPORT = 'get_attendance_report';
+    const ADD_CUSTOM_ATTENDANCE = 'add_custom_attendance';
+    const UPDATE_CUSTOM_ATTENDANCE = 'update_custom_attendance';
+
+    // Attendance Complaint Actions
+    const CREATE_ATTENDANCE_COMPLAINT = 'create_attendance_complaint';
+    const UPDATE_ATTENDANCE_COMPLAINT = 'update_attendance_complaint';
+    const GET_ATTENDANCE_COMPLAINTS = 'get_attendance_complaints';
+    const REVIEW_ATTENDANCE_COMPLAINT = 'review_attendance_complaint';
+    const RESPOND_TO_ATTENDANCE_COMPLAINT = 'respond_to_attendance_complaint';
+    const GET_ATTENDANCE_COMPLAINT_STATS = 'get_attendance_complaint_stats';
+
+    // List Board Actions
+    const CREATE_LIST = 'create_list';
+    const UPDATE_LIST = 'update_list';
+    const DELETE_LIST = 'delete_list';
+    const UPDATE_LIST_POSITIONS = 'update_list_positions';
+    const GET_BOARD_LISTS = 'get_board_lists';
+    const ADD_BOARD_MEMBER = 'add_board_member';
+    const REMOVE_BOARD_MEMBER = 'remove_board_member';
+    const GET_BOARD_MEMBERS = 'get_board_members';
 }

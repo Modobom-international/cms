@@ -5,6 +5,8 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceComplaint;
 use App\Models\Attendance;
+use App\Traits\LogsActivity;
+use App\Enums\ActivityAction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,6 +14,8 @@ use Illuminate\Validation\Rule;
 
 class AttendanceComplaintController extends Controller
 {
+    use LogsActivity;
+
     /**
      * Employee: Create a new complaint
      */
@@ -76,6 +80,11 @@ class AttendanceComplaintController extends Controller
             'proposed_changes' => $request->proposed_changes
         ]);
 
+        $this->logActivity(ActivityAction::CREATE_ATTENDANCE_COMPLAINT, [
+            'complaint_id' => $complaint->id,
+            'complaint_type' => $request->complaint_type
+        ], 'Created complaint');
+
         return response()->json([
             'message' => 'Complaint submitted successfully',
             'data' => $complaint->load(['attendance', 'employee:id,name,email'])
@@ -87,6 +96,10 @@ class AttendanceComplaintController extends Controller
      */
     public function index(Request $request)
     {
+        $this->logActivity(ActivityAction::GET_ATTENDANCE_COMPLAINTS, [
+            'employee_id' => Auth::id()
+        ], 'Viewed complaints');
+
         $request->validate([
             'status' => 'nullable|in:pending,under_review,resolved,rejected',
             'per_page' => 'nullable|integer|min:1|max:100'
@@ -150,6 +163,10 @@ class AttendanceComplaintController extends Controller
      */
     public function adminIndex(Request $request)
     {
+        $this->logActivity(ActivityAction::GET_ATTENDANCE_COMPLAINTS, [
+            'user_type' => 'admin'
+        ], 'Viewed complaints (admin)');
+
         $request->validate([
             'status' => 'nullable|in:pending,under_review,resolved,rejected',
             'employee_id' => 'nullable|exists:users,id',
@@ -211,6 +228,11 @@ class AttendanceComplaintController extends Controller
                 $complaint->markAsRejected(Auth::id(), $request->admin_response);
                 break;
         }
+
+        $this->logActivity(ActivityAction::REVIEW_ATTENDANCE_COMPLAINT, [
+            'complaint_id' => $id,
+            'status' => $request->status
+        ], 'Reviewed complaint');
 
         return response()->json([
             'message' => 'Complaint status updated successfully',
@@ -362,6 +384,11 @@ class AttendanceComplaintController extends Controller
                 // Mark complaint as rejected
                 $complaint->markAsRejected(Auth::id(), $request->admin_response);
             }
+
+            $this->logActivity(ActivityAction::RESPOND_TO_ATTENDANCE_COMPLAINT, [
+                'complaint_id' => $id,
+                'response_type' => $request->response_type
+            ], 'Responded to complaint');
 
             \DB::commit();
 

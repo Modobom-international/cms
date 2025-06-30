@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use App\Traits\LogsActivity;
 use App\Http\Requests\UpdateListPositionsRequest;
+use App\Enums\ActivityAction;
 
 class ListBoardController extends Controller
 {
@@ -48,6 +49,8 @@ class ListBoardController extends Controller
      */
     public function index($boardId)
     {
+        $this->logActivity(ActivityAction::GET_BOARD_LISTS, ['board_id' => $boardId], 'Viewed board lists');
+
         try {
             $board = $this->boardRepository->show($boardId);
             if (!$board) {
@@ -66,6 +69,7 @@ class ListBoardController extends Controller
                     'type' => 'Unauthorized'
                 ], 403);
             }
+
             $lists = $this->listBoardRepository->getListsByBoard($boardId);
 
             if ($lists->isEmpty()) {
@@ -108,6 +112,7 @@ class ListBoardController extends Controller
                     'type' => 'board_not_found',
                 ], 404);
             }
+
             // Kiểm tra quyền chỉnh sửa
             if (!$this->listBoardRepository->userCanEdit($board->id)) {
                 return response()->json([
@@ -127,7 +132,12 @@ class ListBoardController extends Controller
                 'title' => $input['title'],
                 'position' => $position
             ];
-            $this->listBoardRepository->createListBoard($dataList);
+            $createdList = $this->listBoardRepository->createListBoard($dataList);
+
+            $this->logActivity(ActivityAction::CREATE_LIST, [
+                'board_id' => $board->id,
+                'title' => $input['title']
+            ], 'Created list');
 
             return response()->json([
                 'success' => true,
@@ -198,6 +208,7 @@ class ListBoardController extends Controller
             if (isset($input['position'])) {
                 $this->updateListPosition($listBoard, $input['position']);
             }
+
             // Tạo list mới
             $dataList = [
                 'board_id' => $board->id,
@@ -206,6 +217,11 @@ class ListBoardController extends Controller
             ];
 
             $this->listBoardRepository->updateListBoard($dataList, $id);
+
+            $this->logActivity(ActivityAction::UPDATE_LIST, [
+                'list_id' => $id,
+                'title' => $dataList['title']
+            ], 'Updated list');
 
             return response()->json([
                 'success' => true,
@@ -272,6 +288,11 @@ class ListBoardController extends Controller
             }
 
             $this->listBoardRepository->destroy($id);
+
+            $this->logActivity(ActivityAction::DELETE_LIST, [
+                'list_id' => $id,
+                'title' => $listBoard->title
+            ], 'Deleted list');
 
             return response()->json([
                 'success' => true,
@@ -486,6 +507,11 @@ class ListBoardController extends Controller
             }
 
             $this->listBoardRepository->updatePositions($positions);
+
+            $this->logActivity(ActivityAction::UPDATE_LIST_POSITIONS, [
+                'board_id' => $firstList->board_id,
+                'lists_count' => count($positions)
+            ], 'Updated list positions');
 
             return response()->json([
                 'success' => true,
