@@ -19,6 +19,15 @@ class Page extends Model
         'tracking_script'
     ];
 
+    // Only log lightweight columns to keep activity logs short
+    protected array $loggableAttributes = [
+        'site_id',
+        'name',
+        'slug',
+        'provider',
+        'tracking_script',
+    ];
+
     public function site()
     {
         return $this->belongsTo(Site::class);
