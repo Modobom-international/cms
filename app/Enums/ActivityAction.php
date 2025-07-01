@@ -19,6 +19,7 @@ class ActivityAction
     const DEPLOY_EXPORT_CLOUDFLARE_PAGE = 'deploy_export_cloudflare_page';
     const DETAIL_MONITOR_SERVER = 'detail_monitor_server';
     const CREATE_PAGE_EXPORTS = 'create_page_exports';
+    const CREATE_PAGES = 'create_pages';
     const UPDATE_PAGES = 'update_pages';
 
     // Site Management Actions

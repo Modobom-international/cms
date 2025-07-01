@@ -116,7 +116,7 @@ class DomainController extends Controller
                 })->toArray();
             }
 
-            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input, 'include_dns' => $includeDns], 'Xem danh sách domain');
+            // $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input, 'include_dns' => $includeDns], 'Xem danh sách domain');
 
             $responseData = [
                 'success' => true,
@@ -184,7 +184,7 @@ class DomainController extends Controller
 
             $data = $this->utility->paginate($availableDomains, $pageSize, $page);
 
-            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách domain khả dụng');
+            // $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách domain khả dụng');
 
             return response()->json([
                 'success' => true,
@@ -303,7 +303,7 @@ class DomainController extends Controller
             $user_id = $request->get('user_id');
             $domains = $this->siteRepository->getDomainBySearchAndUserID($search, $user_id);
 
-            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách domain');
+            // $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách domain');
 
             return response()->json([
                 'success' => true,
@@ -382,7 +382,7 @@ class DomainController extends Controller
                 }
             }
 
-            $this->logActivity(ActivityAction::ACCESS_VIEW, ['domain' => $domain], 'Xem DNS records của domain');
+            // $this->logActivity(ActivityAction::ACCESS_VIEW, ['domain' => $domain], 'Xem DNS records của domain');
 
             return response()->json([
                 'success' => true,

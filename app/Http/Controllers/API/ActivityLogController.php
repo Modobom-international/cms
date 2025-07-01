@@ -9,6 +9,7 @@ use App\Traits\LogsActivity;
 use App\Enums\Utility;
 use App\Enums\ActivityAction;
 use Exception;
+use Illuminate\Validation\ValidationException;
 
 class ActivityLogController extends Controller
 {
@@ -27,55 +28,67 @@ class ActivityLogController extends Controller
     {
         try {
             $input = $request->all();
-            $date = $request->get('date') ?? $this->utility->getCurrentVNTime('Y-m-d');
-            $dateFrom = $request->get('date_from');
-            $dateTo = $request->get('date_to');
-            $user_id = $request->get('user_id');
-            $action = $request->get('action');
-            $group_action = $request->get('group_action');
-            $search = $request->get('search');
-            $pageSize = $request->get('pageSize') ?? 10;
-            $page = $request->get('page') ?? 1;
 
+            // Build filter array with all possible parameters
             $filter = [
-                'date' => $date,
-                'date_from' => $dateFrom,
-                'date_to' => $dateTo,
-                'user_id' => $user_id,
-                'action' => $action,
-                'group_action' => $group_action,
-                'search' => $search,
+                'date' => $request->get('date'),
+                'date_from' => $request->get('date_from'),
+                'date_to' => $request->get('date_to'),
+                'user_id' => $request->get('user_id'),
+                'action' => $request->get('action'),
+                'group_action' => $request->get('group_action'),
+                'search' => $request->get('search'),
+                'page' => $request->get('page', 1),
+                'pageSize' => $request->get('pageSize', 20),
+                'sort_field' => $request->get('sort_field', 'created_at'),
+                'sort_direction' => $request->get('sort_direction', 'desc'),
             ];
 
-            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách activity log');
-            $activityLogs = $this->activityLogRepository->getByFilter($filter);
-            $data = $this->utility->paginate($activityLogs, $pageSize, $page);
+            // Remove null values
+            $filter = array_filter($filter, function ($value) {
+                return $value !== null && $value !== '';
+            });
+
+            // $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách activity log');
+            $paginator = $this->activityLogRepository->getByFilter($filter);
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'activities' => $data->items(),
+                    'activities' => $paginator->items(),
                     'pagination' => [
-                        'current_page' => $data->currentPage(),
-                        'per_page' => $data->perPage(),
-                        'total' => $data->total(),
-                        'last_page' => $data->lastPage(),
-                        'from' => $data->firstItem(),
-                        'to' => $data->lastItem(),
+                        'current_page' => $paginator->currentPage(),
+                        'per_page' => $paginator->perPage(),
+                        'total' => $paginator->total(),
+                        'last_page' => $paginator->lastPage(),
+                        'from' => $paginator->firstItem(),
+                        'to' => $paginator->lastItem(),
+                        'has_more_pages' => $paginator->hasMorePages(),
+                        'on_first_page' => $paginator->onFirstPage(),
                     ],
-                    'filters_applied' => array_filter($filter, function ($value) {
-                        return $value !== null && $value !== '';
-                    })
+                    'filters_applied' => $filter,
+                    'sort' => [
+                        'field' => $filter['sort_field'] ?? 'created_at',
+                        'direction' => $filter['sort_direction'] ?? 'desc'
+                    ]
                 ],
                 'message' => 'Lấy danh sách activity log thành công',
                 'type' => 'list_activity_log_success',
             ], 200);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu đầu vào không hợp lệ',
+                'type' => 'list_activity_log_validation_error',
+                'errors' => $e->errors()
+            ], 422);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Lấy danh sách activity log không thành công',
                 'type' => 'list_activity_log_fail',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Đã xảy ra lỗi hệ thống'
             ], 500);
         }
     }
@@ -84,17 +97,18 @@ class ActivityLogController extends Controller
     {
         try {
             $input = $request->all();
-            $date = $request->get('date') ?? $this->utility->getCurrentVNTime('Y-m-d');
-            $dateFrom = $request->get('date_from');
-            $dateTo = $request->get('date_to');
-            $user_id = $request->get('user_id');
 
             $filter = [
-                'date' => $date,
-                'date_from' => $dateFrom,
-                'date_to' => $dateTo,
-                'user_id' => $user_id,
+                'date' => $request->get('date'),
+                'date_from' => $request->get('date_from'),
+                'date_to' => $request->get('date_to'),
+                'user_id' => $request->get('user_id'),
             ];
+
+            // Remove null values
+            $filter = array_filter($filter, function ($value) {
+                return $value !== null && $value !== '';
+            });
 
             $stats = $this->activityLogRepository->getActivityStats($filter);
 
@@ -104,19 +118,26 @@ class ActivityLogController extends Controller
                     'total_activities' => $stats['total_activities'],
                     'actions_by_group' => $stats['actions_by_group'],
                     'top_users' => $stats['top_users'],
-                    'filters_applied' => array_filter($filter, function ($value) {
-                        return $value !== null && $value !== '';
-                    })
+                    'daily_activities' => $stats['daily_activities'],
+                    'filters_applied' => $filter
                 ],
                 'message' => 'Lấy thống kê activity log thành công',
                 'type' => 'get_activity_stats_success',
             ], 200);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu đầu vào không hợp lệ',
+                'type' => 'get_activity_stats_validation_error',
+                'errors' => $e->errors()
+            ], 422);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Lấy thống kê activity log không thành công',
                 'type' => 'get_activity_stats_fail',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Đã xảy ra lỗi hệ thống'
             ], 500);
         }
     }
@@ -168,21 +189,83 @@ class ActivityLogController extends Controller
                     ]
                 ],
                 'date_filters' => [
-                    'today' => 'Hôm nay',
-                    'yesterday' => 'Hôm qua',
-                    'this_week' => 'Tuần này',
-                    'last_week' => 'Tuần trước',
-                    'this_month' => 'Tháng này',
-                    'last_month' => 'Tháng trước',
-                    'custom_range' => 'Khoảng thời gian tùy chỉnh'
+                    [
+                        'value' => 'today',
+                        'label' => 'Hôm nay',
+                        'date' => now()->format('Y-m-d')
+                    ],
+                    [
+                        'value' => 'yesterday',
+                        'label' => 'Hôm qua',
+                        'date' => now()->subDay()->format('Y-m-d')
+                    ],
+                    [
+                        'value' => 'this_week',
+                        'label' => 'Tuần này',
+                        'date_from' => now()->startOfWeek()->format('Y-m-d'),
+                        'date_to' => now()->endOfWeek()->format('Y-m-d')
+                    ],
+                    [
+                        'value' => 'last_week',
+                        'label' => 'Tuần trước',
+                        'date_from' => now()->subWeek()->startOfWeek()->format('Y-m-d'),
+                        'date_to' => now()->subWeek()->endOfWeek()->format('Y-m-d')
+                    ],
+                    [
+                        'value' => 'this_month',
+                        'label' => 'Tháng này',
+                        'date_from' => now()->startOfMonth()->format('Y-m-d'),
+                        'date_to' => now()->endOfMonth()->format('Y-m-d')
+                    ],
+                    [
+                        'value' => 'last_month',
+                        'label' => 'Tháng trước',
+                        'date_from' => now()->subMonth()->startOfMonth()->format('Y-m-d'),
+                        'date_to' => now()->subMonth()->endOfMonth()->format('Y-m-d')
+                    ]
                 ],
                 'sort_options' => [
-                    'created_at_desc' => 'Thời gian tạo (Mới nhất)',
-                    'created_at_asc' => 'Thời gian tạo (Cũ nhất)',
-                    'action_asc' => 'Hành động (A-Z)',
-                    'action_desc' => 'Hành động (Z-A)',
-                    'user_name_asc' => 'Tên người dùng (A-Z)',
-                    'user_name_desc' => 'Tên người dùng (Z-A)'
+                    [
+                        'value' => 'created_at_desc',
+                        'label' => 'Thời gian tạo (Mới nhất)',
+                        'field' => 'created_at',
+                        'direction' => 'desc'
+                    ],
+                    [
+                        'value' => 'created_at_asc',
+                        'label' => 'Thời gian tạo (Cũ nhất)',
+                        'field' => 'created_at',
+                        'direction' => 'asc'
+                    ],
+                    [
+                        'value' => 'action_asc',
+                        'label' => 'Hành động (A-Z)',
+                        'field' => 'action',
+                        'direction' => 'asc'
+                    ],
+                    [
+                        'value' => 'action_desc',
+                        'label' => 'Hành động (Z-A)',
+                        'field' => 'action',
+                        'direction' => 'desc'
+                    ],
+                    [
+                        'value' => 'user_id_asc',
+                        'label' => 'Người dùng (A-Z)',
+                        'field' => 'user_id',
+                        'direction' => 'asc'
+                    ],
+                    [
+                        'value' => 'user_id_desc',
+                        'label' => 'Người dùng (Z-A)',
+                        'field' => 'user_id',
+                        'direction' => 'desc'
+                    ]
+                ],
+                'filter_options' => [
+                    'page_sizes' => [10, 20, 50, 100],
+                    'max_page_size' => 100,
+                    'default_page_size' => 20
                 ]
             ];
 
@@ -197,7 +280,7 @@ class ActivityLogController extends Controller
                 'success' => false,
                 'message' => 'Lấy danh sách bộ lọc không thành công',
                 'type' => 'get_available_filters_fail',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Đã xảy ra lỗi hệ thống'
             ], 500);
         }
     }
@@ -206,30 +289,40 @@ class ActivityLogController extends Controller
     {
         try {
             $input = $request->all();
-            $date = $request->get('date') ?? $this->utility->getCurrentVNTime('Y-m-d');
-            $dateFrom = $request->get('date_from');
-            $dateTo = $request->get('date_to');
-            $user_id = $request->get('user_id');
-            $action = $request->get('action');
-            $group_action = $request->get('group_action');
-            $search = $request->get('search');
-            $format = $request->get('format', 'csv'); // csv, excel, json
 
             $filter = [
-                'date' => $date,
-                'date_from' => $dateFrom,
-                'date_to' => $dateTo,
-                'user_id' => $user_id,
-                'action' => $action,
-                'group_action' => $group_action,
-                'search' => $search,
+                'date' => $request->get('date'),
+                'date_from' => $request->get('date_from'),
+                'date_to' => $request->get('date_to'),
+                'user_id' => $request->get('user_id'),
+                'action' => $request->get('action'),
+                'group_action' => $request->get('group_action'),
+                'search' => $request->get('search'),
+                'sort_field' => $request->get('sort_field', 'created_at'),
+                'sort_direction' => $request->get('sort_direction', 'desc'),
             ];
 
-            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input, 'export_format' => $format], 'Xuất activity log');
-            $activityLogs = $this->activityLogRepository->getByFilter($filter);
+            // Remove null values
+            $filter = array_filter($filter, function ($value) {
+                return $value !== null && $value !== '';
+            });
 
-            // For now, return JSON format. You can implement CSV/Excel export later
-            $exportData = $activityLogs->map(function ($log) {
+            // Limit export to prevent performance issues
+            $filter['pageSize'] = min($request->get('limit', 1000), 5000);
+            $filter['page'] = 1;
+
+            $format = $request->get('format', 'json'); // json, csv
+
+            $this->logActivity(ActivityAction::ACCESS_VIEW, [
+                'filters' => $input,
+                'export_format' => $format,
+                'export_limit' => $filter['pageSize']
+            ], 'Xuất activity log');
+
+            $paginator = $this->activityLogRepository->getByFilter($filter);
+
+            // Transform data for export
+            $exportData = $paginator->map(function ($log) {
                 return [
                     'id' => $log->id,
                     'action' => $log->action,
@@ -240,9 +333,18 @@ class ActivityLogController extends Controller
                     'user_email' => $log->user_email,
                     'user_name' => $log->user_name,
                     'created_at' => $log->formatted_created_at,
-                    'details' => $log->details
+                    'details' => $log->formatted_details
                 ];
             });
+
+            if ($format === 'csv') {
+                // Generate CSV content
+                $csvContent = $this->generateCsvContent($exportData);
+
+                return response($csvContent)
+                    ->header('Content-Type', 'text/csv')
+                    ->header('Content-Disposition', 'attachment; filename="activity_log_' . now()->format('Y-m-d_H-i-s') . '.csv"');
+            }
 
             return response()->json([
                 'success' => true,
@@ -250,20 +352,70 @@ class ActivityLogController extends Controller
                     'export_data' => $exportData,
                     'total_records' => $exportData->count(),
                     'export_format' => $format,
-                    'filters_applied' => array_filter($filter, function ($value) {
-                        return $value !== null && $value !== '';
-                    })
+                    'export_limit' => $filter['pageSize'],
+                    'generated_at' => now()->format('Y-m-d H:i:s'),
+                    'filters_applied' => array_filter($filter, function ($key) {
+                        return !in_array($key, ['pageSize', 'page']);
+                    }, ARRAY_FILTER_USE_KEY)
                 ],
                 'message' => 'Xuất activity log thành công',
                 'type' => 'export_activity_log_success',
             ], 200);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu đầu vào không hợp lệ',
+                'type' => 'export_activity_log_validation_error',
+                'errors' => $e->errors()
+            ], 422);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Xuất activity log không thành công',
                 'type' => 'export_activity_log_fail',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Đã xảy ra lỗi hệ thống'
             ], 500);
         }
+    }
+
+    private function generateCsvContent($data)
+    {
+        if ($data->isEmpty()) {
+            return '';
+        }
+
+        $headers = [
+            'ID',
+            'Hành động',
+            'Nhãn hành động',
+            'Nhóm hành động',
+            'Mô tả',
+            'ID người dùng',
+            'Email người dùng',
+            'Tên người dùng',
+            'Thời gian tạo',
+            'Chi tiết'
+        ];
+
+        $csvContent = implode(',', $headers) . "\n";
+
+        foreach ($data as $row) {
+            $csvRow = [
+                $row['id'],
+                '"' . str_replace('"', '""', $row['action']) . '"',
+                '"' . str_replace('"', '""', $row['action_label']) . '"',
+                '"' . str_replace('"', '""', $row['group_action']) . '"',
+                '"' . str_replace('"', '""', $row['description']) . '"',
+                $row['user_id'],
+                '"' . str_replace('"', '""', $row['user_email'] ?? '') . '"',
+                '"' . str_replace('"', '""', $row['user_name'] ?? '') . '"',
+                '"' . $row['created_at'] . '"',
+                '"' . str_replace('"', '""', json_encode($row['details'])) . '"'
+            ];
+            $csvContent .= implode(',', $csvRow) . "\n";
+        }
+
+        return $csvContent;
     }
 }

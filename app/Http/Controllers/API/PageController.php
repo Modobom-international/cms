@@ -192,7 +192,7 @@ class PageController extends Controller
      */
     public function getPages()
     {
-        $this->logActivity(ActivityAction::ACCESS_VIEW, [], 'Viewed pages listing');
+        // $this->logActivity(ActivityAction::ACCESS_VIEW, [], 'Viewed pages listing');
 
         $pages = $this->pageRepository->getAllWithRelations();
 
@@ -211,7 +211,7 @@ class PageController extends Controller
      */
     public function getPagesBySite($siteId)
     {
-        $this->logActivity(ActivityAction::ACCESS_VIEW, ['site_id' => $siteId], 'Viewed pages for site');
+        // $this->logActivity(ActivityAction::ACCESS_VIEW, ['site_id' => $siteId], 'Viewed pages for site');
 
         try {
             // Verify site exists
@@ -452,7 +452,7 @@ EOT;
      */
     public function getPendingExports()
     {
-        $this->logActivity(ActivityAction::ACCESS_VIEW, [], 'Viewed pending exports');
+        // $this->logActivity(ActivityAction::ACCESS_VIEW, [], 'Viewed pending exports');
 
         $latestExport = $this->pageExportRepository->getLatestExport();
 
