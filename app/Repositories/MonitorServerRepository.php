@@ -15,4 +15,9 @@ class MonitorServerRepository extends BaseRepository
     {
         return $this->model->where('server_id', $server_id)->orderBy('created_at', 'desc')->get();
     }
+
+    public function getByServerWithDate($server_id, $startDate, $endDate, $limit = 100)
+    {
+        return $this->model->where('server_id', $server_id)->whereBetween('created_at', [$startDate, $endDate])->orderBy('created_at', 'desc')->limit($limit)->get();
+    }
 }

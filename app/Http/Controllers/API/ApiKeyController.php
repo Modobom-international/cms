@@ -18,7 +18,6 @@ class ApiKeyController extends BaseController
 
     public function __construct(ApiKeyRepository $apiKeyRepository)
     {
-        $this->middleware('auth:sanctum');
         $this->apiKeyRepository = $apiKeyRepository;
     }
 
