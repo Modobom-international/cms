@@ -24,8 +24,7 @@ class Page extends Model
         'site_id',
         'name',
         'slug',
-        'provider',
-        'tracking_script',
+        'provider'
     ];
 
     public function site()
