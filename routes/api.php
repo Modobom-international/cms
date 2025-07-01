@@ -69,6 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', [ApiKeyController::class, 'destroy'])->name('api-keys.delete');
         Route::post('/{id}/regenerate', [ApiKeyController::class, 'regenerate'])->name('api-keys.regenerate');
         Route::get('/{id}', [ApiKeyController::class, 'show'])->name('api-keys.show');
+        Route::get('/get-server-key', [ApiKeyController::class, 'getServerApiKey'])->name('api-keys.get.server');
     });
 
     Route::get('/notifications', [NotificationController::class, 'getNotifications']);
@@ -325,6 +326,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/store', [ServerController::class, 'store'])->name('server.store');
         Route::post('/update/{id}', [ServerController::class, 'update'])->name('server.update');
         Route::delete('/delete/{id}', [ServerController::class, 'show'])->name('server.destroy');
+        Route::get('/list-only', [ServerController::class, 'listOnly'])->name('server.list.only');
+        Route::get('/detail/{id}', [ServerController::class, 'detail'])->name('server.detail');
     });
 
     Route::prefix('activity-log')->group(function () {
@@ -335,7 +338,8 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::prefix('monitor-server')->group(function () {
-        Route::get('/detail', [MonitorServerController::class, 'detail'])->name('monitor.server.detail');
+        Route::get('/detail/{id}', [MonitorServerController::class, 'detail'])->name('monitor.server.detail');
+        Route::post('/store', [MonitorServerController::class, 'store'])->name('monitor.server.store');
     });
 
     // Company IP Management routes

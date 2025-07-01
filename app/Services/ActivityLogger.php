@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Auth;
 
 class ActivityLogger
 {
-    public function log(string $action, array $details = [], string $description, ?int $userId = null): void
+    public function log(string $action, array $details = [], string $description, ?int $userId = null, ?string $ip = null): void
     {
         $userId = $userId ?? Auth::id();
 
@@ -17,7 +17,8 @@ class ActivityLogger
                 'logged_at' => now()->toDateTimeString(),
             ]),
             description: $description,
-            userId: $userId
+            userId: $userId,
+            ip: $ip ?? request()->ip()
         ));
     }
 }

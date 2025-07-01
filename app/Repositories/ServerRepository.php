@@ -28,4 +28,9 @@ class ServerRepository extends BaseRepository
 
         return $query;
     }
+
+    public function listOnly()
+    {
+        return $this->model->get();
+    }
 }
