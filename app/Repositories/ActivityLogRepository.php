@@ -196,7 +196,8 @@ class ActivityLogRepository extends BaseRepository
             'date_to' => 'nullable|date_format:Y-m-d|after_or_equal:date_from',
             'user_id' => 'nullable',
             'user_id.*' => 'exists:users,id',
-            'action' => 'nullable|string',
+            'action' => 'nullable',
+            'action.*' => 'string',
             'group_action' => 'nullable|string',
             'search' => 'nullable|string|max:255',
             'page' => 'nullable|integer|min:1',
@@ -212,6 +213,16 @@ class ActivityLogRepository extends BaseRepository
             } else {
                 $rules['user_id'] = 'nullable|string|exists:users,id';
                 unset($rules['user_id.*']);
+            }
+        }
+
+        // Handle action validation for both single value and array
+        if (isset($filter['action'])) {
+            if (is_array($filter['action'])) {
+                $rules['action'] = 'nullable|array';
+            } else {
+                $rules['action'] = 'nullable|string';
+                unset($rules['action.*']);
             }
         }
 

@@ -48,6 +48,11 @@ class ActivityLogController extends Controller
                 $filter['user_id'] = array_map('trim', explode(',', $filter['user_id']));
             }
 
+            // Parse comma-separated action into array
+            if (!empty($filter['action']) && is_string($filter['action']) && strpos($filter['action'], ',') !== false) {
+                $filter['action'] = array_map('trim', explode(',', $filter['action']));
+            }
+
             // Remove null values
             $filter = array_filter($filter, function ($value) {
                 return $value !== null && $value !== '';
@@ -314,6 +319,11 @@ class ActivityLogController extends Controller
             // Parse comma-separated user_id into array
             if (!empty($filter['user_id']) && is_string($filter['user_id']) && strpos($filter['user_id'], ',') !== false) {
                 $filter['user_id'] = array_map('trim', explode(',', $filter['user_id']));
+            }
+
+            // Parse comma-separated action into array
+            if (!empty($filter['action']) && is_string($filter['action']) && strpos($filter['action'], ',') !== false) {
+                $filter['action'] = array_map('trim', explode(',', $filter['action']));
             }
 
             // Remove null values
