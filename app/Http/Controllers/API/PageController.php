@@ -848,7 +848,7 @@ EOT;
      */
     public function getTrackingScript($pageId)
     {
-        $this->logActivity(ActivityAction::GET_TRACKING_SCRIPT, ['page_id' => $pageId], 'Viewed tracking script');
+        // $this->logActivity(ActivityAction::GET_TRACKING_SCRIPT, ['page_id' => $pageId], 'Viewed tracking script');
 
         try {
             $page = $this->pageRepository->find($pageId);

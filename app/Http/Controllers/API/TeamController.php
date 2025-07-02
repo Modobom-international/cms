@@ -22,9 +22,9 @@ class TeamController extends Controller
 
     public function __construct(TeamRepository $teamRepository, PermissionRepository $permissionRepository, Utility $utility)
     {
-        $this->teamRepository  = $teamRepository;
-        $this->permissionRepository  = $permissionRepository;
-        $this->utility  = $utility;
+        $this->teamRepository = $teamRepository;
+        $this->permissionRepository = $permissionRepository;
+        $this->utility = $utility;
     }
 
     public function index(Request $request)
@@ -43,7 +43,7 @@ class TeamController extends Controller
             $query = $this->teamRepository->getTeamByFilter($filter);
 
             foreach ($query as $team) {
-                $permissions  = array();
+                $permissions = array();
                 if (isset($team->permissions)) {
                     $getPermission = $team->permissions;
                     foreach ($getPermission as $permission) {
@@ -134,7 +134,7 @@ class TeamController extends Controller
                 $team->permissions()->sync($permissions);
             }
 
-            $this->logActivity(ActivityAction::UPDATE_RECORD, ['filters' => $input], 'Cập nhật team');
+            // $this->logActivity(ActivityAction::UPDATE_RECORD, ['filters' => $input], 'Cập nhật team');
 
             return response()->json([
                 'success' => true,
@@ -197,7 +197,7 @@ class TeamController extends Controller
                 }
             }
 
-            $this->logActivity(ActivityAction::GET_PERMISSiON_BY_TEAM, ['filters' => $input], 'Lấy danh sách quyền của team');
+            // $this->logActivity(ActivityAction::GET_PERMISSiON_BY_TEAM, ['filters' => $input], 'Lấy danh sách quyền của team');
 
             return response()->json([
                 'success' => true,

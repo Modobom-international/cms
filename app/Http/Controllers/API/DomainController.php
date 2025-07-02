@@ -246,7 +246,7 @@ class DomainController extends Controller
             $getSlug = $this->siteRepository->getSlugByDomain($domain);
 
             $listPath = [];
-            $this->logActivity(ActivityAction::GET_LIST_PATH_BY_DOMAIN, [], 'Lấy danh sách url path theo domain');
+            // $this->logActivity(ActivityAction::GET_LIST_PATH_BY_DOMAIN, [], 'Lấy danh sách url path theo domain');
 
             if (isset($getSlug['pages'])) {
                 foreach ($getSlug['pages'] as $record) {
