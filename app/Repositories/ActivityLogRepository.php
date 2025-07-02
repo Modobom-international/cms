@@ -194,7 +194,8 @@ class ActivityLogRepository extends BaseRepository
             'date' => 'nullable|date_format:Y-m-d',
             'date_from' => 'nullable|date_format:Y-m-d',
             'date_to' => 'nullable|date_format:Y-m-d|after_or_equal:date_from',
-            'user_id' => 'nullable|integer|exists:users,id',
+            'user_id' => 'nullable',
+            'user_id.*' => 'exists:users,id',
             'action' => 'nullable|string',
             'group_action' => 'nullable|string',
             'search' => 'nullable|string|max:255',
@@ -203,6 +204,16 @@ class ActivityLogRepository extends BaseRepository
             'sort_field' => 'nullable|string|in:created_at,action,user_id',
             'sort_direction' => 'nullable|string|in:asc,desc'
         ];
+
+        // Handle user_id validation for both single value and array
+        if (isset($filter['user_id'])) {
+            if (is_array($filter['user_id'])) {
+                $rules['user_id'] = 'nullable|array';
+            } else {
+                $rules['user_id'] = 'nullable|string|exists:users,id';
+                unset($rules['user_id.*']);
+            }
+        }
 
         $validator = Validator::make($filter, $rules);
 

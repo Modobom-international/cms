@@ -316,6 +316,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('users')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('user.list');
+        Route::get('/all', [UserController::class, 'getAllUsers'])->name('user.list.all');
         Route::get('/{id}', [UserController::class, 'show'])->name('user.edit');
         Route::post('/update/{id}', [UserController::class, 'update'])->name('user.update');
         Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('user.destroy');

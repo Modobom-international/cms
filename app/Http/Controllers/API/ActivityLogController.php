@@ -27,7 +27,6 @@ class ActivityLogController extends Controller
     public function listActivityLog(Request $request)
     {
         try {
-            $input = $request->all();
 
             // Build filter array with all possible parameters
             $filter = [
@@ -43,6 +42,11 @@ class ActivityLogController extends Controller
                 'sort_field' => $request->get('sort_field', 'created_at'),
                 'sort_direction' => $request->get('sort_direction', 'desc'),
             ];
+
+            // Parse comma-separated user_id into array
+            if (!empty($filter['user_id']) && is_string($filter['user_id']) && strpos($filter['user_id'], ',') !== false) {
+                $filter['user_id'] = array_map('trim', explode(',', $filter['user_id']));
+            }
 
             // Remove null values
             $filter = array_filter($filter, function ($value) {
@@ -104,6 +108,11 @@ class ActivityLogController extends Controller
                 'date_to' => $request->get('date_to'),
                 'user_id' => $request->get('user_id'),
             ];
+
+            // Parse comma-separated user_id into array
+            if (!empty($filter['user_id']) && is_string($filter['user_id']) && strpos($filter['user_id'], ',') !== false) {
+                $filter['user_id'] = array_map('trim', explode(',', $filter['user_id']));
+            }
 
             // Remove null values
             $filter = array_filter($filter, function ($value) {
@@ -301,6 +310,11 @@ class ActivityLogController extends Controller
                 'sort_field' => $request->get('sort_field', 'created_at'),
                 'sort_direction' => $request->get('sort_direction', 'desc'),
             ];
+
+            // Parse comma-separated user_id into array
+            if (!empty($filter['user_id']) && is_string($filter['user_id']) && strpos($filter['user_id'], ',') !== false) {
+                $filter['user_id'] = array_map('trim', explode(',', $filter['user_id']));
+            }
 
             // Remove null values
             $filter = array_filter($filter, function ($value) {

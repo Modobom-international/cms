@@ -352,6 +352,42 @@ class UserController extends Controller
         }
     }
 
+    public function getAllUsers(Request $request)
+    {
+        try {
+            $input = $request->all();
+            $team = $request->get('team');
+            $search = $request->get('search');
+            $filter = [];
+
+            if (isset($team)) {
+                $filter['team'] = $team;
+            }
+
+            if (isset($search)) {
+                $filter['search'] = $search;
+            }
+
+            $users = $this->userRepository->getUsersByFilter($filter);
+
+            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem tất cả users');
+
+            return response()->json([
+                'success' => true,
+                'data' => $users,
+                'message' => 'Lấy tất cả user thành công',
+                'type' => 'list_all_user_success',
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lấy tất cả user không thành công',
+                'type' => 'list_all_user_fail',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function show(Request $request, $id)
     {
         try {
@@ -382,7 +418,7 @@ class UserController extends Controller
         }
     }
 
-    public function update($id)
+    public function update(Request $request, $id)
     {
         try {
             $user = $this->userRepository->getUserByID($id);
@@ -394,10 +430,10 @@ class UserController extends Controller
                 ], 404);
             }
 
-            $input = request()->all();
+            $input = $request->all();
             $this->userRepository->update($input, $user->id);
 
-            $this->logActivity(ActivityAction::SHOW_RECORD, ['filters' => $request->all(), 'user' => $user], 'Thay đổi thông tin user');
+            $this->logActivity(ActivityAction::UPDATE_RECORD, ['filters' => $request->all(), 'user' => $user], 'Thay đổi thông tin user');
 
             return response()->json([
                 'success' => true,
