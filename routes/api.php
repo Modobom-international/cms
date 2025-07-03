@@ -59,14 +59,12 @@ Route::middleware(ExcludeDomainTracking::class)->group(function () {
     Route::get('/api-keys/get-server-key', [ApiKeyController::class, 'getServerApiKey']);
 });
 
-//API Dashboard
-
-Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
-
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [UserController::class, 'me']);
-    
+
+    Route::get('/boards/metrics', [DashboardController::class, 'metrics'])->name('boards.metrics');
+
     // API Keys routes
     Route::prefix('api-keys')->group(function () {
         Route::get('/', [ApiKeyController::class, 'index'])->name('api-keys.index');

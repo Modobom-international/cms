@@ -22,7 +22,8 @@ class RestrictBrowserAccess
         'api/store-app-info',
         'horizon/*',
         'storage/exports/*',
-        'api/api-keys/get-server-key'
+        'api/api-keys/get-server-key',
+        'api/boards/metrics'
     ];
 
     /**
