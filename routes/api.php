@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\ExcludeDomainTracking;
 
 use App\Http\Controllers\API\AttachmentController;
+use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\CommentController;
 use App\Http\Controllers\API\DueDateController;
 use App\Http\Controllers\API\AuthController;
@@ -57,10 +58,14 @@ Route::middleware(ExcludeDomainTracking::class)->group(function () {
     Route::get('/store-monitor', [MonitorServerController::class, 'store']);
 });
 
+//API Dashboard
+
+Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [UserController::class, 'me']);
-
+    
     // API Keys routes
     Route::prefix('api-keys')->group(function () {
         Route::get('/', [ApiKeyController::class, 'index'])->name('api-keys.index');

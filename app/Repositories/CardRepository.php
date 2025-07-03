@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Card;
 use App\Models\ListBoard;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Enums\Boards;
@@ -173,5 +174,65 @@ class CardRepository extends BaseRepository
             ->where('user_id', $user->id)
             ->whereIn('role', [Boards::ROLE_ADMIN, Boards::ROLE_MEMBER])
             ->exists();
+    }
+    
+    public function countTotal()
+    {
+        return $this->model->count();
+    }
+    
+    public function countTotalThisWeek()
+    {
+        return $this->model->whereHas('dueDate', function ($q) {
+            $q->where('is_completed', true)
+                ->whereBetween('updated_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+        })->count();
+    }
+    
+    public function overdueCount()
+    {
+        return $this->model->whereHas('dueDate', function ($q) {
+            $q->where('due_date', '<', now())
+                ->where('is_completed', false);
+        })->count();
+    }
+    
+    public function statusStats()
+    {
+        return $this->model->select(DB::raw('due_dates.status_text, COUNT(cards.id) as total'))
+            ->join('due_dates', 'due_dates.card_id', '=', 'cards.id')
+            ->groupBy('due_dates.status_text')
+            ->pluck('total', 'status_text');
+    }
+    
+    public function overdueTasks()
+    {
+        return $this->model->with(['dueDate', 'listBoard.board', 'users']) // load quan hệ liên quan
+        ->whereHas('dueDate', function ($q) {
+            $q->where('due_date', '<', now())
+                ->where('is_completed', false);
+        })
+            ->get()
+        
+            ->map(function ($card) {
+                $dueDate = optional($card->dueDate)->due_date;
+                $now = Carbon::now('Asia/Ho_Chi_Minh'); // ví dụ: 2025-07-03 10:00:00
+                $isCompleted = optional($card->dueDate)->is_completed;
+    
+                $daysLate = null;
+        
+                if ($dueDate && !$isCompleted && $dueDate < now()) {
+                    $daysLateCount = abs(floor($now->diffInDays($dueDate, false))); // 71
+                    $daysLate = "Quá hạn {$daysLateCount} ngày";
+                }
+        
+                return [
+                    'card_name' => $card->title,
+                    'board_name' => $card->listBoard->board->name ?? '(Không rõ)',
+                    'users' => $card->users->pluck('name')->toArray() ?: ['Chưa gán'],
+                    'due_date' => $dueDate,
+                    'days_late' => $daysLate ?? "Chưa xác định",
+                ];
+            });
     }
 }

@@ -46,4 +46,9 @@ class Card extends Model
     {
         return $this->hasMany(Attachment::class);
     }
+    
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'card_users'); // 👈 chỉ rõ tên bảng pivot
+    }
 }

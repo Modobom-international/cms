@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class UserRepository extends BaseRepository
 {
@@ -73,5 +74,24 @@ class UserRepository extends BaseRepository
         });
 
         return $users;
+    }
+    
+    public function topUser()
+    {
+        return $this->model->select('users.id', 'users.name', DB::raw('COUNT(card_users.card_id) as total'))
+            ->join('card_users', 'users.id', '=', 'card_users.user_id')
+            ->join('due_dates', 'due_dates.card_id', '=', 'card_users.card_id')
+            ->where('due_dates.is_completed', true)
+            ->groupBy('users.id', 'users.name')
+            ->orderByDesc('total')
+            ->take(3)
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'user' => $user->name,
+                    'task_done' => $user->total,
+                ];
+            });
+        
     }
 }
