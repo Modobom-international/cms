@@ -21,7 +21,8 @@ class RestrictBrowserAccess
         'api/refresh-token',
         'api/store-app-info',
         'horizon/*',
-        'storage/exports/*'
+        'storage/exports/*',
+        'api/api-keys/get-server-key'
     ];
 
     /**

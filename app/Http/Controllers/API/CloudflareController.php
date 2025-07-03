@@ -38,7 +38,7 @@ class CloudflareController extends Controller
      */
     public function getProjects()
     {
-        $this->logActivity(ActivityAction::ACCESS_VIEW, [], 'Viewed Cloudflare projects');
+        // $this->logActivity(ActivityAction::ACCESS_VIEW, [], 'Viewed Cloudflare projects');
 
         $result = $this->cloudflareService->getProjects();
 

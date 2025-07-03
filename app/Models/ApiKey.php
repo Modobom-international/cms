@@ -36,6 +36,11 @@ class ApiKey extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function servers()
+    {
+        return $this->belongsToMany(Server::class, 'server_api_keys');
+    }
+
     public static function generateKey(): array
     {
         // Generate a random string of 32 bytes and encode it in base64

@@ -19,6 +19,7 @@ class ActivityAction
     const DEPLOY_EXPORT_CLOUDFLARE_PAGE = 'deploy_export_cloudflare_page';
     const DETAIL_MONITOR_SERVER = 'detail_monitor_server';
     const CREATE_PAGE_EXPORTS = 'create_page_exports';
+    const CREATE_PAGES = 'create_pages';
     const UPDATE_PAGES = 'update_pages';
 
     // Site Management Actions
@@ -65,4 +66,17 @@ class ActivityAction
     const ADD_BOARD_MEMBER = 'add_board_member';
     const REMOVE_BOARD_MEMBER = 'remove_board_member';
     const GET_BOARD_MEMBERS = 'get_board_members';
+
+    // DNS Management Actions
+    const SYNC_DNS_RECORDS = 'sync_dns_records';
+    const DNS_DOMAIN_SYNCED = 'dns_domain_synced';
+    const DNS_SYNC_COMPLETED = 'dns_sync_completed';
+    const DNS_SYNC_FAILED = 'dns_sync_failed';
+    const DNS_ZONE_NOT_FOUND = 'dns_zone_not_found';
+    const DNS_NO_RECORDS_FOUND = 'dns_no_records_found';
+    const DNS_RECORD_SYNC_FAILED = 'dns_record_sync_failed';
+    const DNS_OBSOLETE_RECORDS_REMOVED = 'dns_obsolete_records_removed';
+    const DNS_SYNC_BATCH_COMPLETED = 'dns_sync_batch_completed';
+    const DNS_SYNC_COMPLETED_WITH_ERRORS = 'dns_sync_completed_with_errors';
+    const DNS_SYNC_ERROR = 'dns_sync_error';
 }

@@ -151,9 +151,9 @@ class AttendanceController extends Controller
 
     public function getTodayAttendance($employeeId)
     {
-        $this->logActivity(ActivityAction::GET_ATTENDANCE, [
-            'employee_id' => $employeeId
-        ], 'Viewed attendance');
+        // $this->logActivity(ActivityAction::GET_ATTENDANCE, [
+        //     'employee_id' => $employeeId
+        // ], 'Viewed attendance');
 
         $attendance = Attendance::where('employee_id', $employeeId)
             ->where('date', Carbon::today())
@@ -340,10 +340,10 @@ class AttendanceController extends Controller
             }
         }
 
-        $this->logActivity(ActivityAction::GET_ATTENDANCE_REPORT, [
-            'date' => $request->date,
-            'type' => $request->type
-        ], 'Generated attendance report');
+        // $this->logActivity(ActivityAction::GET_ATTENDANCE_REPORT, [
+        //     'date' => $request->date,
+        //     'type' => $request->type
+        // ], 'Generated attendance report');
 
         return response()->json($attendances);
     }

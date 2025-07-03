@@ -166,7 +166,7 @@ class PageController extends Controller
      */
     public function getPage($pageId)
     {
-        $this->logActivity(ActivityAction::SHOW_RECORD, ['page_id' => $pageId], 'Viewed page');
+        // $this->logActivity(ActivityAction::SHOW_RECORD, ['page_id' => $pageId], 'Viewed page');
 
         $page = $this->pageRepository->find($pageId);
         $site = $this->siteRepository->findWithRelations($page->site_id);
@@ -192,7 +192,7 @@ class PageController extends Controller
      */
     public function getPages()
     {
-        $this->logActivity(ActivityAction::ACCESS_VIEW, [], 'Viewed pages listing');
+        // $this->logActivity(ActivityAction::ACCESS_VIEW, [], 'Viewed pages listing');
 
         $pages = $this->pageRepository->getAllWithRelations();
 
@@ -211,7 +211,7 @@ class PageController extends Controller
      */
     public function getPagesBySite($siteId)
     {
-        $this->logActivity(ActivityAction::ACCESS_VIEW, ['site_id' => $siteId], 'Viewed pages for site');
+        // $this->logActivity(ActivityAction::ACCESS_VIEW, ['site_id' => $siteId], 'Viewed pages for site');
 
         try {
             // Verify site exists
@@ -452,7 +452,7 @@ EOT;
      */
     public function getPendingExports()
     {
-        $this->logActivity(ActivityAction::ACCESS_VIEW, [], 'Viewed pending exports');
+        // $this->logActivity(ActivityAction::ACCESS_VIEW, [], 'Viewed pending exports');
 
         $latestExport = $this->pageExportRepository->getLatestExport();
 
@@ -848,7 +848,7 @@ EOT;
      */
     public function getTrackingScript($pageId)
     {
-        $this->logActivity(ActivityAction::GET_TRACKING_SCRIPT, ['page_id' => $pageId], 'Viewed tracking script');
+        // $this->logActivity(ActivityAction::GET_TRACKING_SCRIPT, ['page_id' => $pageId], 'Viewed tracking script');
 
         try {
             $page = $this->pageRepository->find($pageId);

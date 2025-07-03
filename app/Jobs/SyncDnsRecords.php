@@ -8,9 +8,10 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Services\CloudFlareService;
-use App\Services\ActivityLogger;
+use App\Services\ApplicationLogger;
 use App\Repositories\DomainRepository;
 use App\Repositories\DnsRecordRepository;
+use App\Enums\ActivityAction;
 
 class SyncDnsRecords implements ShouldQueue
 {
@@ -38,16 +39,15 @@ class SyncDnsRecords implements ShouldQueue
         CloudFlareService $cloudFlareService,
         DomainRepository $domainRepository,
         DnsRecordRepository $dnsRecordRepository,
-        ActivityLogger $activityLogger
+        ApplicationLogger $applicationLogger
     ) {
         try {
             if ($this->domain) {
                 // Sync specific domain
-                $this->syncDomainDnsRecords($this->domain, $cloudFlareService, $dnsRecordRepository, $activityLogger);
-                $activityLogger->log(
+                $this->syncDomainDnsRecords($this->domain, $cloudFlareService, $dnsRecordRepository, $applicationLogger);
+                $applicationLogger->logDomain(
                     'dns_sync_completed',
-                    ['domain' => $this->domain],
-                    "DNS records synced successfully for domain: {$this->domain}"
+                    ['domain' => $this->domain, 'message' => "DNS records synced successfully for domain: {$this->domain}"]
                 );
             } else {
                 // Sync all domains
@@ -61,44 +61,62 @@ class SyncDnsRecords implements ShouldQueue
                             $domainModel->domain,
                             $cloudFlareService,
                             $dnsRecordRepository,
-                            $activityLogger
+                            $applicationLogger
                         );
                         $totalSynced += $recordCount;
 
-                        $activityLogger->log(
-                            'dns_domain_synced',
-                            ['domain' => $domainModel->domain, 'record_count' => $recordCount],
-                            "Synced {$recordCount} DNS records for domain: {$domainModel->domain}"
+                        $applicationLogger->logDomain(
+                            ActivityAction::DNS_DOMAIN_SYNCED,
+                            [
+                                'domain' => $domainModel->domain,
+                                'record_count' => $recordCount,
+                                'message' => "Synced {$recordCount} DNS records for domain: {$domainModel->domain}"
+                            ]
                         );
                     } catch (\Exception $e) {
                         $errors[] = "Failed to sync DNS records for {$domainModel->domain}: " . $e->getMessage();
-                        $activityLogger->log(
+                        $applicationLogger->logDomain(
                             'dns_sync_error',
-                            ['domain' => $domainModel->domain, 'error' => $e->getMessage()],
-                            "DNS sync error for {$domainModel->domain}: " . $e->getMessage()
+                            [
+                                'domain' => $domainModel->domain,
+                                'error' => $e->getMessage(),
+                                'message' => "DNS sync error for {$domainModel->domain}: " . $e->getMessage()
+                            ],
+                            'error'
                         );
                     }
                 }
 
-                $activityLogger->log(
+                $applicationLogger->logDomain(
                     'dns_sync_batch_completed',
-                    ['total_synced' => $totalSynced, 'domains_count' => count($domains)],
-                    "DNS records sync completed. Total records synced: {$totalSynced}"
+                    [
+                        'total_synced' => $totalSynced,
+                        'domains_count' => count($domains),
+                        'message' => "DNS records sync completed. Total records synced: {$totalSynced}"
+                    ]
                 );
 
                 if (!empty($errors)) {
-                    $activityLogger->log(
+                    $applicationLogger->logDomain(
                         'dns_sync_completed_with_errors',
-                        ['errors' => $errors, 'error_count' => count($errors)],
-                        "DNS sync completed with errors: " . implode(', ', $errors)
+                        [
+                            'errors' => $errors,
+                            'error_count' => count($errors),
+                            'message' => "DNS sync completed with errors: " . implode(', ', $errors)
+                        ],
+                        'warning'
                     );
                 }
             }
         } catch (\Exception $e) {
-            $activityLogger->log(
+            $applicationLogger->logDomain(
                 'dns_sync_failed',
-                ['error' => $e->getMessage(), 'domain' => $this->domain],
-                'DNS records sync failed: ' . $e->getMessage()
+                [
+                    'error' => $e->getMessage(),
+                    'domain' => $this->domain,
+                    'message' => 'DNS records sync failed: ' . $e->getMessage()
+                ],
+                'error'
             );
             throw $e;
         }
@@ -110,23 +128,26 @@ class SyncDnsRecords implements ShouldQueue
      * @param string $domain
      * @param CloudFlareService $cloudFlareService
      * @param DnsRecordRepository $dnsRecordRepository
-     * @param ActivityLogger $activityLogger
+     * @param ApplicationLogger $applicationLogger
      * @return int Number of records synced
      */
     private function syncDomainDnsRecords(
         string $domain,
         CloudFlareService $cloudFlareService,
         DnsRecordRepository $dnsRecordRepository,
-        ActivityLogger $activityLogger
+        ApplicationLogger $applicationLogger
     ): int {
         // Get zone ID for the domain
         $zoneId = $cloudFlareService->getZoneId($domain);
 
         if (!$zoneId) {
-            $activityLogger->log(
+            $applicationLogger->logDomain(
                 'dns_zone_not_found',
-                ['domain' => $domain],
-                "Zone ID not found for domain: {$domain}"
+                [
+                    'domain' => $domain,
+                    'message' => "Zone ID not found for domain: {$domain}"
+                ],
+                'warning'
             );
             return 0;
         }
@@ -140,10 +161,14 @@ class SyncDnsRecords implements ShouldQueue
         }
 
         if (!isset($response['result']) || !is_array($response['result'])) {
-            $activityLogger->log(
+            $applicationLogger->logDomain(
                 'dns_no_records_found',
-                ['domain' => $domain, 'zone_id' => $zoneId],
-                "No DNS records found for domain: {$domain}"
+                [
+                    'domain' => $domain,
+                    'zone_id' => $zoneId,
+                    'message' => "No DNS records found for domain: {$domain}"
+                ],
+                'warning'
             );
             return 0;
         }
@@ -165,10 +190,15 @@ class SyncDnsRecords implements ShouldQueue
                 $cloudflareIds[] = $record['id'];
                 $syncedCount++;
             } catch (\Exception $e) {
-                $activityLogger->log(
+                $applicationLogger->logDomain(
                     'dns_record_sync_failed',
-                    ['domain' => $domain, 'record_id' => $record['id'], 'error' => $e->getMessage()],
-                    "Failed to sync DNS record {$record['id']} for {$domain}: " . $e->getMessage()
+                    [
+                        'domain' => $domain,
+                        'record_id' => $record['id'],
+                        'error' => $e->getMessage(),
+                        'message' => "Failed to sync DNS record {$record['id']} for {$domain}: " . $e->getMessage()
+                    ],
+                    'error'
                 );
             }
         }
@@ -177,10 +207,13 @@ class SyncDnsRecords implements ShouldQueue
         $deletedCount = $dnsRecordRepository->deleteObsoleteRecords($domain, $cloudflareIds);
 
         if ($deletedCount > 0) {
-            $activityLogger->log(
+            $applicationLogger->logDomain(
                 'dns_obsolete_records_removed',
-                ['domain' => $domain, 'deleted_count' => $deletedCount],
-                "Removed {$deletedCount} obsolete DNS records for domain: {$domain}"
+                [
+                    'domain' => $domain,
+                    'deleted_count' => $deletedCount,
+                    'message' => "Removed {$deletedCount} obsolete DNS records for domain: {$domain}"
+                ]
             );
         }
 

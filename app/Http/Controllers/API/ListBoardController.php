@@ -49,7 +49,7 @@ class ListBoardController extends Controller
      */
     public function index($boardId)
     {
-        $this->logActivity(ActivityAction::GET_BOARD_LISTS, ['board_id' => $boardId], 'Viewed board lists');
+        // $this->logActivity(ActivityAction::GET_BOARD_LISTS, ['board_id' => $boardId], 'Viewed board lists');
 
         try {
             $board = $this->boardRepository->show($boardId);

@@ -41,7 +41,6 @@ use App\Http\Controllers\API\EventController;
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 Route::middleware('api.key')->group(function () {
-
     //API key routes
 });
 
@@ -56,6 +55,8 @@ Route::middleware(ExcludeDomainTracking::class)->group(function () {
 
     Route::post('/store-app-info', [AppInformationController::class, 'store']);
     Route::get('/store-monitor', [MonitorServerController::class, 'store']);
+
+    Route::get('/api-keys/get-server-key', [ApiKeyController::class, 'getServerApiKey']);
 });
 
 //API Dashboard
@@ -320,6 +321,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('users')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('user.list');
+        Route::get('/all', [UserController::class, 'getAllUsers'])->name('user.list.all');
         Route::get('/{id}', [UserController::class, 'show'])->name('user.edit');
         Route::post('/update/{id}', [UserController::class, 'update'])->name('user.update');
         Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('user.destroy');
@@ -330,6 +332,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/store', [ServerController::class, 'store'])->name('server.store');
         Route::post('/update/{id}', [ServerController::class, 'update'])->name('server.update');
         Route::delete('/delete/{id}', [ServerController::class, 'show'])->name('server.destroy');
+        Route::get('/list-only', [ServerController::class, 'listOnly'])->name('server.list.only');
+        Route::get('/detail/{id}', [ServerController::class, 'detail'])->name('server.detail');
     });
 
     Route::prefix('activity-log')->group(function () {
@@ -341,6 +345,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('monitor-server')->group(function () {
         Route::get('/detail', [MonitorServerController::class, 'detail'])->name('monitor.server.detail');
+        Route::post('/logs', [MonitorServerController::class, 'logs'])->name('monitor.server.logs');
+        Route::get('/history/{id}', [MonitorServerController::class, 'history'])->name('monitor.server.history');
     });
 
     // Company IP Management routes

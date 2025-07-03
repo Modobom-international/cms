@@ -6,6 +6,38 @@ use Illuminate\Support\Facades\Log;
 use Monolog\Logger;
 use Monolog\Handler\RotatingFileHandler;
 
+/**
+ * Custom rotating file handler that sets proper permissions
+ */
+class PermissionAwareRotatingFileHandler extends RotatingFileHandler
+{
+    protected function write(\Monolog\LogRecord $record): void
+    {
+        // Get the filename that will be used
+        $filename = $this->getTimedFilename();
+        $fileExists = file_exists($filename);
+        
+        // Call parent write method
+        parent::write($record);
+        
+        // If file was just created, set proper permissions
+        if (!$fileExists && file_exists($filename)) {
+            chmod($filename, 0777);
+            
+            // Try to set proper ownership if running as root
+            if (function_exists('posix_getuid') && posix_getuid() === 0) {
+                $webUser = 'modobomMDB';
+                $webGroup = 'modobomMDB';
+                
+                if (function_exists('chown') && function_exists('chgrp')) {
+                    @chown($filename, $webUser);
+                    @chgrp($filename, $webGroup);
+                }
+            }
+        }
+    }
+}
+
 class ApplicationLogger
 {
     protected $logger;
@@ -15,7 +47,7 @@ class ApplicationLogger
     {
         // General site management logger
         $this->logger = new Logger('site-management');
-        $handler = new RotatingFileHandler(
+        $handler = new PermissionAwareRotatingFileHandler(
             storage_path('logs/site-management.log'),
             365, // Keep 365 days (1 year) of logs
             Logger::INFO
@@ -28,7 +60,7 @@ class ApplicationLogger
 
         // Separate domain logger
         $this->domainLogger = new Logger('domain-management');
-        $domainHandler = new RotatingFileHandler(
+        $domainHandler = new PermissionAwareRotatingFileHandler(
             storage_path('logs/domain-management.log'),
             365, // Keep 365 days (1 year) of logs
             Logger::INFO

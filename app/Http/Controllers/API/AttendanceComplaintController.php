@@ -96,9 +96,9 @@ class AttendanceComplaintController extends Controller
      */
     public function index(Request $request)
     {
-        $this->logActivity(ActivityAction::GET_ATTENDANCE_COMPLAINTS, [
-            'employee_id' => Auth::id()
-        ], 'Viewed complaints');
+        // $this->logActivity(ActivityAction::GET_ATTENDANCE_COMPLAINTS, [
+        //     'employee_id' => Auth::id()
+        // ], 'Viewed complaints');
 
         $request->validate([
             'status' => 'nullable|in:pending,under_review,resolved,rejected',
@@ -163,9 +163,9 @@ class AttendanceComplaintController extends Controller
      */
     public function adminIndex(Request $request)
     {
-        $this->logActivity(ActivityAction::GET_ATTENDANCE_COMPLAINTS, [
-            'user_type' => 'admin'
-        ], 'Viewed complaints (admin)');
+        // $this->logActivity(ActivityAction::GET_ATTENDANCE_COMPLAINTS, [
+        //     'user_type' => 'admin'
+        // ], 'Viewed complaints (admin)');
 
         $request->validate([
             'status' => 'nullable|in:pending,under_review,resolved,rejected',

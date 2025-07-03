@@ -61,7 +61,7 @@ class UsersTrackingController extends Controller
                 $path = 'all';
             }
 
-            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách users tracking');
+            // $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem danh sách users tracking');
 
             $query = $this->trackingEventRepository->getTrackingEventByDomain($domain, $date, $path);
             $data = $this->utility->paginate($query->groupBy('uuid'), $pageSize, $page);

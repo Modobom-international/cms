@@ -40,8 +40,6 @@ class SiteController extends Controller
      */
     public function index()
     {
-        $this->logActivity(ActivityAction::ACCESS_VIEW, [], 'Viewed sites listing');
-
         $sites = Site::with(['user'])->latest()->get();
         return response()->json([
             'success' => true,
@@ -193,8 +191,6 @@ class SiteController extends Controller
      */
     public function show($id)
     {
-        $this->logActivity(ActivityAction::SHOW_RECORD, ['site_id' => $id], 'Viewed site details');
-
         try {
             $site = Site::with(['user'])->findOrFail($id);
 
