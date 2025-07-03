@@ -99,7 +99,6 @@ class MonitorServerController extends Controller
                 ], 401);
             }
 
-            // Update last used timestamp
             $apiKeyModel = $this->apiKeyRepository->getByServer($server->id);
             if ($apiKeyModel) {
                 $this->apiKeyRepository->updateLastUsed($apiKeyModel->id);
