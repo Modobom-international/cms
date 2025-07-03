@@ -72,7 +72,7 @@ class ApiKeyController extends BaseController
             'data' => [
                 'id' => $apiKey->id,
                 'name' => $apiKey->name,
-                'key' => $keyData['key'], // Only shown once
+                'key' => $keyData['key'],
                 'key_prefix' => $keyData['key_prefix'],
                 'expires_at' => $apiKey->expires_at,
                 'created_at' => $apiKey->created_at,
@@ -199,7 +199,7 @@ class ApiKeyController extends BaseController
             'data' => [
                 'id' => $apiKey->id,
                 'name' => $apiKey->name,
-                'key' => $keyData['key'], // Only shown once
+                'key' => $keyData['key'],
                 'key_prefix' => $keyData['key_prefix'],
                 'expires_at' => $apiKey->expires_at,
                 'created_at' => $apiKey->created_at,

@@ -207,7 +207,7 @@ class CardRepository extends BaseRepository
     
     public function overdueTasks()
     {
-        return $this->model->with(['dueDate', 'listBoard.board', 'users']) // load quan hệ liên quan
+        return $this->model->with(['dueDate', 'listBoard.board', 'users'])
         ->whereHas('dueDate', function ($q) {
             $q->where('due_date', '<', now())
                 ->where('is_completed', false);
@@ -216,13 +216,13 @@ class CardRepository extends BaseRepository
         
             ->map(function ($card) {
                 $dueDate = optional($card->dueDate)->due_date;
-                $now = Carbon::now('Asia/Ho_Chi_Minh'); // ví dụ: 2025-07-03 10:00:00
+                $now = Carbon::now('Asia/Ho_Chi_Minh');
                 $isCompleted = optional($card->dueDate)->is_completed;
     
                 $daysLate = null;
         
                 if ($dueDate && !$isCompleted && $dueDate < now()) {
-                    $daysLateCount = abs(floor($now->diffInDays($dueDate, false))); // 71
+                    $daysLateCount = abs(floor($now->diffInDays($dueDate, false)));
                     $daysLate = "Quá hạn {$daysLateCount} ngày";
                 }
         

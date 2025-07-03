@@ -49,8 +49,6 @@ class ListBoardController extends Controller
      */
     public function index($boardId)
     {
-        // $this->logActivity(ActivityAction::GET_BOARD_LISTS, ['board_id' => $boardId], 'Viewed board lists');
-
         try {
             $board = $this->boardRepository->show($boardId);
             if (!$board) {
@@ -113,7 +111,6 @@ class ListBoardController extends Controller
                 ], 404);
             }
 
-            // Kiểm tra quyền chỉnh sửa
             if (!$this->listBoardRepository->userCanEdit($board->id)) {
                 return response()->json([
                     'success' => false,
@@ -122,17 +119,15 @@ class ListBoardController extends Controller
                 ], 403);
             }
 
-            // Xác định position nếu không có
             $maxPosition = $this->listBoardRepository->maxPosition($board->id);
             $position = is_null($maxPosition) ? 1 : $maxPosition + 1;
 
-            // Tạo list mới
             $dataList = [
                 'board_id' => $board->id,
                 'title' => $input['title'],
                 'position' => $position
             ];
-            $createdList = $this->listBoardRepository->createListBoard($dataList);
+            $this->listBoardRepository->createListBoard($dataList);
 
             $this->logActivity(ActivityAction::CREATE_LIST, [
                 'board_id' => $board->id,

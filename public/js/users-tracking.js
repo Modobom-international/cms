@@ -16,184 +16,101 @@
     let startTime = getCurrentTimeInGMT7();
 
     const translations = {
-        'vi': {
-            title: 'Thông Báo Quyền Riêng Tư',
-            message: 'Trang web này sử dụng công nghệ như cookies để hỗ trợ các chức năng cần thiết, phân tích, và cá nhân hóa. Bạn có thể thay đổi cài đặt bất kỳ lúc nào hoặc chấp nhận cài đặt mặc định.',
-            closeMessage: 'Bạn có thể đóng thanh này để tiếp tục với các cookies cần thiết.',
-            privacyNotice: 'Thông Báo Quyền Riêng Tư',
-            analytics: 'Phân Tích',
-            personalization: 'Cá Nhân Hóa',
-            save: 'Lưu',
-            acceptAll: 'Chấp Nhận Tất Cả',
-            rejectAll: 'Từ Chối Tất Cả'
-        },
         'en': {
             title: 'Privacy Notice',
-            message: 'This website utilizes technologies such as cookies to enable essential site functionality, analytics, and personalization. You may change your settings at any time or accept the default settings.',
-            closeMessage: 'You may close this banner to continue with only essential cookies.',
-            privacyNotice: 'Privacy Notice',
-            analytics: 'Analytics',
-            personalization: 'Personalization',
-            save: 'Save',
-            acceptAll: 'Accept All',
-            rejectAll: 'Reject All'
+            message: 'We collect information about your usage behavior, device, and referrer for analytics, experience optimization, and security. You can accept or reject.',
+            details: 'Collected data: clicks, mouse movements, device, browser, referrer, session time. Purpose: analytics, optimization, security.',
+            accept: 'Accept',
+            reject: 'Reject',
+        },
+        'fr': {
+            title: 'Avis de confidentialité',
+            message: 'Nous collectons des informations sur votre comportement d\'utilisation, votre appareil et votre référent pour l\'analyse, l\'optimisation de l\'expérience et la sécurité. Vous pouvez accepter ou refuser.',
+            details: 'Données collectées : clics, mouvements de souris, appareil, navigateur, référent, durée de session. Objectif : analyse, optimisation, sécurité.',
+            accept: 'Accepter',
+            reject: 'Refuser',
+        },
+        'de': {
+            title: 'Datenschutzhinweis',
+            message: 'Wir erfassen Informationen über Ihr Nutzungsverhalten, Ihr Gerät und den Referrer für Analysen, Optimierung und Sicherheit. Sie können akzeptieren oder ablehnen.',
+            details: 'Gesammelte Daten: Klicks, Mausbewegungen, Gerät, Browser, Referrer, Sitzungsdauer. Zweck: Analyse, Optimierung, Sicherheit.',
+            accept: 'Akzeptieren',
+            reject: 'Ablehnen',
+        },
+        'it': {
+            title: 'Informativa sulla privacy',
+            message: 'Raccogliamo informazioni sul comportamento di utilizzo, dispositivo e referrer per analisi, ottimizzazione e sicurezza. Puoi accettare o rifiutare.',
+            details: 'Dati raccolti: clic, movimenti del mouse, dispositivo, browser, referrer, durata sessione. Scopo: analisi, ottimizzazione, sicurezza.',
+            accept: 'Accetta',
+            reject: 'Rifiuta',
+        },
+        'es': {
+            title: 'Aviso de privacidad',
+            message: 'Recopilamos información sobre su comportamiento de uso, dispositivo y referencia para análisis, optimización y seguridad. Puede aceptar o rechazar.',
+            details: 'Datos recopilados: clics, movimientos del ratón, dispositivo, navegador, referencia, tiempo de sesión. Propósito: análisis, optimización, seguridad.',
+            accept: 'Aceptar',
+            reject: 'Rechazar',
         },
         'ro': {
             title: 'Notificare de Confidențialitate',
-            message: 'Acest site web utilizează tehnologii precum cookie-urile pentru a activa funcționalitățile esențiale, analize și personalizare. Puteți schimba setările în orice moment sau accepta setările implicite.',
-            closeMessage: 'Puteți închide această bară pentru a continua doar cu cookie-urile esențiale.',
-            privacyNotice: 'Notificare de Confidențialitate',
-            analytics: 'Analize',
-            personalization: 'Personalizare',
-            save: 'Salvează',
-            acceptAll: 'Acceptă Toate',
-            rejectAll: 'Respinge Toate'
+            message: 'Colectăm informații despre comportamentul de utilizare, dispozitiv și sursa de acces pentru analiză, optimizare și securitate. Puteți accepta sau respinge.',
+            details: 'Date colectate: click-uri, mișcări mouse, dispozitiv, browser, referrer, timp sesiune. Scop: analiză, optimizare, securitate.',
+            accept: 'Acceptă',
+            reject: 'Respinge',
         },
-        'th': {
-            title: 'ประกาศความเป็นส่วนตัว',
-            message: 'เว็บไซต์นี้ใช้เทคโนโลยีเช่นคุกกี้เพื่อเปิดใช้งานฟังก์ชันที่จำเป็น การวิเคราะห์ และการปรับแต่งส่วนบุคคล คุณสามารถเปลี่ยนการตั้งค่าได้ทุกเมื่อหรือยอมรับการตั้งค่าเริ่มต้น',
-            closeMessage: 'คุณสามารถปิดแบนเนอร์นี้เพื่อดำเนินการต่อด้วยคุกกี้ที่จำเป็นเท่านั้น',
-            privacyNotice: 'ประกาศความเป็นส่วนตัว',
-            analytics: 'การวิเคราะห์',
-            personalization: 'การปรับแต่งส่วนบุคคล',
-            save: 'บันทึก',
-            acceptAll: 'ยอมรับทั้งหมด',
-            rejectAll: 'ปฏิเสธทั้งหมด'
+        'pl': {
+            title: 'Informacja o prywatności',
+            message: 'Zbieramy informacje o Twoim zachowaniu, urządzeniu i źródle wejścia w celach analitycznych, optymalizacyjnych i bezpieczeństwa. Możesz zaakceptować lub odrzucić.',
+            details: 'Zbierane dane: kliknięcia, ruchy myszą, urządzenie, przeglądarka, referrer, czas sesji. Cel: analiza, optymalizacja, bezpieczeństwo.',
+            accept: 'Akceptuj',
+            reject: 'Odrzuć',
+        },
+        'nl': {
+            title: 'Privacyverklaring',
+            message: 'We verzamelen informatie over uw gebruiksgedrag, apparaat en referrer voor analyse, optimalisatie en beveiliging. U kunt accepteren of weigeren.',
+            details: 'Verzamelde gegevens: klikken, muisbewegingen, apparaat, browser, referrer, sessieduur. Doel: analyse, optimalisatie, beveiliging.',
+            accept: 'Accepteren',
+            reject: 'Weigeren',
+        },
+        'sv': {
+            title: 'Integritetsmeddelande',
+            message: 'Vi samlar in information om ditt användarbeteende, enhet och hänvisning för analys, optimering och säkerhet. Du kan acceptera eller avvisa.',
+            details: 'Insamlade data: klick, musrörelser, enhet, webbläsare, hänvisning, sessionstid. Syfte: analys, optimering, säkerhet.',
+            accept: 'Acceptera',
+            reject: 'Avvisa',
+        },
+        'da': {
+            title: 'Privatlivsmeddelelse',
+            message: 'Vi indsamler oplysninger om din brug, enhed og henviser til analyse, optimering og sikkerhed. Du kan acceptere eller afvise.',
+            details: 'Indsamlede data: klik, musebevægelser, enhed, browser, henviser, sessionstid. Formål: analyse, optimering, sikkerhed.',
+            accept: 'Accepter',
+            reject: 'Afvis',
+        },
+        'fi': {
+            title: 'Tietosuojailmoitus',
+            message: 'Keräämme tietoja käyttötavastasi, laitteestasi ja viittaajasta analysointia, optimointia ja turvallisuutta varten. Voit hyväksyä tai hylätä.',
+            details: 'Kerätyt tiedot: napsautukset, hiiren liikkeet, laite, selain, viittaaja, istunnon kesto. Tarkoitus: analyysi, optimointi, turvallisuus.',
+            accept: 'Hyväksy',
+            reject: 'Hylkää',
         }
     };
 
-    function getUserLanguage() {
-        const userLang = navigator.language || navigator.userLanguage || 'en';
-        const langCode = userLang.split('-')[0];
-        return translations[langCode] ? langCode : 'en';
+    function isEUCountry(countryCode) {
+        const euCountries = [
+            'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','UK','GB'
+        ];
+        return euCountries.includes(countryCode);
     }
 
-    function showConsentPopup() {
-        const lang = getUserLanguage();
-        const translation = translations[lang];
-
-        const consentPopup = document.createElement('div');
-        consentPopup.style.position = 'fixed';
-        consentPopup.style.top = '10px';
-        consentPopup.style.right = '10px';
-        consentPopup.style.backgroundColor = '#f5f5f5';
-        consentPopup.style.padding = '20px';
-        consentPopup.style.borderRadius = '8px';
-        consentPopup.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
-        consentPopup.style.maxWidth = '400px';
-        consentPopup.style.zIndex = '1000';
-        consentPopup.style.fontFamily = 'Arial, sans-serif';
-
-        consentPopup.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2 style="font-size: 18px; margin: 0;">${translation.title}</h2>
-                <button id="closePopup" style="background: none; border: none; font-size: 18px; cursor: pointer;">✕</button>
-            </div>
-            <p style="font-size: 14px; margin-bottom: 10px;">${translation.message}</p>
-            <p style="font-size: 14px; margin-bottom: 20px;">${translation.closeMessage} <a href="#" style="color: #007bff; text-decoration: none;">${translation.privacyNotice}</a></p>
-            <div style="margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <span style="font-size: 14px;">${translation.analytics}</span>
-                    <label style="display: inline-flex; align-items: center; cursor: pointer;">
-                        <input type="checkbox" id="analyticsToggle" style="display: none;" ${analyticsEnabled ? 'checked' : ''}>
-                        <div style="width: 40px; height: 20px; background-color: ${analyticsEnabled ? '#007bff' : '#ccc'}; border-radius: 20px; position: relative; transition: background-color 0.3s;">
-                            <div style="width: 16px; height: 16px; background-color: white; border-radius: 50%; position: absolute; top: 2px; left: ${analyticsEnabled ? '22px' : '2px'}; transition: left 0.3s;"></div>
-                        </div>
-                    </label>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 14px;">${translation.personalization}</span>
-                    <label style="display: inline-flex; align-items: center; cursor: pointer;">
-                        <input type="checkbox" id="personalizationToggle" style="display: none;" ${personalizationEnabled ? 'checked' : ''}>
-                        <div style="width: 40px; height: 20px; background-color: ${personalizationEnabled ? '#007bff' : '#ccc'}; border-radius: 20px; position: relative; transition: background-color 0.3s;">
-                            <div style="width: 16px; height: 16px; background-color: white; border-radius: 50%; position: absolute; top: 2px; left: ${personalizationEnabled ? '22px' : '2px'}; transition: left 0.3s;"></div>
-                        </div>
-                    </label>
-                </div>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button id="saveSettings" style="padding: 10px; background-color: #f0f0f0; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">${translation.save}</button>
-                <button id="acceptAll" style="padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">${translation.acceptAll}</button>
-                <button id="rejectAll" style="padding: 10px; background-color: #f0f0f0; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">${translation.rejectAll}</button>
-            </div>
-        `;
-
-        document.body.appendChild(consentPopup);
-
-        const analyticsToggle = document.getElementById('analyticsToggle');
-        const analyticsToggleSwitch = analyticsToggle.nextElementSibling;
-        analyticsToggle.addEventListener('change', () => {
-            analyticsEnabled = analyticsToggle.checked;
-            analyticsToggleSwitch.style.backgroundColor = analyticsEnabled ? '#007bff' : '#ccc';
-            analyticsToggleSwitch.firstElementChild.style.left = analyticsEnabled ? '22px' : '2px';
-        });
-
-        const personalizationToggle = document.getElementById('personalizationToggle');
-        const personalizationToggleSwitch = personalizationToggle.nextElementSibling;
-        personalizationToggle.addEventListener('change', () => {
-            personalizationEnabled = personalizationToggle.checked;
-            personalizationToggleSwitch.style.backgroundColor = personalizationEnabled ? '#007bff' : '#ccc';
-            personalizationToggleSwitch.firstElementChild.style.left = personalizationEnabled ? '22px' : '2px';
-        });
-
-        document.getElementById('saveSettings').addEventListener('click', () => {
-            userConsented = true;
-            localStorage.setItem('userConsent', 'true');
-            localStorage.setItem('analyticsEnabled', analyticsEnabled.toString());
-            localStorage.setItem('personalizationEnabled', personalizationEnabled.toString());
-            document.body.removeChild(consentPopup);
-            startTracking();
-        });
-
-        document.getElementById('acceptAll').addEventListener('click', () => {
-            userConsented = true;
-            analyticsEnabled = true;
-            personalizationEnabled = true;
-            localStorage.setItem('userConsent', 'true');
-            localStorage.setItem('analyticsEnabled', 'true');
-            localStorage.setItem('personalizationEnabled', 'true');
-            document.body.removeChild(consentPopup);
-            startTracking();
-        });
-
-        document.getElementById('rejectAll').addEventListener('click', () => {
-            userConsented = false;
-            analyticsEnabled = false;
-            personalizationEnabled = false;
-            localStorage.setItem('userConsent', 'false');
-            localStorage.setItem('analyticsEnabled', 'false');
-            localStorage.setItem('personalizationEnabled', 'false');
-            document.body.removeChild(consentPopup);
-        });
-
-        document.getElementById('closePopup').addEventListener('click', () => {
-            userConsented = false;
-            analyticsEnabled = false;
-            personalizationEnabled = false;
-            localStorage.setItem('userConsent', 'false');
-            localStorage.setItem('analyticsEnabled', 'false');
-            localStorage.setItem('personalizationEnabled', 'false');
-            document.body.removeChild(consentPopup);
-        });
-    }
-
-    function checkConsent() {
-        const consent = localStorage.getItem('userConsent');
-        const storedAnalytics = localStorage.getItem('analyticsEnabled');
-        const storedPersonalization = localStorage.getItem('personalizationEnabled');
-
-        if (consent === 'true') {
-            userConsented = true;
-            analyticsEnabled = storedAnalytics === 'true';
-            personalizationEnabled = storedPersonalization === 'true';
-            startTracking();
-        } else if (consent === 'false') {
-            userConsented = false;
-            analyticsEnabled = false;
-            personalizationEnabled = false;
-        } else {
-            showConsentPopup();
-        }
+    function getUserCountry(callback) {
+        fetch('https://ipapi.co/json/')
+            .then(response => response.json())
+            .then(data => {
+                callback(data.country_code);
+            })
+            .catch(() => {
+                callback('EU');
+            });
     }
 
     function isBot() {
@@ -538,5 +455,71 @@
         };
     }
 
-    window.addEventListener('load', checkConsent);
+    function getUserLanguage() {
+        const userLang = navigator.language || navigator.userLanguage || 'en';
+        const langCode = userLang.split('-')[0];
+        return Object.keys(translations).includes(langCode) ? langCode : 'en';
+    }
+
+    function showConsentPopup(onAccept, onReject) {
+        const lang = getUserLanguage();
+        const t = translations[lang];
+        const consentPopup = document.createElement('div');
+        consentPopup.style.position = 'fixed';
+        consentPopup.style.bottom = '10px';
+        consentPopup.style.left = '10px';
+        consentPopup.style.right = '10px';
+        consentPopup.style.backgroundColor = '#f5f5f5';
+        consentPopup.style.padding = '20px';
+        consentPopup.style.borderRadius = '8px';
+        consentPopup.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+        consentPopup.style.maxWidth = '95vw';
+        consentPopup.style.zIndex = '1000';
+        consentPopup.style.fontFamily = 'Arial, sans-serif';
+        consentPopup.style.margin = '0 auto';
+        consentPopup.style.width = 'calc(100vw - 20px)';
+        consentPopup.innerHTML = `
+            <div style="text-align:center;">
+                <h2 style="font-size:18px; margin:0 0 10px 0;">${t.title}</h2>
+                <p style="font-size:14px; margin-bottom:8px;">${t.message}</p>
+                <p style="font-size:12px; color:#555; margin-bottom:16px;">${t.details}</p>
+                <button id="consent-accept" style="padding:10px 20px; background:#007bff; color:#fff; border:none; border-radius:4px; margin-right:10px; cursor:pointer;">${t.accept}</button>
+                <button id="consent-reject" style="padding:10px 20px; background:#f0f0f0; color:#333; border:none; border-radius:4px; cursor:pointer;">${t.reject}</button>
+            </div>
+        `;
+        document.body.appendChild(consentPopup);
+        document.getElementById('consent-accept').onclick = function() {
+            document.body.removeChild(consentPopup);
+            onAccept();
+        };
+        document.getElementById('consent-reject').onclick = function() {
+            document.body.removeChild(consentPopup);
+            onReject();
+        };
+    }
+
+    window.addEventListener('load', function() {
+        getUserCountry(function(countryCode) {
+            if (isEUCountry(countryCode)) {
+                showConsentPopup(
+                    function() {
+                        userConsented = true;
+                        analyticsEnabled = true;
+                        personalizationEnabled = true;
+                        startTracking();
+                    },
+                    function() {
+                        userConsented = false;
+                        analyticsEnabled = false;
+                        personalizationEnabled = false;
+                    }
+                );
+            } else {
+                userConsented = true;
+                analyticsEnabled = true;
+                personalizationEnabled = true;
+                startTracking();
+            }
+        });
+    });
 })();
