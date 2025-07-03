@@ -320,7 +320,18 @@ class ActivityLogRepository extends BaseRepository
             ],
             'domain_operations' => [
                 ActivityAction::REFRESH_LIST_DOMAIN,
-                ActivityAction::GET_LIST_PATH_BY_DOMAIN
+                ActivityAction::GET_LIST_PATH_BY_DOMAIN,
+                ActivityAction::SYNC_DNS_RECORDS,
+                ActivityAction::DNS_DOMAIN_SYNCED,
+                ActivityAction::DNS_SYNC_COMPLETED,
+                ActivityAction::DNS_SYNC_FAILED,
+                ActivityAction::DNS_ZONE_NOT_FOUND,
+                ActivityAction::DNS_NO_RECORDS_FOUND,
+                ActivityAction::DNS_RECORD_SYNC_FAILED,
+                ActivityAction::DNS_OBSOLETE_RECORDS_REMOVED,
+                ActivityAction::DNS_SYNC_BATCH_COMPLETED,
+                ActivityAction::DNS_SYNC_COMPLETED_WITH_ERRORS,
+                ActivityAction::DNS_SYNC_ERROR
             ],
             'general_operations' => [
                 ActivityAction::ACCESS_VIEW,
@@ -396,7 +407,18 @@ class ActivityLogRepository extends BaseRepository
             ],
             'domain_operations' => [
                 ActivityAction::REFRESH_LIST_DOMAIN,
-                ActivityAction::GET_LIST_PATH_BY_DOMAIN
+                ActivityAction::GET_LIST_PATH_BY_DOMAIN,
+                ActivityAction::SYNC_DNS_RECORDS,
+                ActivityAction::DNS_DOMAIN_SYNCED,
+                ActivityAction::DNS_SYNC_COMPLETED,
+                ActivityAction::DNS_SYNC_FAILED,
+                ActivityAction::DNS_ZONE_NOT_FOUND,
+                ActivityAction::DNS_NO_RECORDS_FOUND,
+                ActivityAction::DNS_RECORD_SYNC_FAILED,
+                ActivityAction::DNS_OBSOLETE_RECORDS_REMOVED,
+                ActivityAction::DNS_SYNC_BATCH_COMPLETED,
+                ActivityAction::DNS_SYNC_COMPLETED_WITH_ERRORS,
+                ActivityAction::DNS_SYNC_ERROR
             ],
             'general_operations' => [
                 ActivityAction::ACCESS_VIEW,
@@ -488,6 +510,19 @@ class ActivityLogRepository extends BaseRepository
                 // Domain Operations
             ActivityAction::REFRESH_LIST_DOMAIN => 'Làm mới danh sách domain',
             ActivityAction::GET_LIST_PATH_BY_DOMAIN => 'Lấy đường dẫn theo domain',
+
+                // DNS Management
+            ActivityAction::SYNC_DNS_RECORDS => 'Đồng bộ DNS records',
+            ActivityAction::DNS_DOMAIN_SYNCED => 'Đồng bộ DNS domain thành công',
+            ActivityAction::DNS_SYNC_COMPLETED => 'Hoàn thành đồng bộ DNS',
+            ActivityAction::DNS_SYNC_FAILED => 'Đồng bộ DNS thất bại',
+            ActivityAction::DNS_ZONE_NOT_FOUND => 'Không tìm thấy DNS zone',
+            ActivityAction::DNS_NO_RECORDS_FOUND => 'Không tìm thấy DNS records',
+            ActivityAction::DNS_RECORD_SYNC_FAILED => 'Đồng bộ DNS record thất bại',
+            ActivityAction::DNS_OBSOLETE_RECORDS_REMOVED => 'Xóa DNS records cũ',
+            ActivityAction::DNS_SYNC_BATCH_COMPLETED => 'Hoàn thành đồng bộ DNS batch',
+            ActivityAction::DNS_SYNC_COMPLETED_WITH_ERRORS => 'Đồng bộ DNS hoàn thành có lỗi',
+            ActivityAction::DNS_SYNC_ERROR => 'Lỗi đồng bộ DNS',
         ];
 
         return $labels[$action] ?? ucfirst(str_replace('_', ' ', $action));
