@@ -34,6 +34,7 @@ use App\Http\Controllers\API\LeaveRequestController;
 use App\Http\Controllers\API\SalaryCalculationController;
 use App\Http\Controllers\API\PublicHolidayController;
 use App\Http\Controllers\API\FileController;
+use App\Http\Controllers\API\FileSeaweedFSController;
 use App\Http\Controllers\API\AppInformationController;
 use App\Http\Controllers\API\EventController;
 
@@ -433,6 +434,31 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/upload', [FileController::class, 'upload'])->name('files.upload');
         Route::get('/download/{id}', [FileController::class, 'download'])->name('files.download');
         Route::get('/', [FileController::class, 'list'])->name('files.list');
+    });
+
+    // SeaweedFS File Management API
+    Route::prefix('seaweedfs/files')->group(function () {
+        // Health check and system endpoints
+        Route::get('/health', [FileSeaweedFSController::class, 'healthCheck'])->name('seaweedfs.files.health');
+        Route::get('/stats', [FileSeaweedFSController::class, 'getStats'])->name('seaweedfs.files.stats');
+
+        // File listing and search
+        Route::get('/', [FileSeaweedFSController::class, 'listFiles'])->name('seaweedfs.files.list');
+        Route::get('/{fileId}', [FileSeaweedFSController::class, 'getFileInfo'])->name('seaweedfs.files.info');
+
+        // Upload operations
+        Route::post('/upload-url', [FileSeaweedFSController::class, 'generateUploadUrl'])->name('seaweedfs.files.upload.url');
+        Route::post('/{fileId}/complete', [FileSeaweedFSController::class, 'completeUpload'])->name('seaweedfs.files.upload.complete');
+
+        // Download and streaming operations
+        Route::post('/{fileId}/download-url', [FileSeaweedFSController::class, 'generateDownloadUrl'])->name('seaweedfs.files.download.url');
+        Route::post('/{fileId}/stream-url', [FileSeaweedFSController::class, 'generateStreamUrl'])->name('seaweedfs.files.stream.url');
+
+        // File sharing and access control
+        Route::post('/{fileId}/share', [FileSeaweedFSController::class, 'shareFile'])->name('seaweedfs.files.share');
+
+        // File deletion
+        Route::delete('/{fileId}', [FileSeaweedFSController::class, 'deleteFile'])->name('seaweedfs.files.delete');
     });
 
     Route::prefix('app-information')->group(function () {

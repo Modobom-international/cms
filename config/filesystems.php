@@ -60,6 +60,19 @@ return [
             'report' => false,
         ],
 
+        'seaweedfs' => [
+            'driver' => 's3',
+            'key' => env('SEAWEEDFS_S3_ACCESS_KEY', 'seaweedfs_access_key_123'),
+            'secret' => env('SEAWEEDFS_S3_SECRET_KEY', 'seaweedfs_secret_key_456'),
+            'region' => env('SEAWEEDFS_S3_REGION', 'us-east-1'),
+            'bucket' => env('SEAWEEDFS_DEFAULT_BUCKET', 'files'),
+            'url' => env('SEAWEEDFS_S3_ENDPOINT', 'http://localhost:8333'),
+            'endpoint' => env('SEAWEEDFS_S3_ENDPOINT', 'http://localhost:8333'),
+            'use_path_style_endpoint' => true, // Required for SeaweedFS
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public-image-user' => [
             'driver' => 'local',
             'root' => public_path() . '/storage/images/user/',

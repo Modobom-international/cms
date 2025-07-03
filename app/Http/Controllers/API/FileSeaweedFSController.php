@@ -2,129 +2,23 @@
 
 namespace App\Http\Controllers\API;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\FileRequest;
-use App\Repositories\FileRepository;
-use Illuminate\Support\Facades\Storage;
 use App\Models\File;
 use App\Services\FileService;
+use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use Exception;
 
-class FileController extends Controller
+class FileSeaweedFSController extends Controller
 {
-    protected $fileRepository;
     protected FileService $fileService;
 
-    public function __construct(FileRepository $fileRepository, FileService $fileService)
+    public function __construct(FileService $fileService)
     {
-        $this->fileRepository = $fileRepository;
         $this->fileService = $fileService;
-    }
-
-    public function upload(FileRequest $request)
-    {
-        try {
-            $file = $request->file('file');
-            $path = $request->input('path');
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            $fullPath = "/files/{$path}/{$fileName}";
-
-            Storage::put($fullPath, file_get_contents($file));
-
-            $data = $this->fileRepository->create([
-                'name' => $fileName,
-                'path' => $fullPath,
-                'type' => 'file',
-                'size' => $file->getSize(),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'data' => $data,
-                'message' => 'Tải file lên thành công',
-                'type' => 'upload_file_success',
-            ], 200);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tải file lên không thành công',
-                'type' => 'upload_file_fail',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function download($id)
-    {
-        try {
-            $file = $this->fileRepository->getById($id);
-
-            if (!$file and !Storage::exists($file->path)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Không tìm thấy file',
-                    'type' => 'download_file_fail',
-                ], 500);
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => $file,
-                'message' => 'Lấy file thành công',
-                'type' => 'download_file_success',
-            ], 200);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Lấy file không thành công',
-                'type' => 'download_file_success',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function list(Request $request)
-    {
-        try {
-            $path = $request->query('path', '');
-            $basePath = "/files/{$path}";
-            $files = Storage::allFiles($basePath);
-            $directories = Storage::directories($basePath);
-
-            $fileList = [];
-            foreach ($directories as $dir) {
-                $fileList[] = [
-                    'name' => basename($dir),
-                    'type' => 'folder',
-                    'path' => $dir,
-                ];
-            }
-
-            foreach ($files as $file) {
-                $fileRecord = $this->fileRepository->getByPath($file);
-                if ($fileRecord) {
-                    $fileList[] = [
-                        'id' => $fileRecord->id,
-                        'name' => $fileRecord->name,
-                        'type' => 'file',
-                        'path' => $fileRecord->path,
-                        'size' => $fileRecord->size,
-                    ];
-                }
-            }
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Lấy danh sách team không thành công',
-                'type' => 'download_file_success',
-                'error' => $e->getMessage()
-            ], 500);
-        }
     }
 
     /**
@@ -135,8 +29,6 @@ class FileController extends Controller
         $validator = Validator::make($request->all(), [
             'filename' => 'required|string|max:255',
             'mime_type' => 'required|string|max:100',
-            'visibility' => 'sometimes|in:private,public,shared',
-            'expires_at' => 'sometimes|date|after:now',
             'metadata' => 'sometimes|array',
         ]);
 
@@ -150,13 +42,18 @@ class FileController extends Controller
 
         try {
             $user = Auth::user();
-            $expiresAt = $request->expires_at ? Carbon::parse($request->expires_at) : null;
+
+            // Set default expires_at to 3600 seconds (1 hour) from now
+            $expiresAt = now()->addSeconds(3600);
+
+            // Always set visibility to 'private' - not dependent on client input
+            $visibility = 'private';
 
             $result = $this->fileService->generateUploadPresignedUrl(
                 $request->filename,
                 $request->mime_type,
                 $user,
-                $request->get('visibility', 'private'),
+                $visibility,
                 $expiresAt,
                 $request->get('metadata', [])
             );
@@ -166,7 +63,7 @@ class FileController extends Controller
                 'message' => 'Upload URL generated successfully',
                 'data' => $result
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to generate upload URL',
@@ -213,7 +110,7 @@ class FileController extends Controller
                     'file' => $this->fileService->getFileInfo($updatedFile, $user)
                 ]
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to complete upload',
@@ -247,7 +144,7 @@ class FileController extends Controller
                     'file_info' => $this->fileService->getFileInfo($file, $user)
                 ]
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to generate download URL',
@@ -281,7 +178,7 @@ class FileController extends Controller
                     'file_info' => $this->fileService->getFileInfo($file, $user)
                 ]
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to generate stream URL',
@@ -331,7 +228,7 @@ class FileController extends Controller
                     'file' => $this->fileService->getFileInfo($updatedFile, $user)
                 ]
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to share file',
@@ -355,7 +252,7 @@ class FileController extends Controller
                 'success' => true,
                 'message' => 'File deleted successfully'
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete file',
@@ -380,7 +277,7 @@ class FileController extends Controller
                 'message' => 'File information retrieved successfully',
                 'data' => ['file' => $fileInfo]
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get file information',
@@ -439,7 +336,7 @@ class FileController extends Controller
                 'message' => 'Files retrieved successfully',
                 'data' => $files
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve files',
@@ -462,7 +359,7 @@ class FileController extends Controller
                 'message' => 'File statistics retrieved successfully',
                 'data' => $stats
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve statistics',
@@ -490,7 +387,7 @@ class FileController extends Controller
                     'endpoint' => config('filesystems.disks.seaweedfs.endpoint'),
                 ]
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Health check failed',
