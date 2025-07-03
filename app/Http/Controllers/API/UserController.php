@@ -370,7 +370,7 @@ class UserController extends Controller
 
             $users = $this->userRepository->getUsersByFilter($filter);
 
-            $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem tất cả users');
+            // $this->logActivity(ActivityAction::ACCESS_VIEW, ['filters' => $input], 'Xem tất cả users');
 
             return response()->json([
                 'success' => true,
@@ -400,7 +400,7 @@ class UserController extends Controller
                 ], 404);
             }
 
-            $this->logActivity(ActivityAction::SHOW_RECORD, ['filters' => $request->all(), 'user' => $user], 'Xem thông tin user');
+            // $this->logActivity(ActivityAction::SHOW_RECORD, ['filters' => $request->all(), 'user' => $user], 'Xem thông tin user');
 
             return response()->json([
                 'success' => true,

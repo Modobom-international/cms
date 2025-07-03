@@ -166,7 +166,7 @@ class PageController extends Controller
      */
     public function getPage($pageId)
     {
-        $this->logActivity(ActivityAction::SHOW_RECORD, ['page_id' => $pageId], 'Viewed page');
+        // $this->logActivity(ActivityAction::SHOW_RECORD, ['page_id' => $pageId], 'Viewed page');
 
         $page = $this->pageRepository->find($pageId);
         $site = $this->siteRepository->findWithRelations($page->site_id);

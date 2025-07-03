@@ -277,7 +277,7 @@ class DomainController extends Controller
 
             $this->domainRepository->create($input);
 
-            $this->logActivity(ActivityAction::SHOW_RECORD, ['data' => $input], 'Thêm record vào bảng domains');
+            $this->logActivity(ActivityAction::CREATE_RECORD, ['data' => $input], 'Thêm record vào bảng domains');
 
             return response()->json([
                 'success' => true,
