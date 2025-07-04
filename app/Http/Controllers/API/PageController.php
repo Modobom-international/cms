@@ -169,8 +169,8 @@ class PageController extends Controller
         // $this->logActivity(ActivityAction::SHOW_RECORD, ['page_id' => $pageId], 'Viewed page');
 
         $page = $this->pageRepository->find($pageId);
-        $site = $this->siteRepository->findWithRelations($page->site_id);
         if ($page) {
+            $site = $this->siteRepository->findWithRelations($page->site_id);
             return response()->json([
                 'success' => true,
                 'message' => 'Page found',

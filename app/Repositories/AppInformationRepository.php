@@ -14,8 +14,19 @@ class AppInformationRepository extends BaseRepository
 
     public function getWithFilter($filters = [])
     {
-        $from = Carbon::parse($filters['from']);
-        $to = Carbon::parse($filters['to']);
+        // Validate and parse date filters safely
+        if (empty($filters['from']) || !$this->isValidDateString($filters['from'])) {
+            $from = Carbon::now()->startOfYear(); // Default to start of current year
+        } else {
+            $from = Carbon::parse($filters['from']);
+        }
+
+        if (empty($filters['to']) || !$this->isValidDateString($filters['to'])) {
+            $to = Carbon::now()->endOfYear(); // Default to end of current year
+        } else {
+            $to = Carbon::parse($filters['to']);
+        }
+
         $query = $this->model->whereBetween('created_at', [$from, $to]);
 
         if (!empty($filters['app_name'])) {
@@ -64,5 +75,27 @@ class AppInformationRepository extends BaseRepository
     public function getByUserID($userID)
     {
         return $this->model->where('user_id', $userID)->get();
+    }
+
+    /**
+     * Check if a string is a valid date format that Carbon can parse
+     *
+     * @param mixed $dateString
+     * @return bool
+     */
+    private function isValidDateString($dateString): bool
+    {
+        // Check if it's null, empty, or contains NaN
+        if (empty($dateString) || !is_string($dateString) || strpos($dateString, 'NaN') !== false) {
+            return false;
+        }
+
+        // Try to parse the date and catch any exceptions
+        try {
+            Carbon::parse($dateString);
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 }
